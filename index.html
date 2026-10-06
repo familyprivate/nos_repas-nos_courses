@@ -1808,6 +1808,8 @@ var Moteur = (function () {
 
   /* ---------- Code d'accès (redemandé une fois par mois et par appareil) ---------- */
   var SEL_ACCES = "menus-semaine/acces:";
+  /* Empreinte SHA-256 du code d'accès défini en amont (le code lui-même n'est pas dans la page). */
+  var EMPREINTE_ACCES = "e271ef987cdec01e9fb1ecf944bb2c5c5c70a3b0e34c7bb0a58766eb5f121b5c";
   function empreinte(texte) {
     if (!window.crypto || !crypto.subtle || !window.TextEncoder) return Promise.reject(new Error("crypto"));
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(SEL_ACCES + String(texte).trim().toUpperCase())).then(function (buf) {
@@ -1817,7 +1819,7 @@ var Moteur = (function () {
   function moisCourant() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
   function deverrouilleCeMois() {
     var v = lsGet("menus-deverrouille");
-    return !!(v && Store.acces && v.mois === moisCourant() && v.empreinte === Store.acces.empreinte);
+    return !!(v && v.mois === moisCourant() && v.empreinte === EMPREINTE_ACCES);
   }
   var verrouEl = document.getElementById("verrou");
   var verrouEtat = null;
@@ -1830,8 +1832,6 @@ var Moteur = (function () {
   }
   function fermerContenu() { document.body.classList.add("verrouille"); verrouEl.hidden = false; }
   function majVerrou() {
-    if (!Store.accesCharge) { if (verrouEtat !== "chargement") { verrouEtat = "chargement"; fermerContenu(); ecranVerrou(null); } return; }
-    if (!Store.acces) { if (verrouEtat !== "creation") { verrouEtat = "creation"; fermerContenu(); ecranVerrou("creation"); } return; }
     if (deverrouilleCeMois()) { if (verrouEtat !== "ouvert") ouvrir(); return; }
     if (verrouEtat !== "code") { verrouEtat = "code"; fermerContenu(); ecranVerrou("code"); }
   }
@@ -1847,28 +1847,9 @@ var Moteur = (function () {
     clear(verrouEl);
     var tete = h("div", { class: "lock-head" }, h("img", { class: "famille", src: (document.querySelector(".top .famille") || {}).src || "famille.webp", alt: "", width: "720", height: "637" }), h("p", { class: "eyebrow", text: "Accès protégé" }), h("h1", { text: "Menu de la semaine" }));
     var box = h("div", { class: "lock" }, tete);
-    if (!mode) { box.append(h("p", { class: "status", text: "Chargement…" })); verrouEl.append(box); return; }
     var note = h("p", { class: "status", role: "status" });
-    if (mode === "creation") {
-      var a = champCode("code-new", "Choisissez un code");
-      var go = h("button", { type: "submit", class: "btn primary", text: "Créer le code" });
-      box.append(h("p", { class: "lock-txt", text: "Première ouverture : créez le code qui protégera la page. Il vous sera redemandé une fois par mois sur chaque appareil." }),
-        h("form", { class: "lock-form", onsubmit: function (e) {
-          e.preventDefault();
-          var v = a.inp.value.trim();
-          if (v.length < 4) { note.className = "status err"; note.textContent = "Le code doit faire au moins 4 caractères."; a.inp.focus(); return; }
-          go.disabled = true; note.className = "status"; note.textContent = "Enregistrement…";
-          empreinte(v).then(function (hx) {
-            return Store.setAcces({ empreinte: hx, creeLe: new Date().toISOString() }).then(function () {
-              lsSet("menus-deverrouille", { mois: moisCourant(), empreinte: hx });
-              Store.acces = { empreinte: hx }; ouvrir();
-            });
-          }).catch(function () { go.disabled = false; note.className = "status err"; note.textContent = "Impossible d'enregistrer le code. Réessayez."; });
-        } }, a.el, note, go));
-      verrouEl.append(box); a.inp.focus(); return;
-    }
-    var c = champCode("code-acces", "Code d'accès");
-    var ok = h("button", { type: "submit", class: "btn primary", text: "Déverrouiller" });
+    var c = champCode("code-acces", "Tapez le code");
+    var ok = h("button", { type: "submit", class: "btn primary", text: "Validez" });
     box.append(h("form", { class: "lock-form", onsubmit: function (e) {
       e.preventDefault();
       var v = c.inp.value; if (!v.trim()) return;
@@ -1877,7 +1858,7 @@ var Moteur = (function () {
       ok.disabled = true;
       empreinte(v).then(function (hx) {
         ok.disabled = false;
-        if (Store.acces && hx === Store.acces.empreinte) {
+        if (hx === EMPREINTE_ACCES) {
           essais = { echecs: 0, jusqua: 0 }; sauverEssais(); lsSet("menus-deverrouille", { mois: moisCourant(), empreinte: hx }); ouvrir(); return;
         }
         essais.echecs++;
@@ -1890,30 +1871,9 @@ var Moteur = (function () {
     verrouEl.append(box); c.inp.focus();
   }
   function carteCodeAcces() {
-    var note = h("p", { class: "status", role: "status" });
-    var a = champCode("code-act", "Code actuel"), b = champCode("code-nv", "Nouveau code");
-    var go = h("button", { type: "submit", class: "btn", text: "Changer le code" });
     return h("section", { class: "card" }, h("h2", { text: "Code d'accès", style: "font-size:1.2rem" }),
       h("p", { class: "status", text: "Demandé à l'ouverture, une fois par mois sur chaque appareil." }),
-      h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "Verrouiller maintenant", onclick: verrouiller })),
-      h("details", null, h("summary", { text: "Changer le code" }),
-        h("form", { class: "lock-form", style: "margin-top:12px", onsubmit: function (e) {
-          e.preventDefault();
-          var nv = b.inp.value.trim();
-          if (nv.length < 4) { note.className = "status err"; note.textContent = "Le nouveau code doit faire au moins 4 caractères."; return; }
-          go.disabled = true;
-          empreinte(a.inp.value).then(function (hx) {
-            if (!Store.acces || hx !== Store.acces.empreinte) { go.disabled = false; note.className = "status err"; note.textContent = "Code actuel incorrect."; return; }
-            return empreinte(nv).then(function (nh) {
-              return Store.setAcces({ empreinte: nh, creeLe: new Date().toISOString() }).then(function () {
-                lsSet("menus-deverrouille", { mois: moisCourant(), empreinte: nh });
-                Store.acces = { empreinte: nh };
-                a.inp.value = b.inp.value = ""; go.disabled = false;
-                note.className = "status"; note.textContent = "Code changé. Vos autres appareils le redemanderont.";
-              });
-            });
-          }).catch(function () { go.disabled = false; note.className = "status err"; note.textContent = "Changement impossible. Réessayez."; });
-        } }, a.el, b.el, note, h("div", { class: "bar" }, go))));
+      h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "Verrouiller maintenant", onclick: verrouiller })));
   }
 
   /* ---------- Réinitialisation ---------- */
@@ -2193,7 +2153,7 @@ var Moteur = (function () {
   /* ---------- Démarrage ---------- */
   var premierChargement = true;
   Store.onChange = function (quoi) {
-    if (quoi === "acces") { majVerrou(); return; }
+    if (quoi === "acces") return;
     if (quoi === "articles") {
       if (ongletActif === "art") renderArt();
       rafraichirSelectsArticles();
