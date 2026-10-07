@@ -380,11 +380,14 @@ body.tunnel .app { max-width: 720px; }
 /* Entrée */
 .tn-entree { display: flex; flex-direction: column; gap: 14px; border: 2px solid var(--rule); border-radius: 16px; padding: 20px; background: var(--surface); }
 .tn-entree h2 { font-size: 1.9rem; letter-spacing: -.03em; line-height: 1.05; }
-.tn-plan { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.tn-plan li { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--muted); }
-.tn-plan b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line); font-size: 13px; }
+.tn-plan { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; position: relative; }
+.tn-plan::before { content: ""; position: absolute; left: 10%; right: 10%; top: 13px; height: 2px; background: var(--line); }
+.tn-plan li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-size: 11px; font-weight: 700; line-height: 1.2; color: var(--muted); }
+.tn-plan b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line); background: var(--surface); font-size: 12px; }
 .tn-plan li.fait { color: var(--ink); } .tn-plan li.fait b { background: var(--ok); border-color: var(--ok); color: #fff; }
 .tn-plan li.encours { color: var(--ink); } .tn-plan li.encours b { border-color: var(--accent); color: var(--accent); }
+body.vue-mobile .tn-entree { padding: 16px; gap: 12px; }
+body.vue-mobile .tn-entree h2 { font-size: 1.6rem; }
 .tn-go { padding-block: 15px; font-size: 16px; }
 /* La semaine en pastilles */
 .tj-liste { display: flex; flex-direction: column; gap: 8px; }
@@ -473,7 +476,8 @@ body.vue-mobile .dlbtn { width: 100%; padding-block: 15px; font-size: 16px; }
 
 /* Écran de verrouillage */
 body.verrouille .app, body.verrouille .bottombar { display: none !important; }
-.verrou { min-height: 80vh; display: grid; place-items: center; }
+.verrou { min-height: calc(100vh - 28px); min-height: calc(100svh - 28px - env(safe-area-inset-top, 0px)); display: grid; place-items: center; }
+body.verrouille { padding-bottom: 12px !important; }
 .lock { width: min(100%, 460px); display: flex; flex-direction: column; gap: 18px; }
 /* Affiche colorée du mois : date en grand, petits dessins, la famille posée sur le filet */
 .lock-affiche { position: relative; overflow: hidden; background: var(--lk); color: #FFFFFF; border-radius: 18px 18px 0 0; min-height: 250px; border-bottom: 8px solid var(--rule); padding: 22px 22px 0; }
@@ -1546,14 +1550,15 @@ var Moteur = (function () {
     var etape = enCours ? (S.page === "liste" ? 4 : 3) : idxEtape(S.page || "semaine");
     var commence = enCours || (S.page && S.page !== "semaine");
     var liste = h("ol", { class: "tn-plan" });
-    ETAPES_TN.forEach(function (e, i) { liste.append(h("li", { class: i < etape && commence ? "fait" : i === etape && commence ? "encours" : "" }, h("b", { text: String(i + 1) }), h("span", { text: e[1].replace(" ?", "") }))); });
+    var COURTS = ["La semaine", "Recette imposée", "Articles en plus", "Votre menu", "La liste"];
+    ETAPES_TN.forEach(function (e, i) { liste.append(h("li", { class: i < etape && commence ? "fait" : i === etape && commence ? "encours" : "" }, h("b", { text: i < etape && commence ? "✓" : String(i + 1) }), h("span", { text: COURTS[i] }))); });
     panelPrep.append(h("section", { class: "tn-entree" },
       h("div", { class: "statut-bloc" }, statut("todo", deja ? "Modification à valider" : enCours ? "Menu à valider" : "Menu à faire")),
       h("h2", { text: enCours ? "Votre menu est prêt" : "Préparez le menu de la semaine" }),
       h("p", { class: "status", text: enCours ? "Il reste à le relire et à valider la liste de courses." : "Trois petites questions, puis votre menu et votre liste de courses. Environ une minute." }),
-      liste,
       h("button", { type: "button", class: "btn primary tn-go", text: commence ? "Reprendre →" : "Commencer →", onclick: function () { sensTn = 1; S.tunnel = true; if (!S.page) S.page = "semaine"; sauver(); renderPrep(); window.scrollTo(0, 0); } }),
-      deja ? h("button", { type: "button", class: "btn ghost", text: "Annuler la modification", onclick: function () { S = depuisValide(deja); lsDel(cleBrouillon()); renderPrep(); } }) : null));
+      deja ? h("button", { type: "button", class: "btn ghost", text: "Annuler la modification", onclick: function () { S = depuisValide(deja); lsDel(cleBrouillon()); renderPrep(); } }) : null,
+      liste));
   }
 
   function enteteTn(i, titre, sous) {
