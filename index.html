@@ -140,7 +140,7 @@ h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); line-height: .95; font-weight: 800; 
 .slotrow { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 6px 8px; align-items: center; }
 .slotrow label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .slotrow input { grid-column: 2; }
-select, input[type="text"], input[type="date"] {
+select, input[type="text"], input[type="date"], input[type="search"] {
   background: var(--surface); border: 1.5px solid var(--line); border-radius: 4px; padding: 8px 10px; width: 100%; min-width: 0;
 }
 select.etat { font-weight: 600; }
@@ -151,10 +151,23 @@ select.etat[data-etat="resto"] { background: var(--st-resto); border-color: var(
 select.etat option { background: var(--surface); color: var(--ink); }
 
 .rows { display: flex; flex-direction: column; gap: 8px; }
+.cherche { position: relative; min-width: 0; }
+.cherche-in { width: 100%; -webkit-appearance: none; appearance: none; }
+.cherche-in::-webkit-search-decoration { -webkit-appearance: none; }
+.cherche-liste { list-style: none; margin: 6px 0 0; padding: 4px; max-height: min(320px, 46vh); overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--surface); border: 1.5px solid var(--ink); border-radius: 10px; }
+.cherche-liste[hidden] { display: none; }
+.cherche-grp { font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 10px 4px; }
+.cherche-opt { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding: 11px 10px; border-radius: 7px; cursor: pointer; }
+.cherche-opt small { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.cherche-opt.actif, .cherche-opt:hover { background: var(--sunk); }
+.cherche-opt.choisi span { font-weight: 700; }
+.cherche-vide { padding: 10px; color: var(--muted); font-size: .9rem; }
+.choix-ligne { display: flex; gap: 6px; align-items: flex-start; }
+.choix-ligne .cherche { flex: 1; }
 .irow { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr) auto; gap: 8px; align-items: center; }
 .arow { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 8px; align-items: center; }
 .mform { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, .8fr) auto; gap: 8px; align-items: center; }
-.pickbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.pickbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
 .rowtools { display: flex; gap: 2px; align-items: center; }
 
 /* Boutons */
@@ -270,6 +283,37 @@ td .add { margin-left: 8px; }
 .chip[aria-pressed="true"], .chip[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .chip[aria-pressed="true"] small, .chip[aria-selected="true"] small { color: inherit; opacity: .75; }
 .chips.petits .chip { padding: 4px 11px; font-size: 13px; border-style: dashed; }
+/* Glisser pour supprimer */
+.sw { position: relative; overflow: hidden; }
+.sw-fond { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; border: 0; background: #D32F2F; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.sw-fond svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sw-piste { position: relative; background: var(--bg); display: flex; align-items: stretch; transition: transform .22s ease; touch-action: pan-y; }
+.sw-piste.glisse { transition: none; }
+.sw-piste > :first-child { flex: 1; min-width: 0; }
+.sw-pc { display: none; align-self: center; flex: none; color: var(--muted); }
+.sw-pc svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sw-pc:hover { color: var(--danger); border-color: var(--danger); }
+@media (hover: hover) and (pointer: fine) {
+  .sw-pc { display: inline-grid; place-items: center; margin-left: 6px; }
+  .sw-fond { display: none; }
+  .astuce-sw { display: none; }
+}
+.astuce-sw { font-size: 12.5px; }
+.art-liste { border-top: 3px solid var(--rule); }
+.art-grp { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 14px 4px 6px; border-bottom: 1px solid var(--line); }
+.art-ligne { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 9px 4px; border-bottom: 1px solid var(--line); }
+.art-nom { overflow-wrap: anywhere; }
+.art-q { color: var(--muted); font-size: 14px; }
+.effacees { margin-top: 18px; }
+.effacees .bar { justify-content: space-between; border-bottom: 1px solid var(--line); padding: 6px 0; }
+.sw .rec-row, .sw .art-ligne { border-bottom: 0; }
+.rec-list .sw, .art-liste .sw { border-bottom: 1px solid var(--line); }
+/* Retour aux recettes, toujours visible */
+.fiche-nav { position: sticky; top: 0; z-index: 6; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--bg); padding: 10px 0; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+.retour-rec { display: inline-flex; align-items: center; gap: 10px; border: 2px solid var(--ink); background: var(--surface); color: var(--ink); font-weight: 700; padding: 10px 16px 10px 12px; min-height: 46px; }
+.retour-rec .fl { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 16px; }
+.retour-rec.danger { border-color: var(--danger); color: var(--danger); }
+.retour-rec.danger .fl { background: var(--danger); }
 .rec-list { display: flex; flex-direction: column; border-top: 3px solid var(--rule); }
 .rec-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 12px 4px; cursor: pointer; color: var(--ink); }
 .rec-nom { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline; min-width: 0; }
@@ -572,7 +616,7 @@ body.vue-mobile .seg { align-self: stretch; }
 body.vue-mobile .seg button { flex: 1; padding-inline: 6px; }
 body.vue-mobile .weeknav { flex: 1; justify-content: space-between; }
 body.vue-mobile .weeknav button { width: 46px; height: 42px; }
-body.vue-mobile select, body.vue-mobile input[type="text"], body.vue-mobile input[type="date"] { font-size: 16px; padding-block: 10px; }
+body.vue-mobile select, body.vue-mobile input[type="text"], body.vue-mobile input[type="date"], body.vue-mobile input[type="search"] { font-size: 16px; padding-block: 10px; }
 body.vue-mobile .daygrid { grid-template-columns: 1fr; }
 body.vue-mobile .irow, body.vue-mobile .arow, body.vue-mobile .mform { grid-template-columns: 1fr 1fr; }
 body.vue-mobile .irow > :first-child, body.vue-mobile .arow > :first-child, body.vue-mobile .mform > :first-child { grid-column: 1 / -1; }
@@ -603,7 +647,7 @@ body.vue-mobile .bottombar {
   .weeknav button:hover { background: var(--sunk); }
   .basebtn:hover { background: var(--ink); color: var(--on-ink); }
   .tab:hover { color: var(--ink); }
-  select:hover, input[type="text"]:hover, input[type="date"]:hover { border-color: var(--muted); }
+  select:hover, input[type="text"]:hover, input[type="date"]:hover, input[type="search"]:hover { border-color: var(--muted); }
   .btn:hover { background: var(--sunk); }
   .btn.primary:hover { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
   .btn.ghost:hover { text-decoration: underline; background: none; }
@@ -1019,7 +1063,7 @@ var Moteur = (function () {
       }
       if (!target) { avert.push("Aucun créneau disponible pour la recette imposée « " + rec.nom + " »."); return; }
       var notes = [];
-      if (!compatible(rec, target.jour, target.repas) && rec._regle.type !== "libre") notes.push("hors règle (" + rec._regle.texte + "), demandé");
+      if (!compatible(rec, target.jour, target.repas) && rec._regle.type !== "libre" && rec._regle.type !== "imposee") notes.push("hors règle (" + rec._regle.texte + "), demandé");
       assign(target, rec, "imposee", notes);
     });
 
@@ -1410,10 +1454,13 @@ var Moteur = (function () {
     out.forEach(function (r) { r.ingredients = r.ingredients || []; r.saison = r.saison || "Toute l’année"; r.delai = r.delai == null ? 1 : +r.delai; r.regle = r.regle || "Aucune"; });
     ALIAS = {};
     out.forEach(function (r) { (r.anciensNoms || []).forEach(function (a) { if (a !== r.nom) ALIAS[a] = r.nom; }); });
+    // Une recette perso qui porte exactement le nom d'une recette d'origine fait doublon : on garde celle d'origine.
+    var nomsBase = {}; out.forEach(function (r) { if (r._base && !r.effacee) nomsBase[M.norm(r.nom)] = true; });
+    out = out.filter(function (r) { return r._base || !nomsBase[M.norm(r.nom)]; });
     TOUTES = out;
     var actives = out.filter(function (r) { return !r.supprimee; });
     R = { list: actives, byName: M.prepare(out) };
-    NOMS = actives.map(function (r) { return r.nom; }).sort(function (a, b) { return a.localeCompare(b, "fr"); });
+    NOMS = actives.map(function (r) { return r.nom; }).filter(function (n, i, a) { return a.indexOf(n) === i; }).sort(function (a, b) { return a.localeCompare(b, "fr"); });
     BASE_PRODUITS = calcBaseProduits();
   }
   recalculerRecettes();
@@ -1598,6 +1645,7 @@ var Moteur = (function () {
       var rows3 = h("div", { class: "rows", id: "imposees" });
       page.append(h("section", { class: "card" }, rows3, h("div", { class: "bar" }, h("button", { type: "button", class: "btn", text: "+ Imposer une recette", onclick: function () {
         rep.imposees.push({ recette: "", jour: null, repas: null }); sauver(); renderImposees(rows3); majBouton3();
+        var ins3 = rows3.querySelectorAll(".cherche-in"); if (ins3.length) ins3[ins3.length - 1].focus();
       } }))));
       renderImposees(rows3);
       var b3 = h("button", { type: "button", class: "btn primary", onclick: function () { allerPage("articles"); } });
@@ -1861,15 +1909,79 @@ var Moteur = (function () {
     return o;
   })();
 
+  /* ---------- Champ de recherche (remplace les longues listes déroulantes) ----------
+     opts : items() -> [{v, label, groupe?, sub?, haut?}], value, placeholder, id, garder (affiche le choix), onPick(item) */
+  function chercheur(opts) {
+    var wrap = h("div", { class: "cherche" });
+    var inp = h("input", { type: "search", id: opts.id || null, class: "cherche-in", autocomplete: "off", autocapitalize: "off", spellcheck: false, enterkeyhint: "done",
+      placeholder: opts.placeholder || "Tapez pour chercher…", "aria-label": opts.label || opts.placeholder || "Rechercher", role: "combobox", "aria-expanded": "false" });
+    var liste = h("ul", { class: "cherche-liste", role: "listbox", hidden: true });
+    var choisi = opts.value || "", actif = 0, vus = [], enRecherche = false;
+    function afficheValeur() { var it = (opts.items() || []).filter(function (x) { return x.v === choisi; })[0]; inp.value = opts.garder && it ? it.label : ""; }
+    afficheValeur();
+    function filtrer() {
+      var q = M.norm(inp.value), tous = opts.items() || [];
+      if (opts.garder && choisi && inp.value && tous.some(function (x) { return x.v === choisi && x.label === inp.value; })) q = "";
+      enRecherche = !!q;
+      if (!q) return tous;
+      var debut = [], mot = [], dedans = [];
+      tous.forEach(function (x) {
+        if (x.haut) return;
+        var n = M.norm(x.label + " " + (x.cherche || ""));
+        if (n.indexOf(q) === 0) debut.push(x);
+        else if ((" " + n).indexOf(" " + q) !== -1) mot.push(x);
+        else if (q.length > 1 && n.indexOf(q) !== -1) dedans.push(x);
+      });
+      return debut.concat(mot, dedans);
+    }
+    function dessiner() {
+      clear(liste); vus = filtrer(); if (actif >= vus.length) actif = 0;
+      var grp = null, q = enRecherche;
+      if (!vus.length) liste.append(h("li", { class: "cherche-vide", text: opts.vide || "Aucun résultat." }));
+      vus.forEach(function (x, i) {
+        if (!q && x.groupe && x.groupe !== grp) { grp = x.groupe; liste.append(h("li", { class: "cherche-grp", role: "presentation", text: x.groupe })); }
+        var li = h("li", { role: "option", class: "cherche-opt" + (i === actif ? " actif" : "") + (x.v === choisi ? " choisi" : ""), "aria-selected": String(x.v === choisi) },
+          h("span", { text: x.label }), x.sub ? h("small", { text: x.sub }) : null);
+        li.addEventListener("pointerdown", function (e) { e.preventDefault(); });
+        li.addEventListener("click", function () { prendre(x); });
+        liste.append(li);
+      });
+    }
+    function ouvrir() { if (!liste.hidden) return; liste.hidden = false; inp.setAttribute("aria-expanded", "true"); wrap.classList.add("ouvert"); actif = 0; dessiner();
+      if (window.innerWidth < 760) setTimeout(function () { var r = wrap.getBoundingClientRect(); if (r.top > 90 || r.top < 0) window.scrollBy({ top: r.top - 70, behavior: "smooth" }); }, 280); }
+    function fermer() { liste.hidden = true; inp.setAttribute("aria-expanded", "false"); wrap.classList.remove("ouvert"); afficheValeur(); }
+    function prendre(x) {
+      if (!x) return;
+      if (opts.garder && !x.haut) choisi = x.v;
+      fermer(); inp.blur(); opts.onPick(x);
+      wrap.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    inp.addEventListener("focus", function () { if (opts.garder) inp.select(); ouvrir(); });
+    inp.addEventListener("click", ouvrir);
+    inp.addEventListener("input", function () { liste.hidden = true; ouvrir(); actif = 0; dessiner(); });
+    inp.addEventListener("blur", function () { setTimeout(fermer, 120); });
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown") { e.preventDefault(); actif = Math.min(vus.length - 1, actif + 1); dessiner(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); actif = Math.max(0, actif - 1); dessiner(); }
+      else if (e.key === "Enter") { e.preventDefault(); prendre(vus[actif]); }
+      else if (e.key === "Escape") { fermer(); inp.blur(); }
+    });
+    wrap.append(inp, liste);
+    wrap._valeur = function () { return choisi; };
+    wrap._vider = function () { choisi = ""; inp.value = ""; };
+    wrap._rafraichir = function () { if (!liste.hidden) dessiner(); };
+    return wrap;
+  }
+  function itemsRecettes() { return NOMS.map(function (n) { var r = R.byName[n]; return { v: n, label: n, sub: r && r._regle && r._regle.type === "imposee" ? "si imposée" : "" }; }); }
+
   function renderImposees(wrap) {
     clear(wrap);
     var rep = S.reponses;
     if (!rep.imposees.length) { wrap.append(h("p", { class: "empty", text: "Aucune." })); return; }
     rep.imposees.forEach(function (im, i) {
-      var rs = options(h("select", { id: "imp-r-" + i, "aria-label": "Recette" }), [["", "Choisir une recette…"]].concat(NOMS), im.recette);
+      var rs = chercheur({ id: "imp-r-" + i, label: "Recette", placeholder: "Recette : tapez les 1res lettres…", garder: true, value: im.recette, items: itemsRecettes, onPick: function (x) { im.recette = x.v; sauver(); } });
       var pv = (im.jour == null ? "" : im.jour + "-" + (im.repas || ""));
       var ps = options(h("select", { id: "imp-p-" + i, "aria-label": "Créneau" }), PLACEMENTS, pv);
-      rs.addEventListener("change", function () { im.recette = rs.value; sauver(); });
       ps.addEventListener("change", function () {
         if (!ps.value) { im.jour = null; im.repas = null; }
         else { var p = ps.value.split("-"); im.jour = +p[0]; im.repas = p[1] || null; }
@@ -1896,8 +2008,14 @@ var Moteur = (function () {
   }
   function cleArticle(nom) { return (M.norm(nom).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "article").slice(0, 150); }
   function mesArticles() {
-    return Object.keys(Store.articles).map(function (id) { var a = Store.articles[id]; return { id: id, produit: majuscule(a.produit), categorie: a.categorie || "D", quantite: a.quantite || "", perso: true }; })
+    return Object.keys(Store.articles).filter(function (id) { return !Store.articles[id].masque; }).map(function (id) { var a = Store.articles[id]; return { id: id, produit: majuscule(a.produit), categorie: a.categorie || "D", quantite: a.quantite || "", perso: true }; })
       .filter(function (a) { return a.produit; });
+  }
+  /* Ingrédients des recettes supprimés de la liste des articles (ils restent dans leurs recettes). */
+  function articlesMasques() {
+    var out = {};
+    Object.keys(Store.articles).forEach(function (id) { var a = Store.articles[id]; if (a && a.masque && a.produit) out[M.norm(a.produit)] = id; });
+    return out;
   }
   function estEnregistre(nom, quantite) {
     var n = M.norm(nom), q = M.norm(quantite || "");
@@ -1911,8 +2029,9 @@ var Moteur = (function () {
       if (vus[k]) return; vus[k] = true; noms[M.norm(a.produit)] = true;
       out.push({ cle: k, id: a.id, produit: a.produit, categorie: a.categorie, quantite: a.quantite || "", perso: true });
     });
+    var masques = articlesMasques();
     BASE_PRODUITS.forEach(function (a) {
-      if (noms[M.norm(a.produit)]) return;
+      if (noms[M.norm(a.produit)] || masques[M.norm(a.produit)] != null) return;
       var k = cleArticle(a.produit);
       if (vus[k]) return; vus[k] = true;
       out.push({ cle: k, id: null, produit: a.produit, categorie: a.categorie, quantite: "", perso: false });
@@ -1941,18 +2060,23 @@ var Moteur = (function () {
       sel.append(g);
     });
   }
+  function itemsArticles() {
+    var tous = tousArticles(), out = [];
+    function it(a, g) { return { v: a.cle, label: a.produit + (a.quantite ? " (" + a.quantite + ")" : ""), sub: g === "★ Favoris" ? M.CAT_NAMES[a.categorie] || "" : "", groupe: g, a: a }; }
+    tous.filter(function (a) { return Store.favoris[a.cle]; }).forEach(function (a) { out.push(it(a, "★ Favoris")); });
+    var vu = {}; out.forEach(function (x) { vu[x.v] = true; });
+    M.CAT_ORDER.forEach(function (c) { tous.forEach(function (a) { if (a.categorie === c && !vu[a.cle]) out.push(it(a, M.CAT_NAMES[c])); }); });
+    tous.forEach(function (a) { if (!M.CAT_NAMES[a.categorie] && !vu[a.cle] && !out.some(function (x) { return x.v === a.cle; })) out.push(it(a, "Divers")); });
+    return out;
+  }
   function selectArticles(id, onPick) {
-    var sel = h("select", { id: id, class: "pick-article", "aria-label": "Articles enregistrés" });
-    remplirSelectArticles(sel);
-    sel.addEventListener("change", function () {
-      var item = sel.value && sel._articles ? sel._articles[sel.value] : null;
-      sel.value = "";
-      if (item) onPick({ produit: item.produit, quantite: item.quantite || "", categorie: item.categorie || "D" });
-    });
-    return sel;
+    var w = chercheur({ id: id, label: "Articles enregistrés", placeholder: "🔍 Article enregistré : tapez les 1res lettres…", items: itemsArticles, vide: "Pas trouvé : ajoutez-le ci-dessous comme nouvel article.",
+      onPick: function (x) { var a = x.a; onPick({ produit: a.produit, quantite: a.quantite || "", categorie: a.categorie || "D" }); } });
+    w.classList.add("pick-article");
+    return w;
   }
   function rafraichirSelectsArticles() {
-    Array.prototype.forEach.call(document.querySelectorAll("select.pick-article"), remplirSelectArticles);
+    Array.prototype.forEach.call(document.querySelectorAll(".pick-article"), function (w) { if (w._rafraichir) w._rafraichir(); });
   }
   function boutonEnregistrer(a, apres) {
     if (estEnregistre(a.produit, a.quantite || "")) return h("button", { type: "button", class: "btn ghost mini", text: "Mémorisé", disabled: true, title: "Déjà dans mes articles" });
@@ -2084,14 +2208,16 @@ var Moteur = (function () {
         tools.append(h("button", { type: "button", class: "icon", title: slot && slot.type === "recette" ? "Autre recette" : "Tirer une recette", "aria-label": "Tirer une recette pour " + libelle, text: "↻", onclick: function () { tirerCreneau(j, repas, hist); } }));
       }
       tools.append(h("button", { type: "button", class: "icon", title: "Choisir", "aria-label": "Choisir pour " + libelle, text: "✎", onclick: function () {
-        var sel = h("select", { "aria-label": "Choix pour " + libelle });
-        sel.append(h("option", { value: "", text: "Choisir…" }));
-        sel.append(h("option", { value: "__auto", text: "↻ Tirage automatique" }));
-        var ge = h("optgroup", { label: "Sans recette" }); CHOIX_EVT.forEach(function (o) { ge.append(h("option", { value: o[0], text: o[1] })); });
-        var gr = h("optgroup", { label: "Recettes" }); NOMS.forEach(function (n) { gr.append(h("option", { value: n, text: n, selected: slot && slot.recette === n })); });
-        sel.append(ge, gr);
-        sel.addEventListener("change", function () {
-          var v = sel.value; if (!v) return;
+        var sel = chercheur({ label: "Choix pour " + libelle, placeholder: "Recette : tapez les 1res lettres…", value: slot && slot.recette || "",
+          items: function () {
+            return [{ v: "__auto", label: "↻ Tirage automatique", groupe: "Options", haut: true }].concat(
+              CHOIX_EVT.map(function (o) { return { v: o[0], label: o[1], groupe: "Sans recette", haut: true }; }),
+              itemsRecettes().map(function (x) { x.groupe = "Recettes"; return x; }));
+          },
+          onPick: function (x) { choisir(x.v); } });
+        var annuler = h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: function () { renderPrep(); } });
+        function choisir(v) {
+          if (!v) return;
           if (v === "__auto") { tirerCreneau(j, repas, hist); return; }
           var cible = slot;
           if (!cible) {
@@ -2105,8 +2231,8 @@ var Moteur = (function () {
           else if (v === "__resto") { cible.type = "resto"; cible.recette = null; cible.texte = "Restaurant en famille"; cible.source = "choisie"; }
           else { cible.type = "recette"; cible.recette = v; cible.texte = ""; cible.source = "choisie"; }
           sauver(); renderPrep();
-        });
-        clear(cell); cell.append(h("span", { class: "lab", text: repas }), sel); sel.focus();
+        }
+        clear(cell); cell.append(h("span", { class: "lab", text: repas }), h("div", { class: "choix-ligne" }, sel, annuler)); sel.querySelector("input").focus();
       } }));
     }
     cell.append(h("div", { class: "mline" }, nameEl, tools));
@@ -2620,7 +2746,8 @@ var Moteur = (function () {
 
     var c2 = h("section", { class: "card" }, h("h2", { text: "Recettes servies hors de l'outil", style: "font-size:1.2rem" }),
       h("p", { class: "status", text: "Pour démarrer avec votre historique ChatGPT : ajoutez les recettes des dernières semaines. Elles comptent pour les délais. Gnocchis ou Pâtes farcies un vendredi soir fixent l'alternance." }));
-    var rs = options(h("select", { id: "man-r", "aria-label": "Recette" }), [["", "Recette…"]].concat(NOMS), "");
+    var rsW = chercheur({ id: "man-r", label: "Recette", placeholder: "Recette : tapez les 1res lettres…", garder: true, items: itemsRecettes, onPick: function () {} });
+    var rs = { get value() { return rsW._valeur(); }, set value(v) { if (!v) rsW._vider(); } };
     var dt = h("input", { type: "date", id: "man-d", "aria-label": "Date", value: M.iso(M.addDays(debut, -1)) });
     var rp = options(h("select", { id: "man-p", "aria-label": "Repas" }), ["Soir", "Midi"], "Soir");
     var mnote = h("p", { class: "status", role: "status" });
@@ -2629,7 +2756,7 @@ var Moteur = (function () {
       if (!rs.value || !dt.value) { mnote.className = "status err"; mnote.textContent = "Choisissez une recette et une date."; return; }
       Store.addManuel({ recette: rs.value, date: dt.value, repas: rp.value }).then(function () { mnote.className = "status"; mnote.textContent = rs.value + " ajouté au " + M.fr(M.fromIso(dt.value)) + "."; rs.value = ""; },
         function () { mnote.className = "status err"; mnote.textContent = "Ajout impossible. Réessayez."; });
-    } }, rs, dt, rp, h("button", { type: "submit", class: "btn", text: "Ajouter" })), mnote);
+    } }, rsW, dt, rp, h("button", { type: "submit", class: "btn", text: "Ajouter" })), mnote);
 
     var man = Object.keys(Store.manuels).map(function (id) { return { id: id, m: Store.manuels[id] }; })
       .filter(function (o) { return o.m && o.m.date; }).sort(function (a, b) { return a.m.date < b.m.date ? 1 : -1; });
@@ -2643,7 +2770,7 @@ var Moteur = (function () {
       c2.append(h("div", { class: "tablewrap" }, h("table", null, h("thead", null, h("tr", null, h("th", { text: "Date" }), h("th", { text: "Créneau" }), h("th", { text: "Recette" }), h("th"))), tb)));
     }
     var c3 = h("section", { class: "card zone-danger" }, h("h2", { text: "Repartir de zéro", style: "font-size:1.2rem" }),
-      h("p", { class: "status", text: "Efface tout l'historique pour recommencer comme au premier jour. Un mot code est demandé." }),
+      h("p", { class: "status", text: "Efface l'historique des menus et des listes de courses pour recommencer comme au premier jour. Les recettes et les articles ne sont pas touchés. Un mot code est demandé." }),
       h("div", { class: "bar" }, h("button", { type: "button", class: "btn danger", text: "Réinitialiser…", onclick: ouvrirReset })));
     panelHist.append(c1, c2, c3);
   }
@@ -3000,9 +3127,8 @@ var Moteur = (function () {
     var dejaOuvert = document.getElementById("reset-overlay"); if (dejaOuvert) dejaOuvert.remove();
     var precedent = document.activeElement;
     var champ = h("input", { type: "password", id: "reset-code", autocomplete: "off", autocapitalize: "characters", spellcheck: false, "aria-describedby": "reset-aide" });
-    var avecArticles = h("input", { type: "checkbox", id: "reset-articles" });
     var note = h("p", { class: "status", role: "status" });
-    var go = h("button", { type: "submit", class: "btn danger", text: "Tout réinitialiser", disabled: true });
+    var go = h("button", { type: "submit", class: "btn danger", text: "Réinitialiser l'historique", disabled: true });
     function fermer() { overlay.remove(); if (precedent && precedent.focus) precedent.focus(); }
     champ.addEventListener("input", function () { go.disabled = !champ.value.trim(); note.textContent = ""; });
     var form = h("form", { class: "dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "reset-titre", onsubmit: function (e) {
@@ -3012,25 +3138,116 @@ var Moteur = (function () {
       verifierCode(champ.value).then(function (ok) {
       if (!ok) { go.disabled = false; note.className = "status err"; note.textContent = "Mot code incorrect."; champ.select(); champ.focus(); return; }
       champ.disabled = true; note.className = "status"; note.textContent = "Suppression en cours…";
-      Store.toutEffacer(avecArticles.checked).then(function () {
+      Store.toutEffacer(false).then(function () {
         try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf("menus-brouillon-") === 0) localStorage.removeItem(k); }); } catch (e) {}
         coches = {}; cochesSemaine = null;
         debut = defautDebut; S = etatVide();
         fermer(); choisirOnglet("prep");
-        var st = document.getElementById("storestatus"); st.className = "status"; st.textContent = "Tout a été réinitialisé. Vous repartez de zéro.";
+        var st = document.getElementById("storestatus"); st.className = "status"; st.textContent = "L'historique des menus a été réinitialisé. Recettes et articles conservés.";
       }, function () { note.className = "status err"; note.textContent = "La suppression a échoué en partie. Réessayez."; go.disabled = false; champ.disabled = false; });
       });
     } },
-      h("h2", { id: "reset-titre", text: "Tout réinitialiser" }),
-      h("p", { id: "reset-aide", text: "Supprime définitivement les semaines validées, les recettes ajoutées à la main, les brouillons et les listes cochées. Les délais et l'alternance du vendredi repartent de zéro. Cette action est irréversible." }),
+      h("h2", { id: "reset-titre", text: "Réinitialiser l'historique" }),
+      h("p", { id: "reset-aide", text: "Supprime définitivement les menus des semaines validées et leurs listes de courses, les recettes notées à la main dans l'historique, les brouillons et les cases cochées. Les délais et l'alternance du vendredi repartent de zéro. Vos recettes et vos articles ne sont pas touchés. Cette action est irréversible." }),
       h("label", { class: "lbl", for: "reset-code", text: "Mot code" }), champ,
-      h("label", { class: "check", for: "reset-articles" }, avecArticles, " Supprimer aussi mes articles enregistrés et mes favoris"),
       note,
       h("div", { class: "bar" }, go, h("button", { type: "button", class: "btn", text: "Annuler", onclick: fermer })));
     var overlay = h("div", { class: "overlay", id: "reset-overlay", onkeydown: function (e) { if (e.key === "Escape") fermer(); }, onclick: function (e) { if (e.target === overlay) fermer(); } }, form);
     document.body.append(overlay);
     champ.focus();
   }
+
+  /* ---------- Suppression protégée (code prénom) ---------- */
+  /* Empreintes SHA-256 des deux codes autorisés : les codes eux-mêmes ne sont pas dans la page. */
+  var SEL_SUPPR = "menus-semaine/suppr:";
+  var EMPREINTES_SUPPR = ["6b2cd6ac7a96fff670f8bc381ba771d06d59794d219ec9fd27d0e922008bf74b", "94a37760431a9ecf69f250f095d682b8c164e440b7b336d794483c08a895ebb4"];
+  function verifierCodeSuppr(saisie) {
+    if (!window.crypto || !crypto.subtle || !window.TextEncoder) return Promise.resolve(false);
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(SEL_SUPPR + String(saisie).trim().toUpperCase())).then(function (buf) {
+      return EMPREINTES_SUPPR.indexOf(Array.prototype.map.call(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, "0"); }).join("")) !== -1;
+    }, function () { return false; });
+  }
+  /* opts : titre, texte, bouton, action() -> Promise, ok (message après succès) */
+  function demanderCodeSuppr(opts) {
+    var dejaOuvert = document.getElementById("suppr-overlay"); if (dejaOuvert) dejaOuvert.remove();
+    var precedent = document.activeElement;
+    var champ = h("input", { type: "password", id: "suppr-code", autocomplete: "off", autocapitalize: "characters", spellcheck: false, placeholder: "Code", "aria-describedby": "suppr-aide" });
+    var note = h("p", { class: "status", role: "status" });
+    var go = h("button", { type: "submit", class: "btn danger", text: opts.bouton || "Supprimer", disabled: true });
+    function fermer() { overlay.remove(); if (precedent && precedent.focus && document.body.contains(precedent)) precedent.focus(); }
+    champ.addEventListener("input", function () { go.disabled = !champ.value.trim(); note.textContent = ""; });
+    var form = h("form", { class: "dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "suppr-titre", onsubmit: function (e) {
+      e.preventDefault();
+      if (!champ.value.trim()) return;
+      go.disabled = true;
+      verifierCodeSuppr(champ.value).then(function (ok) {
+        if (!ok) { go.disabled = false; note.className = "status err"; note.textContent = "Code incorrect."; champ.select(); champ.focus(); return; }
+        champ.disabled = true; note.className = "status"; note.textContent = "Suppression en cours…";
+        Promise.resolve(opts.action()).then(function () { fermer(); if (opts.apres) opts.apres(); },
+          function () { note.className = "status err"; note.textContent = "La suppression a échoué. Réessayez."; go.disabled = false; champ.disabled = false; });
+      });
+    } },
+      h("h2", { id: "suppr-titre", text: opts.titre }),
+      h("p", { id: "suppr-aide", text: opts.texte }),
+      h("label", { class: "lbl", for: "suppr-code", text: "Code de suppression" }), champ,
+      note,
+      h("div", { class: "bar" }, go, h("button", { type: "button", class: "btn", text: "Annuler", onclick: fermer })));
+    var overlay = h("div", { class: "overlay", id: "suppr-overlay", onkeydown: function (e) { if (e.key === "Escape") fermer(); }, onclick: function (e) { if (e.target === overlay) fermer(); } }, form);
+    document.body.append(overlay);
+    champ.focus();
+  }
+
+  /* Ligne qu'on fait glisser vers la gauche pour faire apparaître une corbeille (comme sur iPhone).
+     Sur ordinateur, une petite corbeille reste visible au bout de la ligne. */
+  var ICONE_CORBEILLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>';
+  var swOuvert = null;
+  function corbeille(cls, label, onTrash) {
+    var b = h("button", { type: "button", class: cls, "aria-label": label, title: label, onclick: function (e) { e.stopPropagation(); fermerSw(); onTrash(); } });
+    b.innerHTML = ICONE_CORBEILLE + (cls === "sw-fond" ? "<span>Supprimer</span>" : "");
+    return b;
+  }
+  function fermerSw() { if (swOuvert) { swOuvert.style.transform = ""; swOuvert.parentNode.classList.remove("ouvert"); swOuvert = null; } }
+  function glisserPourSupprimer(contenu, label, onTrash) {
+    var LARG = 84;
+    var sw = h("div", { class: "sw" }, corbeille("sw-fond", label, onTrash));
+    var piste = h("div", { class: "sw-piste" }, contenu, corbeille("sw-pc icon", label, onTrash));
+    sw.append(piste);
+    var x0 = 0, y0 = 0, base = 0, glisse = false, suivi = false, dx = 0, pid = null;
+    piste.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      x0 = e.clientX; y0 = e.clientY; dx = 0; glisse = false; suivi = true; pid = e.pointerId;
+      base = swOuvert === piste ? -LARG : 0;
+      if (swOuvert && swOuvert !== piste) fermerSw();
+    });
+    piste.addEventListener("pointermove", function (e) {
+      if (!suivi || e.pointerId !== pid) return;
+      var mx = e.clientX - x0, my = e.clientY - y0;
+      if (!glisse) {
+        if (Math.abs(my) > 10 && Math.abs(my) > Math.abs(mx)) { suivi = false; return; }
+        if (Math.abs(mx) < 10) return;
+        glisse = true; piste.classList.add("glisse");
+        try { piste.setPointerCapture(pid); } catch (er) {}
+      }
+      dx = Math.max(-LARG - 30, Math.min(0, base + mx));
+      piste.style.transform = "translateX(" + dx + "px)";
+    });
+    function fin() {
+      if (!suivi) return; suivi = false;
+      if (!glisse) return;
+      piste.classList.remove("glisse");
+      if (dx < -LARG / 2) { piste.style.transform = "translateX(" + (-LARG) + "px)"; sw.classList.add("ouvert"); swOuvert = piste; }
+      else { piste.style.transform = ""; sw.classList.remove("ouvert"); if (swOuvert === piste) swOuvert = null; }
+    }
+    piste.addEventListener("pointerup", fin);
+    piste.addEventListener("pointercancel", fin);
+    // Un glissement ne doit pas ouvrir la recette ; un toucher sur une ligne ouverte la referme.
+    piste.addEventListener("click", function (e) {
+      if (glisse) { e.preventDefault(); e.stopPropagation(); glisse = false; return; }
+      if (swOuvert === piste && !e.target.closest(".sw-pc")) { e.preventDefault(); e.stopPropagation(); fermerSw(); }
+    }, true);
+    return sw;
+  }
+  document.addEventListener("pointerdown", function (e) { if (swOuvert && !e.target.closest(".sw")) fermerSw(); });
 
   /* ---------- Onglet Recettes ---------- */
   var panelRec = document.getElementById("panel-rec");
@@ -3058,10 +3275,10 @@ var Moteur = (function () {
     var hist = Store.historique(M.iso(debut)).filter(function (e) { return e.date < M.iso(debut); });
     var last = M.dernieres(hist);
     var groupes = {
-      toutes: function () { return true; },
-      completer: function (r) { return !r.supprimee && aCompleter(r); },
-      modifiees: function (r) { return r._modifiee || r._nouvelle; },
-      retirees: function (r) { return r.supprimee; }
+      toutes: function (r) { return !r.effacee; },
+      completer: function (r) { return !r.effacee && !r.supprimee && aCompleter(r); },
+      modifiees: function (r) { return !r.effacee && (r._modifiee || r._nouvelle); },
+      retirees: function (r) { return !r.effacee && r.supprimee; }
     };
     var libs = [["toutes", "Toutes"], ["completer", "À compléter"], ["modifiees", "Modifiées"], ["retirees", "Retirées"]];
     var seg = h("div", { class: "chips", role: "tablist", "aria-label": "Filtrer les recettes" });
@@ -3085,10 +3302,11 @@ var Moteur = (function () {
         if (!r.supprimee && aCompleter(r)) badges.push(h("span", { class: "pill warn", text: "à compléter" }));
         var meta = [r.saison, r.delai + " sem.", r.regle && M.norm(r.regle) !== "aucune" ? r.regle : "sans règle",
           r.ingredients.length ? r.ingredients.length + " ingr." : r.sansIngredients ? "sans ingrédients" : "aucun ingrédient", last[r.nom] ? "dernière fois " + M.fr(M.fromIso(last[r.nom])) : "jamais faite"].join(" · ");
-        liste.append(h("button", { type: "button", class: "rec-row" + (r.supprimee ? " off" : ""), onclick: function () { ouvrirFiche(r._id); } },
+        var ligneRec = h("button", { type: "button", class: "rec-row" + (r.supprimee ? " off" : ""), onclick: function () { ouvrirFiche(r._id); } },
           h("span", { class: "rec-nom" }, h("b", { text: r.nom }), badges),
           statutRecette(r),
-          h("span", { class: "rec-meta", text: meta })));
+          h("span", { class: "rec-meta", text: meta }));
+        liste.append(M.ALTERNANCE.indexOf(r.nom) !== -1 ? ligneRec : glisserPourSupprimer(ligneRec, "Supprimer la recette " + r.nom, function () { supprimerRecette(r); }));
       });
       if (!n) liste.append(h("p", { class: "empty", text: "Aucune recette." }));
     }
@@ -3100,7 +3318,26 @@ var Moteur = (function () {
       h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "+ Nouvelle recette", onclick: function () { ouvrirFiche(null); } }), exp, note),
       seg,
       h("div", { class: "filter" }, input, h("span", { class: "status", text: "Statut pour la semaine du " + M.fr(debut) + " · saison : " + M.saisonDe(debut).replace("ete", "été") + "." })),
+      h("p", { class: "status astuce-sw", text: "Astuce : faites glisser une recette vers la gauche pour la supprimer (code demandé)." }),
       liste);
+  }
+  /* Suppression d'une recette (d'origine ou ajoutée), protégée par code. L'historique garde son nom. */
+  function supprimerRecette(r, apres) {
+    demanderCodeSuppr({
+      titre: "Supprimer « " + r.nom + " » ?",
+      texte: "La recette est supprimée définitivement : elle disparaît de la liste, des tirages et des recherches. Les menus passés gardent son nom.",
+      bouton: "Supprimer la recette",
+      action: function () {
+        var id = r._id;
+        if (r._base) {
+          var doc = { nom: r.nom, saison: r.saison, delai: r.delai, regle: r.regle, ingredients: clone(r.ingredients), anciensNoms: (r.anciensNoms || []).slice(), supprimee: true, effacee: true, base: r._base.n };
+          if (r.sansIngredients) doc.sansIngredients = true;
+          return Store.setRecette(id, doc).then(function () { appliquerLocal(id, doc); });
+        }
+        return Store.deleteRecette(id).then(function () { appliquerLocal(id, null); });
+      },
+      apres: function () { fiche = null; renderRec(); if (apres) apres(); }
+    });
   }
 
   /* ----- Fiche (éditeur) ----- */
@@ -3647,6 +3884,19 @@ var Moteur = (function () {
     return out;
   }
 
+  /* Barre de retour, toujours visible en haut de la fiche. */
+  function navFiche(f) {
+    var confirmer = false;
+    var retour = h("button", { type: "button", class: "btn retour-rec", onclick: function () {
+      if (f.mode === "edition" && f.sale && !confirmer) { confirmer = true; retour.classList.add("danger"); lib.textContent = "Quitter sans enregistrer ?"; return; }
+      fermerFiche();
+    } });
+    var lib = h("span", { text: "Retour aux recettes" });
+    retour.append(h("span", { class: "fl", "aria-hidden": "true", text: "←" }), lib);
+    var droite = f.mode === "edition" && f.id ? h("button", { type: "button", class: "btn ghost mini", text: "Annuler", onclick: function () { var id = f.id; ouvrirFiche(id, true); renderRec(); window.scrollTo(0, 0); } }) : null;
+    return h("div", { class: "fiche-nav" }, retour, droite);
+  }
+
   function renderFiche() { if (fiche.mode === "lecture") renderLecture(); else renderEdition(); }
 
   /* Consultation : rien n'est modifiable tant qu'on n'a pas appuyé sur « Modifier ». */
@@ -3658,8 +3908,8 @@ var Moteur = (function () {
       return h("li", null, h("span", { text: majuscule(it.produit) }), h("span", { class: "qty", text: (q + (u ? " " + u : "")).trim() }), h("small", { text: M.CAT_NAMES[it.categorie] || "" }));
     })) : src.sansIngredients ? h("p", { class: "status", text: "Pas d'ingrédients : c'est voulu pour cette recette." }) : h("p", { class: "status warn", text: "Aucun ingrédient pour l'instant." });
     ajoute(panelRec, 
+      navFiche(f),
       h("div", { class: "fiche-tete" },
-        h("button", { type: "button", class: "btn ghost", text: "← Toutes les recettes", onclick: fermerFiche }),
         h("h2", { text: src.nom }),
         h("div", { class: "tags" },
           src._nouvelle ? h("span", { class: "pill ok", text: "nouvelle" }) : src._modifiee ? h("span", { class: "pill ok", text: "modifiée" }) : h("span", { class: "pill wait", text: "recette d'origine" }),
@@ -3676,7 +3926,7 @@ var Moteur = (function () {
   function erreursFiche(f, rec) {
     var e = [];
     if (!rec.nom) e.push("un nom");
-    else if (TOUTES.some(function (x) { return x._id !== f.id && M.norm(x.nom) === M.norm(rec.nom); })) e.push("un nom qui n'existe pas déjà");
+    else if (TOUTES.some(function (x) { return x._id !== f.id && !x.effacee && M.norm(x.nom) === M.norm(rec.nom); })) e.push("un nom qui n'existe pas déjà");
     if (!SAISONS.some(function (s) { return f.saisons[s[0]]; })) e.push("au moins une saison");
     if (!f.typeRegle) e.push("une règle");
     else if (f.typeRegle === "uniquement" && !Object.keys(f.grille).some(function (k) { return f.grille[k]; })) e.push("au moins un créneau pour « Uniquement »");
@@ -3693,7 +3943,6 @@ var Moteur = (function () {
     var save = h("button", { type: "button", class: "btn primary", text: f.id ? "Enregistrer" : "Créer la recette", onclick: function () { enregistrerFiche(save, note); } });
 
     var titre = h("div", { class: "fiche-tete" },
-      h("button", { type: "button", class: "btn ghost", text: "← Annuler" + (f.sale ? " les modifications" : ""), onclick: function () { if (f.id) { var id = f.id; ouvrirFiche(id, true); renderRec(); window.scrollTo(0, 0); } else fermerFiche(); } }),
       h("h2", { text: f.id ? "Modifier « " + f.nomInitial + " »" : "Nouvelle recette" }));
 
     // Nom
@@ -3827,18 +4076,13 @@ var Moteur = (function () {
       var id = f.id; Store.deleteRecette(id).then(function () { appliquerLocal(id, null); rouvrir(id, "Recette d'origine rétablie."); });
     } }));
     if (src && !bloque) {
-      var confirmer = false;
-      var bRet = h("button", { type: "button", class: "btn" + (rec.supprimee ? "" : " danger"), text: rec.supprimee ? "Remettre dans les tirages" : (src._nouvelle ? "Supprimer la recette" : "Retirer des tirages"), onclick: function () {
-        if (src._nouvelle && !rec.supprimee) {
-          if (!confirmer) { confirmer = true; bRet.textContent = "Confirmer la suppression définitive"; return; }
-          var idn = f.id; Store.deleteRecette(idn).then(function () { appliquerLocal(idn, null); fermerFiche(); }); return;
-        }
+      var bRet = h("button", { type: "button", class: "btn", text: rec.supprimee ? "Remettre dans les tirages" : "Retirer des tirages", onclick: function () {
         var doc = docRecette(f, Object.assign(ficheVersRecette(f), { supprimee: !rec.supprimee }));
         var id = f.id; Store.setRecette(id, doc).then(function () { appliquerLocal(id, doc); rouvrir(id, doc.supprimee ? "Retirée : elle ne sera plus proposée, l'historique est conservé." : "Remise dans les tirages."); });
       } });
-      rares.append(bRet);
+      rares.append(bRet, h("button", { type: "button", class: "btn danger", text: "Supprimer la recette…", onclick: function () { supprimerRecette(src); } }));
     }
-    ajoute(panelRec, titre, c1, c2, c3, c4, c6, apercu, h("div", { class: "bar fiche-actions" }, save, note), rares.childNodes.length ? rares : null);
+    ajoute(panelRec, navFiche(f), titre, c1, c2, c3, c4, c6, apercu, h("div", { class: "bar fiche-actions" }, save, note), rares.childNodes.length ? rares : null);
   }
 
   function docRecette(f, r) {
@@ -3889,12 +4133,24 @@ var Moteur = (function () {
 
   /* ---------- Onglet Articles ---------- */
   var panelArt = document.getElementById("panel-art");
+  /* Suppression d'un article (code demandé). Un ingrédient de recette est seulement retiré de cette liste. */
+  function supprimerArticle(a) {
+    demanderCodeSuppr({
+      titre: "Supprimer « " + a.produit + (a.quantite ? " (" + a.quantite + ")" : "") + " » ?",
+      texte: a.perso ? "Cet article enregistré est supprimé de vos articles et des favoris."
+        : "Cet ingrédient vient d'une recette : il ne sera plus proposé dans vos articles, mais reste dans ses recettes.",
+      action: function () {
+        var p = Store.favoris[a.cle] ? Store.toggleFavori(a.cle, a.produit) : Promise.resolve();
+        return p.then(function () { return a.perso ? Store.deleteArticle(a.id) : Store.addArticle({ produit: a.produit, categorie: a.categorie || "D", quantite: "", masque: true }); });
+      }
+    });
+  }
   var filtreArt = "";
   function renderArt() {
     var focusFiltre = document.activeElement && document.activeElement.id === "art-filtre";
     clear(panelArt);
     var card = h("section", { class: "card" }, h("h2", { text: "Ajouter un article", style: "font-size:1.2rem" }),
-      h("p", { class: "status", text: "Il sera proposé dans la liste déroulante, rangé dans son rayon." }));
+      h("p", { class: "status", text: "Il sera proposé dans les suggestions, rangé dans son rayon." }));
     var p = h("input", { type: "text", id: "art-p", placeholder: "Produit (ex. papier toilette)", "aria-label": "Produit" });
     var q = h("input", { type: "text", id: "art-q", placeholder: "Quantité habituelle", "aria-label": "Quantité habituelle" });
     var c = options(h("select", { id: "art-c", "aria-label": "Rayon" }), CAT_OPTIONS, "D");
@@ -3943,32 +4199,30 @@ var Moteur = (function () {
     var tous = tousArticles();
     var nbFav = tous.filter(function (a) { return Store.favoris[a.cle]; }).length;
     var list = h("section", { class: "card" }, h("h2", { text: "Tous les articles", style: "font-size:1.2rem" }),
-      h("p", { class: "status", text: "Cliquez sur l'étoile pour mettre un article en favori : il apparaîtra en tête de la liste déroulante. " + (nbFav ? nbFav + " favori" + (nbFav > 1 ? "s" : "") + "." : "Aucun favori pour l'instant.") }));
+      h("p", { class: "status", text: "Cliquez sur l'étoile pour mettre un article en favori : il apparaîtra en tête des suggestions. " + (nbFav ? nbFav + " favori" + (nbFav > 1 ? "s" : "") + "." : "Aucun favori pour l'instant.") }));
     var fi = h("input", { type: "text", id: "art-filtre", placeholder: "Filtrer…", value: filtreArt, "aria-label": "Filtrer les articles", style: "max-width:260px" });
-    var tb = h("tbody");
+    var tb = h("div", { class: "art-liste" });
     function lignes() {
       clear(tb);
       var f = M.norm(filtreArt);
       M.CAT_ORDER.forEach(function (cat) {
         var items = tous.filter(function (a) { return a.categorie === cat && (!f || M.norm(a.produit).indexOf(f) !== -1); });
         if (!items.length) return;
-        tb.append(h("tr", { class: "grp" }, h("td", { colspan: "4", text: M.CAT_NAMES[cat] })));
+        tb.append(h("div", { class: "art-grp", text: M.CAT_NAMES[cat] }));
         items.forEach(function (a) {
           var fav = !!Store.favoris[a.cle];
-          tb.append(h("tr", null,
-            h("td", { class: "starcell" }, h("button", { type: "button", class: "star" + (fav ? " on" : ""), "aria-pressed": String(fav), "aria-label": (fav ? "Retirer des favoris : " : "Mettre en favori : ") + a.produit, text: fav ? "★" : "☆", onclick: function () { Store.toggleFavori(a.cle, a.produit); } })),
-            h("td", null, a.produit, a.perso ? h("span", { class: "add", text: "mes articles" }) : null),
-            h("td", { class: "num", text: a.quantite || "" }),
-            h("td", null, a.perso ? h("button", { type: "button", class: "icon", "aria-label": "Supprimer " + a.produit, text: "✕", onclick: function () {
-              if (Store.favoris[a.cle]) Store.toggleFavori(a.cle, a.produit);
-              Store.deleteArticle(a.id);
-            } }) : null)));
+          var ligne = h("div", { class: "art-ligne" },
+            h("button", { type: "button", class: "star" + (fav ? " on" : ""), "aria-pressed": String(fav), "aria-label": (fav ? "Retirer des favoris : " : "Mettre en favori : ") + a.produit, text: fav ? "★" : "☆", onclick: function () { Store.toggleFavori(a.cle, a.produit); } }),
+            h("span", { class: "art-nom" }, a.produit, a.perso ? h("span", { class: "add", text: "mes articles" }) : null),
+            h("span", { class: "num art-q", text: a.quantite || "" }));
+          tb.append(glisserPourSupprimer(ligne, "Supprimer " + a.produit, function () { supprimerArticle(a); }));
         });
       });
+      if (!tb.childNodes.length) tb.append(h("p", { class: "empty", text: "Aucun article." }));
     }
     fi.addEventListener("input", function () { filtreArt = fi.value; lignes(); });
     lignes();
-    list.append(fi, h("div", { class: "tablewrap" }, h("table", null, h("thead", null, h("tr", null, h("th", { "aria-label": "Favori" }), h("th", { text: "Article" }), h("th", { text: "Quantité" }), h("th"))), tb)));
+    list.append(fi, h("p", { class: "status astuce-sw", text: "Astuce : faites glisser un article vers la gauche pour le supprimer (code demandé)." }), tb);
     panelArt.append(card, list);
     if (focusFiltre) { var nf = document.getElementById("art-filtre"); if (nf) { nf.focus(); nf.setSelectionRange(nf.value.length, nf.value.length); } }
   }
