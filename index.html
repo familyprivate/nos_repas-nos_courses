@@ -332,6 +332,102 @@ body.vue-mobile .fl-ligne { grid-template-columns: 1fr; gap: 2px; }
 .cotillons { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 100; }
 .ing-etat .btn.mini { padding: 0 4px; font-size: 12px; }
 
+/* Étapes (smartphone) */
+.etapes-tete { display: flex; flex-direction: column; gap: 8px; }
+.etapes-barre { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.etapes-barre i { height: 6px; border-radius: 3px; background: var(--line); display: block; }
+.etapes-barre i.fait { background: var(--ok); }
+.etapes-barre i.encours { background: var(--accent); }
+.etape-faite { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; text-align: left; width: 100%; background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; cursor: pointer; color: var(--ink); }
+.etape-faite .etape-ok { color: var(--ok); display: flex; }
+.etape-faite .etape-ok svg { width: 22px; height: 22px; }
+.etape-txt { display: flex; flex-direction: column; min-width: 0; }
+.etape-txt b { font-size: 15px; }
+.etape-txt small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etape-mod { font-size: 13px; font-weight: 700; color: var(--accent); }
+.etape-avenir { display: flex; gap: 12px; align-items: baseline; padding: 10px 14px; border: 1.5px dashed var(--line); border-radius: 10px; color: var(--muted); }
+.etape-avenir b { color: var(--line); font-size: 18px; }
+body.vue-mobile form > .etapes-nav { flex-direction: row; flex-wrap: nowrap; }
+body.vue-mobile form > .etapes-nav .btn:not(.primary) { flex: none; width: 56px; padding-inline: 0; font-size: 18px; }
+body.vue-mobile form > .etapes-nav .btn.primary { flex: 1; width: auto; }
+
+
+/* ===== Parcours en pages (tunnel) ===== */
+body.tunnel .top, body.tunnel .navrow, body.tunnel #storestatus, body.tunnel .bottombar, body.tunnel .retour { display: none !important; }
+body.tunnel { padding-bottom: 24px; }
+body.tunnel .app { max-width: 720px; }
+.tn-page { display: flex; flex-direction: column; gap: 16px; min-height: calc(100vh - 60px); animation: tn-d .28s ease-out; }
+.tn-page.depuis-g { animation-name: tn-g; }
+@keyframes tn-d { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes tn-g { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .tn-page { animation: none; } }
+.tn-haut { display: flex; flex-direction: column; gap: 10px; }
+.tn-nav { display: flex; align-items: center; gap: 10px; }
+.tn-x { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font-size: 16px; cursor: pointer; flex: none; }
+.tn-sem { flex: 1; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.tn-num { width: 40px; text-align: right; font-weight: 800; font-size: 14px; color: var(--muted); }
+.tn-barre { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.tn-barre i { height: 6px; border-radius: 3px; background: var(--line); display: block; }
+.tn-barre i.fait { background: var(--ok); }
+.tn-barre i.encours { background: var(--accent); }
+.tn-titre { font-size: clamp(2rem, 7vw, 2.6rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.02; margin-top: 6px; }
+.tn-sous { color: var(--muted); font-size: 15px; }
+.tn-bas { position: sticky; bottom: 0; margin-top: auto; background: var(--bg); border-top: 3px solid var(--rule); padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; z-index: 5; }
+.tn-bas-l { display: flex; gap: 10px; }
+.tn-bas-l .btn.primary { flex: 1; padding-block: 15px; font-size: 16px; }
+.tn-retour { width: 56px; flex: none; font-size: 18px; }
+.tn-question { font-weight: 700; font-size: 15px; }
+/* Entrée */
+.tn-entree { display: flex; flex-direction: column; gap: 14px; border: 2px solid var(--rule); border-radius: 16px; padding: 20px; background: var(--surface); }
+.tn-entree h2 { font-size: 1.9rem; letter-spacing: -.03em; line-height: 1.05; }
+.tn-plan { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.tn-plan li { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--muted); }
+.tn-plan b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line); font-size: 13px; }
+.tn-plan li.fait { color: var(--ink); } .tn-plan li.fait b { background: var(--ok); border-color: var(--ok); color: #fff; }
+.tn-plan li.encours { color: var(--ink); } .tn-plan li.encours b { border-color: var(--accent); color: var(--accent); }
+.tn-go { padding-block: 15px; font-size: 16px; }
+/* La semaine en pastilles */
+.tj-liste { display: flex; flex-direction: column; gap: 8px; }
+.tj { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: start; }
+.tj.auj .tj-date .dname { color: var(--accent); }
+.tj-date { display: flex; flex-direction: column; padding-top: 4px; }
+.tj-date .dnum { font-size: 32px; }
+.tj-date .dname { font-size: 10px; }
+.tj-cell { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tj-slot { display: flex; flex-direction: column; align-items: flex-start; gap: 0; width: 100%; min-height: 54px; padding: 7px 12px; border-radius: 12px; border: 2px solid var(--st-prevu-line); background: var(--st-prevu); color: var(--ink); cursor: pointer; text-align: left; transition: transform .1s; }
+.tj-slot:active { transform: scale(.97); }
+.tj-slot small { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.tj-slot b { font-size: 15px; }
+.tj-slot[data-etat="exclu"] { background: var(--st-exclu); border-color: var(--st-exclu-line); }
+.tj-slot[data-etat="exclu"] b { color: var(--muted); font-weight: 600; }
+.tj-slot[data-etat="invitation"] { background: var(--st-invit); border-color: var(--st-invit-line); }
+.tj-slot[data-etat="resto"] { background: var(--st-resto); border-color: var(--st-resto-line); }
+.tj-txt { font-size: 14px !important; padding: 6px 10px !important; }
+.tj-passe { padding: 8px 12px; }
+/* Préparation */
+.tn-prepa { justify-content: flex-start; }
+.prepa { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 40px 0; }
+.prepa-cocotte { width: 190px; height: auto; }
+.prepa-cocotte .corps { fill: var(--accent); }
+.prepa-cocotte rect { fill: var(--ink); }
+.prepa-cocotte .couvercle { animation: couv .5s ease-in-out infinite alternate; transform-origin: 100px 80px; }
+.prepa-cocotte .vap { fill: none; stroke: var(--muted); stroke-width: 5; stroke-linecap: round; animation: vap 1.4s ease-in-out infinite; opacity: 0; }
+.prepa-cocotte .v2 { animation-delay: .45s; } .prepa-cocotte .v3 { animation-delay: .9s; }
+@keyframes couv { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-6px) rotate(2deg); } }
+@keyframes vap { 0% { opacity: 0; transform: translateY(10px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+.prepa-txt { color: var(--muted); min-height: 2.6em; max-width: 30ch; }
+.prepa-barre { width: min(260px, 70%); height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.prepa-barre i { display: block; height: 100%; background: var(--accent); animation: charge 2.2s ease-in-out forwards; width: 0; }
+@keyframes charge { to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .prepa-cocotte .couvercle, .prepa-cocotte .vap { animation: none; opacity: 1; } }
+/* Fin */
+.tn-fin { align-items: center; justify-content: flex-start; padding-top: 14vh; text-align: center; min-height: 80vh; cursor: pointer; }
+.fin-coche { color: var(--ok); animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
+.fin-coche svg { width: 120px; height: 120px; display: block; }
+.fin-titre { color: var(--ok); animation: monte .5s .15s ease-out both; }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes monte { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+
 /* Statut de la semaine : validé (vert), à faire / à valider (ambre), sans menu (gris) */
 .statut { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.02em; font-size: 1.5rem; line-height: 1.15; }
 .statut svg { width: 1.15em; height: 1.15em; flex: none; }
@@ -378,15 +474,61 @@ body.vue-mobile .dlbtn { width: 100%; padding-block: 15px; font-size: 16px; }
 /* Écran de verrouillage */
 body.verrouille .app, body.verrouille .bottombar { display: none !important; }
 .verrou { min-height: 80vh; display: grid; place-items: center; }
-.lock { width: min(100%, 440px); display: flex; flex-direction: column; gap: 18px; }
-.lock-head { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; min-height: 150px; padding-right: 44%; padding-bottom: 14px; border-bottom: 6px solid var(--rule); }
-.lock-head .famille { height: 146px; max-width: 46%; right: 0; bottom: 0; }
-.lock-head h1 { font-size: clamp(2rem, 8vw, 2.8rem); }
-.lock-txt { color: var(--muted); font-size: 15px; }
+.lock { width: min(100%, 460px); display: flex; flex-direction: column; gap: 18px; }
+/* Affiche colorée du mois : date en grand, petits dessins, la famille posée sur le filet */
+.lock-affiche { position: relative; overflow: hidden; background: var(--lk); color: #FFFFFF; border-radius: 18px 18px 0 0; min-height: 250px; border-bottom: 8px solid var(--rule); padding: 22px 22px 0; }
+.lock-doodles span { position: absolute; color: rgba(255,255,255,.22); display: block; }
+.lock-doodles svg { width: 100%; height: 100%; display: block; }
+.lock-date { position: relative; display: flex; align-items: flex-end; gap: 10px; z-index: 1; }
+.lock-num { font-size: 92px; font-weight: 800; line-height: .82; letter-spacing: -.05em; }
+.lock-jour { display: flex; flex-direction: column; padding-bottom: 6px; }
+.lock-jour b { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.lock-jour span { font-size: 14px; opacity: .85; }
+.lock-jour .lock-pastille { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin-top: 6px; padding: 4px 10px 4px 8px; border-radius: 999px; background: rgba(255,255,255,.95); color: var(--lk, #111318); font-size: 13px; font-weight: 800; opacity: 1; }
+.lock-pastille i { font-style: normal; }
+body .lock-affiche .famille { position: absolute; right: 8px; bottom: 0; height: 200px; width: auto; max-width: 64%; object-fit: contain; object-position: bottom right; z-index: 1; filter: drop-shadow(0 6px 14px rgba(0,0,0,.18)); }
+.lock-tete { display: flex; flex-direction: column; gap: 6px; }
+.lock-tete h1 { font-size: clamp(2.1rem, 8.5vw, 2.9rem); }
 .lock-form { display: flex; flex-direction: column; gap: 12px; }
-.codefield { display: flex; flex-direction: column; gap: 6px; }
+.codefield { display: flex; flex-direction: column; gap: 8px; }
 .codefield .bar.end { flex-direction: row !important; align-items: center !important; }
-.codein { font-size: 24px !important; font-weight: 700; letter-spacing: .3em; padding: 12px 14px !important; text-align: center; background: var(--surface); border: 2px solid var(--rule) !important; border-radius: 4px; width: 100%; }
+.code-zone { position: relative; }
+.code-cases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.code-case { height: 68px; border: 2.5px solid var(--line); border-radius: 12px; display: grid; place-items: center; font-size: 28px; font-weight: 800; background: var(--surface); transition: border-color .15s, transform .15s; }
+.code-case.pleine { border-color: var(--rule); }
+.code-case.curseur { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.code-cases.erreur .code-case { border-color: var(--danger); animation: secoue .35s; }
+.lock-droite { display: flex; flex-direction: column; gap: 18px; }
+.lock-pied { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding-top: 14px; border-top: 3px solid var(--rule); }
+.lock-semaine { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.ls-j { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px; border-radius: 10px; }
+.ls-j small { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ls-j .dnum { font-size: 24px; }
+.ls-j.auj { background: var(--dn-l, var(--accent)); }
+.ls-j.auj small, .ls-j.auj .dnum { color: #FFFFFF !important; }
+.lock-carte { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; text-align: left; width: 100%; padding: 16px 16px 16px 14px; border: 0; border-left: 6px solid var(--lk, var(--accent)); border-radius: 14px; background: color-mix(in srgb, var(--lk, var(--accent)) 10%, var(--bg)); color: var(--ink); cursor: default; font: inherit; animation: monte .4s ease-out both; }
+.lc-ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--lk, var(--accent)); color: #FFFFFF; }
+.lc-ico svg { width: 24px; height: 24px; }
+.lc-corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lc-corps .lbl { color: var(--lk, var(--accent)); font-size: 11px; }
+.lc-txt { font-size: 16px; font-weight: 600; line-height: 1.35; }
+.lock-carte[data-type="citation"] .lc-txt { font-style: italic; font-weight: 500; font-size: 17px; }
+.lc-auteur { font-size: 13px; color: var(--muted); }
+.lc-suiv { color: var(--muted); font-size: 16px; padding-top: 2px; }
+/* PC : affiche à gauche, saisie à droite */
+@media (min-width: 900px) {
+  body:not(.vue-mobile) .lock { width: min(100%, 1040px); display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+  body:not(.vue-mobile) .lock-affiche { min-height: 520px; border-radius: 22px; border-bottom-width: 10px; padding: 32px 32px 0; }
+  body:not(.vue-mobile) .lock-num { font-size: 132px; }
+  body:not(.vue-mobile) .lock-jour b { font-size: 15px; }
+  body:not(.vue-mobile) .lock-jour span { font-size: 16px; }
+  body:not(.vue-mobile) .lock-affiche .famille { height: 330px; max-width: 92%; right: 50%; transform: translateX(50%); object-position: bottom center; }
+  body:not(.vue-mobile) .lock-tete h1 { font-size: 3.4rem; }
+  body:not(.vue-mobile) .code-case { height: 76px; }
+}
+@keyframes secoue { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.code-reel { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; color: transparent; caret-color: transparent; border: 0; background: transparent; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .code-cases.erreur .code-case { animation: none; } }
 .lock-form .btn.primary { width: 100%; padding-block: 15px; font-size: 16px; }
 
 /* Barre du bas (smartphone) */
@@ -1376,6 +1518,167 @@ var Moteur = (function () {
     panelPrep.append(h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "Aller à la semaine à venir", onclick: function () { allerSemaine(defautDebut); } })));
   }
 
+  /* ================= Parcours « tunnel » : une étape = une page ================= */
+  var ETAPES_TN = [["semaine", "La semaine"], ["imposee", "Une recette imposée ?"], ["articles", "Des articles en plus ?"], ["menu", "Votre menu"], ["liste", "Votre liste de courses"]];
+  var finTunnel = false, sensTn = 1;
+  function idxEtape(p) { for (var i = 0; i < ETAPES_TN.length; i++) if (ETAPES_TN[i][0] === p) return i; return 0; }
+  function pageTn() {
+    var p = S.page;
+    if (S.stage === "proposition") return p === "liste" || p === "prepa" ? p : "menu";
+    return p === "imposee" || p === "articles" || p === "prepa" ? p : "semaine";
+  }
+  function allerPage(p, sens) {
+    sensTn = sens || 1;
+    if ((p === "semaine" || p === "imposee" || p === "articles") && S.stage === "proposition") S.stage = "questions";
+    S.page = p; S.tunnel = true; sauver(); renderPrep(); window.scrollTo(0, 0);
+  }
+  function quitterTunnel() { S.tunnel = false; sauver(); finTunnel = false; renderPrep(); window.scrollTo(0, 0); }
+  var prepaTimer = null;
+  function lancerPrepa() { S.page = "prepa"; S.tunnel = true; sensTn = 1; sauver(); renderPrep(); window.scrollTo(0, 0); }
+  function armerPrepa() {
+    if (prepaTimer) return;
+    prepaTimer = setTimeout(function () { prepaTimer = null; if (S.page !== "prepa") return; S.page = "menu"; generer(); }, 2200);
+  }
+
+  /* Carte d'entrée (onglet Menu, semaine pas encore validée) */
+  function renderAccueilTunnel() {
+    var enCours = S.stage === "proposition", deja = Store.menus[M.iso(debut)];
+    var etape = enCours ? (S.page === "liste" ? 4 : 3) : idxEtape(S.page || "semaine");
+    var commence = enCours || (S.page && S.page !== "semaine");
+    var liste = h("ol", { class: "tn-plan" });
+    ETAPES_TN.forEach(function (e, i) { liste.append(h("li", { class: i < etape && commence ? "fait" : i === etape && commence ? "encours" : "" }, h("b", { text: String(i + 1) }), h("span", { text: e[1].replace(" ?", "") }))); });
+    panelPrep.append(h("section", { class: "tn-entree" },
+      h("div", { class: "statut-bloc" }, statut("todo", deja ? "Modification à valider" : enCours ? "Menu à valider" : "Menu à faire")),
+      h("h2", { text: enCours ? "Votre menu est prêt" : "Préparez le menu de la semaine" }),
+      h("p", { class: "status", text: enCours ? "Il reste à le relire et à valider la liste de courses." : "Trois petites questions, puis votre menu et votre liste de courses. Environ une minute." }),
+      liste,
+      h("button", { type: "button", class: "btn primary tn-go", text: commence ? "Reprendre →" : "Commencer →", onclick: function () { sensTn = 1; S.tunnel = true; if (!S.page) S.page = "semaine"; sauver(); renderPrep(); window.scrollTo(0, 0); } }),
+      deja ? h("button", { type: "button", class: "btn ghost", text: "Annuler la modification", onclick: function () { S = depuisValide(deja); lsDel(cleBrouillon()); renderPrep(); } }) : null));
+  }
+
+  function enteteTn(i, titre, sous) {
+    var fin = M.addDays(debut, 6);
+    var barre = h("div", { class: "tn-barre", "aria-hidden": "true" });
+    ETAPES_TN.forEach(function (e, k) { barre.append(h("i", { class: k < i ? "fait" : k === i ? "encours" : "" })); });
+    return h("div", { class: "tn-haut" },
+      h("div", { class: "tn-nav" },
+        h("button", { type: "button", class: "tn-x", "aria-label": "Quitter (rien n'est perdu)", title: "Quitter (rien n'est perdu)", text: "✕", onclick: quitterTunnel }),
+        h("span", { class: "tn-sem", text: "Semaine " + semaineIso(fin) + " · " + M.fr(debut).slice(0, 5) + " → " + M.fr(fin).slice(0, 5) }),
+        h("span", { class: "tn-num", text: i >= 0 ? (i + 1) + "/" + ETAPES_TN.length : "" })),
+      i >= 0 ? barre : null,
+      titre ? h("h1", { class: "tn-titre", text: titre }) : null,
+      sous ? h("p", { class: "tn-sous", text: sous }) : null);
+  }
+  function basTn(retour, principal, extra) {
+    return h("div", { class: "tn-bas" }, extra || null, h("div", { class: "tn-bas-l" },
+      retour ? h("button", { type: "button", class: "btn tn-retour", "aria-label": "Étape précédente", text: "←", onclick: retour }) : null, principal));
+  }
+
+  function renderTunnel() {
+    var p = pageTn(), i = idxEtape(p), page = h("div", { class: "tn-page " + (sensTn < 0 ? "depuis-g" : "depuis-d") });
+    var rep = S.reponses, enCoursSem = semaineEnCours() && Store.menus[M.iso(debut)];
+    if (p === "semaine") {
+      var dejaPasses = 0; for (var jj = 0; jj < 7; jj++) if (jourPasse(jj)) dejaPasses++;
+      page.append(enteteTn(0, "La semaine", "Touchez un repas pour changer : Prévu, Exclu, Invitation ou Restaurant. Les midis de semaine sont exclus par défaut." + (dejaPasses ? " Les jours passés restent tels quels." : "")));
+      var liste = h("div", { class: "tj-liste" });
+      for (var j = 0; j < 7; j++) liste.append(jourTunnel(j));
+      page.append(liste, basTn(null, h("button", { type: "button", class: "btn primary", text: "Continuer →", onclick: function () { allerPage("imposee"); } })));
+    } else if (p === "imposee") {
+      page.append(enteteTn(1, "Une recette imposée ?", "Elle passe avant les règles, la saison et le délai. Facultatif."));
+      var rows3 = h("div", { class: "rows", id: "imposees" });
+      page.append(h("section", { class: "card" }, rows3, h("div", { class: "bar" }, h("button", { type: "button", class: "btn", text: "+ Imposer une recette", onclick: function () {
+        rep.imposees.push({ recette: "", jour: null, repas: null }); sauver(); renderImposees(rows3); majBouton3();
+      } }))));
+      renderImposees(rows3);
+      var b3 = h("button", { type: "button", class: "btn primary", onclick: function () { allerPage("articles"); } });
+      function majBouton3() { b3.textContent = rep.imposees.some(function (im) { return im.recette; }) ? "Continuer →" : "Aucune, continuer →"; }
+      rows3.addEventListener("change", majBouton3); majBouton3();
+      page.append(basTn(function () { allerPage("semaine", -1); }, b3));
+    } else if (p === "articles") {
+      page.append(enteteTn(2, "Des articles en plus ?", "Ils s'ajoutent à la liste de courses, en plus des ingrédients des recettes. Facultatif."));
+      var rows4 = h("div", { class: "rows", id: "ajouts" });
+      var pick4 = selectArticles("aj-pick", function (a) { S.ajouts.push(a); sauver(); renderAjouts(rows4, false); });
+      page.append(h("section", { class: "card" }, rows4, h("div", { class: "pickbar" }, pick4, h("button", { type: "button", class: "btn", text: "+ Saisie libre", onclick: function () {
+        S.ajouts.push({ produit: "", quantite: "", categorie: "D" }); sauver(); renderAjouts(rows4, true);
+      } }))));
+      renderAjouts(rows4, false);
+      var go = h("button", { type: "button", class: "btn primary", text: Store.ready ? "Préparer mon menu →" : "Chargement…", disabled: !Store.ready, onclick: function () { S.ajouts = S.ajouts.filter(function (a) { return a.produit && a.produit.trim(); }); lancerPrepa(); } });
+      page.append(basTn(function () { allerPage("imposee", -1); }, go, S.menu ? h("p", { class: "status", text: "Un nouveau menu sera tiré au sort avec ces réponses." }) : null));
+    } else if (p === "prepa") {
+      page.classList.add("tn-prepa"); armerPrepa();
+      page.append(enteteTn(-1, null, null), prepaVisuel());
+    } else if (p === "menu") {
+      page.append(enteteTn(3, "Votre menu", "Touchez ↻ pour une autre recette, ✎ pour choisir vous-même."));
+      flashEl = h("p", { class: "status", role: "status" });
+      page.append(flashEl);
+      var av = (S.menu.avertissements || []);
+      if (av.length) page.append(h("div", { class: "notes" }, av.map(function (a) { return h("p", { class: "warn", text: a }); })));
+      page.append(renderMenuGrille(true));
+      page.append(h("div", { class: "bar actions-rares" }, h("button", { type: "button", class: "btn", text: "↻ Tout retirer au sort", onclick: function () { generer(); } })));
+      var nbL = listeCourses().lignes.length;
+      page.append(basTn(enCoursSem ? null : function () { allerPage("articles", -1); }, h("button", { type: "button", class: "btn primary", text: "Voir la liste de courses (" + nbL + ") →", onclick: function () { allerPage("liste"); } })));
+    } else if (p === "liste") {
+      page.append(enteteTn(4, "Votre liste de courses", "Retirez ce que vous avez déjà, ajoutez ce qui manque."));
+      page.append(renderCourses(true));
+      var vnote = h("p", { class: "status", role: "status" });
+      var vbtn = h("button", { type: "button", class: "btn primary", text: "Oui, valider le menu et la liste", onclick: function () { valider(vbtn, vnote); } });
+      page.append(basTn(function () { allerPage("menu", -1); }, vbtn, h("div", null, h("p", { class: "tn-question", text: QUESTION_VALIDATION }), vnote)));
+    }
+    panelPrep.append(page);
+  }
+
+  /* Un jour = une ligne ; chaque repas est une pastille qu'on touche pour changer d'état. */
+  var CYCLE_TN = ["", "exclu", "invitation", "resto"], LIB_TN = { "": "Prévu", exclu: "Exclu", invitation: "Invitation", resto: "Restaurant" };
+  function jourTunnel(j) {
+    if (jourPasse(j)) { var b = dayBox(j); b.classList.add("tj-passe"); return b; }
+    var d = M.addDays(debut, j), rep = S.reponses;
+    var row = h("div", { class: "tj" + (estAujourdhui(j) ? " auj" : ""), style: couleursJour(d) },
+      h("div", { class: "tj-date" }, h("span", { class: "dnum", text: String(d.getDate()).padStart(2, "0") }), h("span", { class: "dname", text: nomJour(j) })));
+    slotKeysDuJour(j).forEach(function (key) {
+      var repas = key.split("-")[1], etat = etatCreneau(key), ev = rep.evenements[key];
+      var cell = h("div", { class: "tj-cell" });
+      cell.append(h("button", { type: "button", class: "tj-slot", "data-etat": etat || "prevu", "aria-label": nomJour(j) + " " + repas.toLowerCase() + " : " + LIB_TN[etat || ""] + ". Toucher pour changer.", onclick: function () {
+        var cycle = midiSemaine(key) ? ["exclu", "", "invitation", "resto"] : CYCLE_TN;
+        var suivant = cycle[(cycle.indexOf(etat || "") + 1) % cycle.length];
+        changeCreneau(key, suivant, ""); sauver();
+        row.replaceWith(jourTunnel(j));
+      } }, h("small", { text: repas }), h("b", { text: LIB_TN[etat || ""] })));
+      if (etat === "invitation") {
+        var t = h("input", { type: "text", class: "tj-txt", placeholder: "Chez qui ?", value: ev && ev.texte ? ev.texte : "", "aria-label": "Invitation : chez qui ?" });
+        t.addEventListener("input", function () { if (rep.evenements[key]) { rep.evenements[key].texte = t.value; sauver(); } });
+        cell.append(t);
+      }
+      row.append(cell);
+    });
+    return row;
+  }
+
+  function prepaVisuel() {
+    var msgs = ["On regarde ce que vous avez mangé ces dernières semaines…", "On respecte les saisons et les délais…", "On choisit les recettes…", "On prépare la liste de courses…"];
+    var txt = h("p", { class: "prepa-txt", text: msgs[0] }), k = 0;
+    var timer = setInterval(function () { if (!txt.isConnected) { clearInterval(timer); return; } k = Math.min(k + 1, msgs.length - 1); txt.textContent = msgs[k]; }, 550);
+    var v = h("div", { class: "prepa" });
+    v.innerHTML = '<svg class="prepa-cocotte" viewBox="0 0 200 170" aria-hidden="true">' +
+      '<path class="vap v1" d="M70 58c-10-12 10-18 0-32"/><path class="vap v2" d="M100 54c-10-12 10-18 0-32"/><path class="vap v3" d="M130 58c-10-12 10-18 0-32"/>' +
+      '<rect x="20" y="96" width="24" height="14" rx="7"/><rect x="156" y="96" width="24" height="14" rx="7"/>' +
+      '<path class="corps" d="M36 92h128v40a26 26 0 0 1-26 26H62a26 26 0 0 1-26-26z"/>' +
+      '<g class="couvercle"><rect x="30" y="78" width="140" height="16" rx="8"/><rect x="88" y="66" width="24" height="14" rx="6"/></g></svg>';
+    v.append(h("h1", { class: "tn-titre", text: "On prépare votre menu…" }), txt, h("div", { class: "prepa-barre" }, h("i")));
+    return v;
+  }
+
+  /* Écran de validation : la coche, puis l'animation du mois, puis retour automatique à la semaine validée. */
+  function renderFinTunnel() {
+    panelPrep.append(h("div", { class: "tn-page tn-fin", onclick: finirTunnel },
+      h("div", { class: "fin-coche" }, icone("ok", "ico")),
+      h("h1", { class: "tn-titre fin-titre", text: "Menu validé" })));
+  }
+  function finirTunnel() {
+    if (!finTunnel) return;
+    finTunnel = false; S.tunnel = false; renderPrep(); window.scrollTo(0, 0);
+  }
+
+
   /* Retour vers l'historique quand on a ouvert une semaine depuis Paramètres. */
   var retour = null;
   function renderPrep() {
@@ -1384,9 +1687,11 @@ var Moteur = (function () {
     if (retour) panelPrep.append(h("div", { class: "retour" }, h("button", { type: "button", class: "btn ghost", text: "← Retour à l'historique", onclick: function () {
       var r = retour; retour = null; sauver(); debut = r.debut; chargerSemaine(); choisirOnglet(r.onglet); window.scrollTo(0, r.y);
     } })));
+    var dansTunnel = (S.stage !== "valide" && S.tunnel && !semainePassee()) || (S.stage === "valide" && finTunnel);
+    document.body.classList.toggle("tunnel", dansTunnel && ongletActif === "prep");
+    if (dansTunnel) { clear(panelPrep); if (S.stage === "valide") renderFinTunnel(); else renderTunnel(); return; }
     if (semainePassee() && S.stage !== "valide") { renderSemainePassee(); return; }
-    if (S.stage === "questions") renderQuestions();
-    else if (S.stage === "proposition") renderProposition();
+    if (S.stage === "questions" || S.stage === "proposition") renderAccueilTunnel();
     else renderValide();
   }
 
@@ -1430,9 +1735,45 @@ var Moteur = (function () {
     var form = h("form", { class: "stack", novalidate: true, onsubmit: function (e) {
       e.preventDefault();
       if (!Store.ready) return;
+      if (vueMobile() && (S.etape || 0) < 2) { allerEtape((S.etape || 0) + 1); return; }
       generer();
-    } }, q1, q3, q4, h("div", { class: "bar" }, go, note));
+    } });
+    if (!vueMobile()) { form.append(q1, q3, q4, h("div", { class: "bar" }, go, note)); panelPrep.append(form); return; }
+
+    /* Smartphone : une étape à la fois, les étapes faites se replient en une ligne. */
+    var e = Math.max(0, Math.min(2, S.etape || 0));
+    var etapes = [
+      { el: q1, titre: "Jours et midis", resume: resumeJours },
+      { el: q3, titre: "Recette imposée", resume: function () { var n = rep.imposees.filter(function (im) { return im.recette; }).map(function (im) { return im.recette; }); return n.length ? n.join(", ") : "Aucune"; } },
+      { el: q4, titre: "Articles en plus", resume: function () { var n = S.ajouts.filter(function (a) { return a.produit && a.produit.trim(); }).length; return n ? n + " article" + (n > 1 ? "s" : "") : "Aucun"; } }
+    ];
+    var barre = h("div", { class: "etapes-barre", "aria-hidden": "true" });
+    etapes.forEach(function (x, i) { barre.append(h("i", { class: i < e ? "fait" : i === e ? "encours" : "" })); });
+    form.append(h("div", { class: "etapes-tete" }, h("span", { class: "lbl", text: "Étape " + (e + 1) + " sur 3 · " + etapes[e].titre }), barre));
+    etapes.forEach(function (x, i) {
+      if (i < e) form.append(h("button", { type: "button", class: "etape-faite", onclick: function () { allerEtape(i); } },
+        icone("ok", "etape-ok"), h("span", { class: "etape-txt" }, h("b", { text: String(i + 1).padStart(2, "0") + " · " + x.titre }), h("small", { text: x.resume() })), h("span", { class: "etape-mod", text: "Modifier" })));
+      else if (i === e) form.append(x.el);
+      else form.append(h("div", { class: "etape-avenir" }, h("b", { text: String(i + 1).padStart(2, "0") }), h("span", { text: x.titre })));
+    });
+    var bar = h("div", { class: "bar etapes-nav" });
+    if (e > 0) bar.append(h("button", { type: "button", class: "btn", text: "←", "aria-label": "Étape précédente", onclick: function () { allerEtape(e - 1); } }));
+    if (e < 2) bar.append(h("button", { type: "submit", class: "btn primary", text: e === 1 && !rep.imposees.some(function (im) { return im.recette; }) ? "Aucune, continuer →" : "Continuer →" }));
+    else bar.append(go);
+    bar.append(note);
+    form.append(bar);
     panelPrep.append(form);
+  }
+  function allerEtape(i) { S.etape = i; sauver(); renderPrep(); window.scrollTo(0, 0); }
+  function resumeJours() {
+    var rep = S.reponses, parts = [], n = { exclu: 0, invitation: 0, resto: 0 };
+    Object.keys(rep.evenements).forEach(function (k) { var ev = rep.evenements[k]; if (ev && n[ev.etat] != null) n[ev.etat]++; });
+    var midis = rep.midis.length;
+    if (midis) parts.push(midis + " midi" + (midis > 1 ? "s" : "") + " ajouté" + (midis > 1 ? "s" : ""));
+    if (n.exclu) parts.push(n.exclu + " repas exclu" + (n.exclu > 1 ? "s" : ""));
+    if (n.invitation) parts.push(n.invitation + " invitation" + (n.invitation > 1 ? "s" : ""));
+    if (n.resto) parts.push(n.resto + " restaurant" + (n.resto > 1 ? "s" : ""));
+    return parts.length ? parts.join(" · ") : "Semaine habituelle";
   }
 
   function slotKeysDuJour(j) { return [j + "-Midi", j + "-Soir"]; }
@@ -1655,7 +1996,7 @@ var Moteur = (function () {
     menu.creneaux.forEach(function (c) { if (gardes[c.key]) { c.source = gardes[c.key].source; c.notes = gardes[c.key].notes || []; } });
     S.menu = menu;
     S.ajouts = S.ajouts.filter(function (a) { return a.produit && a.produit.trim(); });
-    S.stage = "proposition";
+    S.stage = "proposition"; if (S.page !== "liste") S.page = "menu";
     sauver();
     renderPrep();
     window.scrollTo(0, 0);
@@ -1886,9 +2227,14 @@ var Moteur = (function () {
     Store.setMenu(id, doc).then(function () {
       S = depuisValide(doc);
       lsDel(cleBrouillon());
+      finTunnel = true;
       renderPrep();
-      if (premiereValidation) lancerCotillons();
       window.scrollTo(0, 0);
+      setTimeout(function () {
+        if (!finTunnel) return;
+        var d = premiereValidation ? lancerCotillons() : 0;
+        setTimeout(finirTunnel, d ? d + 150 : 700);
+      }, 900);
     }, function (e) {
       btn.disabled = false; note.className = "status err";
       note.textContent = e && e.code === "quota_exceeded" ? "Stockage plein : supprimez d'anciennes semaines dans l'historique." : "Enregistrement impossible. Réessayez.";
@@ -1899,7 +2245,7 @@ var Moteur = (function () {
   function renderValide() {
     var valideLe = S.valideLe ? new Date(S.valideLe) : null;
     var mobV = vueMobile();
-    var modif = semainePassee() ? null : h("button", { type: "button", class: "btn", text: "Modifier ce menu", onclick: function () { S.stage = "proposition"; sauver(); renderPrep(); window.scrollTo(0, 0); } });
+    var modif = semainePassee() ? null : h("button", { type: "button", class: "btn", text: "Modifier ce menu", onclick: function () { S.stage = "proposition"; S.tunnel = true; S.page = "menu"; sensTn = 1; sauver(); renderPrep(); window.scrollTo(0, 0); } });
     panelPrep.append(h("div", { class: "bar end" },
       h("div", { class: "statut-bloc" }, statut("ok", "Menu validé"),
         valideLe ? h("p", { class: "status", text: "Le " + valideLe.toLocaleDateString("fr-FR") + " à " + valideLe.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + ". Les recettes comptent dans l'historique." }) : null),
@@ -2294,8 +2640,14 @@ var Moteur = (function () {
     verrouEl.hidden = true; clear(verrouEl); verrouEtat = "ouvert";
   }
   function fermerContenu() { document.body.classList.add("verrouille"); verrouEl.hidden = false; }
+  var accueilVu = false;
   function majVerrou() {
-    if (deverrouilleCeMois()) { if (verrouEtat !== "ouvert") ouvrir(); return; }
+    if (deverrouilleCeMois()) {
+      // Page d'accueil à chaque ouverture de l'application, même sans code à saisir.
+      if (!accueilVu && verrouEtat !== "accueil" && verrouEtat !== "ouvert") { verrouEtat = "accueil"; fermerContenu(); ecranVerrou("accueil"); return; }
+      if (verrouEtat !== "ouvert" && verrouEtat !== "accueil") ouvrir();
+      return;
+    }
     if (verrouEtat !== "code") { verrouEtat = "code"; fermerContenu(); ecranVerrou("code"); }
   }
   function champCode(id, label) {
@@ -2306,32 +2658,295 @@ var Moteur = (function () {
     } });
     return { inp: inp, el: h("div", { class: "codefield" }, h("div", { class: "bar end" }, h("label", { class: "lbl", for: id, text: label }), voir), inp) };
   }
+  /* Petits dessins au trait pour le décor de l'écran d'accueil. */
+  var DOODLES = [
+    '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 0-3 3-3 6s1 4 3 4v8"/>',
+    '<path d="M14 6l4-4M15 9l5-2M8 21l-4-4M5 16c3-7 6-10 10-11l3 3c-1 4-4 7-11 10"/>',
+    '<path d="M3 12c4-6 10-6 14 0-4 6-10 6-14 0zM17 12l4-3v6zM8 11h.01"/>',
+    '<circle cx="12" cy="13" r="8"/><circle cx="12" cy="13" r="3"/>',
+    '<path d="M3 17l9-11 9 11zM3 17v3h18v-3M8 14h.01M13 15h.01M15 12h.01"/>',
+    '<path d="M4 20L20 4M6 14l2 2M9 11l2 2M12 8l2 2M3 21c-1-2 0-4 2-6L15 5c2-2 4-3 6-2 1 2 0 4-2 6L9 19c-2 2-4 3-6 2z"/>',
+    '<path d="M12 7c-3-4-9-2-8 4 1 5 5 9 8 9s7-4 8-9c1-6-5-8-8-4zM12 7c0-2 1-4 3-4"/>',
+    '<path d="M4 11h16M5 11v6a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-6M2 11h2M20 11h2M9 7c0-2 2-2 2-4M13 7c0-2 2-2 2-4"/>'
+  ];
+  function decorDoodles(n) {
+    var wrap = h("div", { class: "lock-doodles", "aria-hidden": "true" }), graine = 7;
+    function alea() { graine = (graine * 9301 + 49297) % 233280; return graine / 233280; }
+    for (var i = 0; i < n; i++) {
+      var sp = h("span"); var t = 26 + Math.round(alea() * 22);
+      sp.style.cssText = "left:" + (alea() * 92) + "%;top:" + (alea() * 80) + "%;width:" + t + "px;height:" + t + "px;transform:rotate(" + Math.round(alea() * 60 - 30) + "deg)";
+      sp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + DOODLES[i % DOODLES.length] + "</svg>";
+      wrap.append(sp);
+    }
+    return wrap;
+  }
+  var LONGUEUR_CODE = 4;
+
+  /* ----- Petite carte de l'écran d'accueil : un mot du jour, une recette oubliée, une astuce ou une citation ----- */
+  var ICONES_CARTE = {
+    date: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M12 13.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" fill="currentColor"/></svg>',
+    saison: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20c-4 0-7-3-7-7 0-3 2-6 7-6s7 3 7 6c0 4-3 7-7 7zM12 7c0-2 1-4 3-4M12 7c-1-1-3-2-5-1"/></svg>',
+    recette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16M5 11v6a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-6M2 11h2M20 11h2M9 7c0-2 2-2 2-4M13 7c0-2 2-2 2-4"/></svg>',
+    astuce: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
+    citation: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 17c0-5 2-9 6-10l1 2c-2 1-3 3-3 5h3v5H4zm9 0c0-5 2-9 6-10l1 2c-2 1-3 3-3 5h3v5h-7z"/></svg>'
+  };
+  var ASTUCES = [
+    "Sortez la viande du frigo une demi-heure avant de la cuire : elle cuira plus régulièrement.",
+    "Laissez reposer une viande rôtie quelques minutes après la cuisson : elle reste plus juteuse.",
+    "Herbes fraîches : enroulez-les dans un papier absorbant humide, elles tiennent plusieurs jours de plus au frigo.",
+    "Roulez un citron sous la paume avant de le couper : il donnera plus de jus.",
+    "Œufs durs : plongez-les dans l'eau froide dès la fin de la cuisson, ils s'écaleront plus facilement.",
+    "Salez l'eau des pâtes une fois qu'elle bout, et gardez une louche d'eau de cuisson pour lier la sauce.",
+    "Rangez les produits les plus récents au fond du frigo : les plus anciens partent en premier.",
+    "Cuisinez une double portion un soir : le déjeuner du lendemain est déjà prêt.",
+    "Congelez le pain en tranches : il passe directement du congélateur au grille-pain.",
+    "Un oignon se coupe avec moins de larmes avec un couteau bien aiguisé.",
+    "Faites vos courses avec la liste par rayon : on gagne du temps et on oublie moins de choses.",
+    "Goûtez avant de servir : un peu de sel, de poivre ou un filet de citron change tout."
+  ];
+  var CITATIONS = [
+    ["Dis-moi ce que tu manges, je te dirai ce que tu es.", "Brillat-Savarin"],
+    ["La découverte d'un mets nouveau fait plus pour le bonheur du genre humain que la découverte d'une étoile.", "Brillat-Savarin"],
+    ["Un dessert sans fromage est une belle à qui il manque un œil.", "Brillat-Savarin"],
+    ["La cuisine, c'est quand les choses ont le goût de ce qu'elles sont.", "Curnonsky"],
+    ["Il faut manger pour vivre, et non pas vivre pour manger.", "Molière, L'Avare"],
+    ["L'appétit vient en mangeant.", "Rabelais"]
+  ];
+  function paques(an) {
+    var a = an % 19, b = Math.floor(an / 100), c = an % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+      hh = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - hh - k) % 7, m = Math.floor((a + 11 * hh + 22 * l) / 451),
+      mois = Math.floor((hh + l - 7 * m + 114) / 31), jour = ((hh + l - 7 * m + 114) % 31) + 1;
+    return new Date(an, mois - 1, jour);
+  }
+  /* Messages liés à la date : { speciaux: fêtes et événements (prioritaires), generaux: thème du mois et du jour de la semaine }. */
+  function dimancheN(an, mois, n) { var d = new Date(an, mois, 1); while (d.getDay() !== 0) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 7 * (n - 1)); return d; }
+  function dernierDimanche(an, mois) { var d = new Date(an, mois + 1, 0); while (d.getDay() !== 0) d.setDate(d.getDate() - 1); return d; }
+  function jeudiN(an, mois, n) { var d = new Date(an, mois, 1); while (d.getDay() !== 4) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 7 * (n - 1)); return d; }
+  /* Calendrier des événements : fêtes (⭐), anniversaires, jours fériés, saisons, moments de l'année.
+     avant = phrase affichée dans les 14 jours qui précèdent ; jour = phrase du jour J. */
+  function evenementsAnnee(an) {
+    var pq = paques(an), D = function (m, j) { return new Date(an, m - 1, j); };
+    var fm = dernierDimanche(an, 4); if (M.iso(fm) === M.iso(M.addDays(pq, 49))) fm = dimancheN(an, 5, 1);
+    var vac = new Date(an, 6, 1); while (vac.getDay() !== 6) vac.setDate(vac.getDate() + 1);
+    var anniv = function (prenom, m, j) { return { nom: "Anniv. " + prenom, date: D(m, j), type: "anniv", ico: "🎂", avant: "L'anniversaire de " + prenom + " approche : son plat préféré au menu ?", jour: "Joyeux anniversaire " + prenom + " !" }; };
+    return [
+      { nom: "Jour de l'an", date: D(1, 1), type: "fete", avant: "Le Nouvel An approche : on prévoit quoi pour le 1er janvier ?", jour: "Bonne année ! Une nouvelle année de bons petits plats commence." },
+      { nom: "Épiphanie", date: D(1, 6), type: "fete", avant: "L'Épiphanie arrive : pensez à la galette des rois !", jour: "C'est l'Épiphanie : qui aura la fève ?" },
+      { nom: "Chandeleur", date: D(2, 2), type: "fete", avant: "La Chandeleur arrive : farine, œufs et lait pour les crêpes !", jour: "C'est la Chandeleur : des crêpes ce soir ?" },
+      { nom: "Mardi gras", date: M.addDays(pq, -47), type: "fete", avant: "Mardi gras approche : beignets ou crêpes au programme ?", jour: "C'est Mardi gras : beignets et crêpes de rigueur !" },
+      { nom: "Saint-Valentin", date: D(2, 14), type: "fete", avant: "La Saint-Valentin approche : un dîner en amoureux ?", jour: "Bonne Saint-Valentin !" },
+      { nom: "Fête des grands-mères", date: dimancheN(an, 2, 1), type: "fete", avant: "La fête des grands-mères arrive : on invite mamie ?", jour: "Bonne fête à toutes les mamies !" },
+      { nom: "Poisson d'avril", date: D(4, 1), type: "fete", ico: "🐟", jour: "Poisson d'avril ! Et si le poisson était au menu aujourd'hui ?" },
+      { nom: "Pâques", date: pq, type: "fete", avant: "Pâques arrive : un repas de fête et des chocolats au programme ?", jour: "Joyeuses Pâques ! Attention à la chasse aux œufs." },
+      { nom: "Fête des mères", date: fm, type: "fete", avant: "La fête des mères approche : on lui prépare son plat préféré ?", jour: "Bonne fête à toutes les mamans !" },
+      { nom: "Fête des pères", date: dimancheN(an, 5, 3), type: "fete", avant: "La fête des pères approche : barbecue ?", jour: "Bonne fête à tous les papas !" },
+      { nom: "Fête de la musique", date: D(6, 21), type: "fete", ico: "🎵", jour: "C'est la fête de la musique : un dîner en musique ?" },
+      { nom: "Fête nationale", date: D(7, 14), type: "fete", avant: "Le 14 juillet approche : pique-nique et feu d'artifice ?", jour: "Bon 14 juillet ! Pique-nique et feu d'artifice ce soir ?" },
+      { nom: "Fête des grands-pères", date: dimancheN(an, 9, 1), type: "fete", avant: "La fête des grands-pères arrive : on invite papy ?", jour: "Bonne fête à tous les papis !" },
+      { nom: "Halloween", date: D(10, 31), type: "fete", ico: "🎃", avant: "Halloween approche : des citrouilles au menu ?", jour: "Joyeux Halloween ! Des bonbons ou un sort ?" },
+      { nom: "Beaujolais nouveau", date: jeudiN(an, 10, 3), type: "fete", ico: "🍷", avant: "Le Beaujolais nouveau arrive : un apéro entre grands ?", jour: "C'est le Beaujolais nouveau : santé (avec modération) !" },
+      { nom: "Réveillon de Noël", date: D(12, 24), type: "fete", avant: "Le réveillon de Noël approche : on prévoit le menu de fête ?", jour: "C'est le réveillon : bonne soirée en famille !" },
+      { nom: "Noël", date: D(12, 25), type: "fete", avant: "Noël approche : pensez au repas de fête !", jour: "Joyeux Noël à toute la famille !" },
+      { nom: "Saint-Sylvestre", date: D(12, 31), type: "fete", avant: "La Saint-Sylvestre approche : apéro dînatoire ou raclette ?", jour: "Bonne Saint-Sylvestre ! On fête la nouvelle année ce soir." },
+      // La famille
+      { nom: "Anniv. de mariage", date: D(6, 20), type: "anniv", ico: "💍", avant: "Votre anniversaire de mariage approche : un dîner en amoureux ?", jour: "Joyeux anniversaire de mariage !" },
+      anniv("Yann", 12, 7), anniv("Sabrina", 10, 14), anniv("Louane", 10, 29), anniv("Gabriel", 2, 6),
+      // Jours fériés (hors fêtes ci-dessus)
+      { nom: "Lundi de Pâques", date: M.addDays(pq, 1), type: "ferie" },
+      { nom: "Fête du Travail", date: D(5, 1), type: "ferie", jour: "Un brin de muguet pour le 1er mai ?" },
+      { nom: "8 mai", date: D(5, 8), type: "ferie" },
+      { nom: "Ascension", date: M.addDays(pq, 39), type: "ferie" },
+      { nom: "Lundi de Pentecôte", date: M.addDays(pq, 50), type: "ferie" },
+      { nom: "15 août", date: D(8, 15), type: "ferie" },
+      { nom: "Toussaint", date: D(11, 1), type: "ferie" },
+      { nom: "11 novembre", date: D(11, 11), type: "ferie" },
+      // Saisons et moments de l'année
+      { nom: "Printemps", date: D(3, 20), type: "saison", ico: "🌸", avant: "Le printemps arrive : place aux légumes nouveaux.", jour: "C'est le printemps ! Place aux légumes nouveaux." },
+      { nom: "Été", date: D(6, 21), type: "saison", ico: "☀️", avant: "L'été arrive : vive les salades et les repas en terrasse.", jour: "C'est l'été ! Vive les salades et les repas en terrasse." },
+      { nom: "Automne", date: D(9, 22), type: "saison", ico: "🍂", avant: "L'automne arrive : place aux plats qui réchauffent.", jour: "C'est l'automne : place aux plats qui réchauffent." },
+      { nom: "Hiver", date: D(12, 21), type: "saison", ico: "❄️", avant: "L'hiver arrive : soupes et plats mijotés en vue.", jour: "C'est l'hiver : soupes et plats mijotés au programme." },
+      { nom: "Rentrée", date: D(9, 1), type: "vie", ico: "🎒", avant: "C'est bientôt la rentrée : on reprend le rythme des menus de la semaine.", jour: "C'est la rentrée ! Bonne reprise à tous." },
+      { nom: "Vacances d'été", date: vac, type: "vie", ico: "🏖️", avant: "Les vacances d'été approchent !", jour: "C'est les vacances : on se fait plaisir, sans se compliquer la vie." }
+    ].map(function (e) { if (!e.ico) e.ico = e.type === "fete" ? "⭐" : e.type === "ferie" ? "📅" : "⭐"; return e; });
+  }
+  function evenementsProches(d, horizon) {
+    var out = [];
+    [d.getFullYear(), d.getFullYear() + 1].forEach(function (an) {
+      evenementsAnnee(an).forEach(function (e) {
+        var n = Math.round((M.fromIso(M.iso(e.date)) - M.fromIso(M.iso(d))) / 86400000);
+        var lim = e.type === "saison" || e.type === "vie" ? 7 : horizon;
+        if (n >= 0 && n <= lim) out.push({ e: e, n: n });
+      });
+    });
+    return out;
+  }
+  /* Pastilles de l'affiche : les événements du jour même (une fête l'emporte sur le jour férié du même jour). */
+  function pastillesDuJour(d) {
+    var du = evenementsProches(d, 0).filter(function (x) { return x.n === 0; }).map(function (x) { return x.e; });
+    if (du.some(function (e) { return e.type === "fete"; })) du = du.filter(function (e) { return e.type !== "ferie"; });
+    return du;
+  }
+  function messagesDuJour(d) {
+    var an = d.getFullYear(), m = d.getMonth() + 1, j = d.getDate(), js = d.getDay(), sp = [], ge = [];
+    var JS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+    var sam = M.prochainSamedi(d), finSem = M.addDays(sam, 6);
+    evenementsProches(d, 14).forEach(function (x) {
+      var e = x.e, ds = JS[e.date.getDay()] + " " + e.date.getDate();
+      if (x.n === 0) { if (e.jour) sp.push({ lbl: e.ico + " " + e.nom, txt: e.jour }); return; }
+      var dansProchain = M.iso(e.date) >= M.iso(sam) && M.iso(e.date) <= M.iso(finSem);
+      var quand = x.n === 1 ? "Demain" : dansProchain ? majuscule(ds) + " · prochain menu" : "Dans " + x.n + " jours";
+      if (e.type === "ferie") {
+        var jo = e.date.getDay();
+        if (jo >= 1 && jo <= 5) sp.push({ lbl: quand + " · férié", txt: majuscule(ds) + " est férié (" + e.nom + ") : pensez à ajouter le déjeuner au menu." });
+        return;
+      }
+      if (e.avant) sp.push({ lbl: quand + " · " + e.nom, txt: e.avant });
+    });
+    // Préparer la semaine suivante (le menu commence le samedi)
+    if ((js === 4 || js === 5) && Store.ready && !Store.menus[M.iso(sam)]) sp.push({ lbl: "Prochain menu", txt: "Le menu de samedi n'est pas encore prêt : c'est le moment de le préparer !" });
+    // Thème du mois
+    var THEMES_MOIS = [
+      "Janvier : c'est la saison des raclettes et des soirées au chaud.",
+      "Février : encore quelques plats d'hiver avant le printemps.",
+      "Mars : les premiers légumes de printemps arrivent.",
+      "Avril : les asperges sont de retour !",
+      "Mai : premières fraises et premiers repas dehors.",
+      "Juin : l'été arrive, vive les salades et les repas en terrasse.",
+      "Juillet : c'est les vacances, on se fait plaisir sans se compliquer la vie.",
+      "Août : tomates, melons et pêches sont au meilleur de leur forme.",
+      "Septembre : retour des bonnes habitudes… et des menus de la semaine.",
+      "Octobre : potirons et champignons sont de retour.",
+      "Novembre : le temps des soupes et des plats mijotés.",
+      "Décembre : le mois le plus gourmand de l'année !"
+    ];
+    ge.push(THEMES_MOIS[m - 1]);
+    if (js === 5) ge.push("C'est vendredi : gnocchis ou pâtes farcies ce soir ?");
+    if (js === 6) ge.push("C'est le week-end : un bon repas en famille ?");
+    if (js === 0) ge.push("Dimanche : le jour idéal pour un plat qui mijote.");
+    return { speciaux: sp, generaux: ge };
+  }
+  function recettesOubliees(d) {
+    if (!Store.ready || !R) return [];
+    var hist = Store.historique(null), last = M.dernieres(hist), cand = [];
+    R.list.forEach(function (r) {
+      if (r._regle.type === "imposee" || !M.enSaison(r, d) || M.ALTERNANCE.indexOf(r.nom) !== -1 || !last[r.nom]) return;
+      var w = M.semainesDepuis(last[r.nom], d);
+      if (w >= Math.max(4, r.delai + 2)) cand.push({ r: r, w: w });
+    });
+    cand.sort(function (a, b) { return b.w - a.w; });
+    return cand.slice(0, 6).map(function (x) { return "Ça fait " + x.w + " semaines qu'on n'a pas mangé « " + x.r.nom + " ». Et si on la remettait au menu ?"; });
+  }
+  var SAISON_MOIS = [
+    "poireaux, choux, endives, carottes, oranges, clémentines et kiwis",
+    "poireaux, endives, choux, céleri, oranges, pamplemousses et pommes",
+    "poireaux, épinards, endives, radis, pommes et poires",
+    "asperges, radis, épinards, petits pois et premières fraises",
+    "asperges, petits pois, fèves, radis, fraises et rhubarbe",
+    "courgettes, haricots verts, tomates, fraises, cerises et abricots",
+    "tomates, courgettes, aubergines, melons, pêches et abricots",
+    "tomates, poivrons, aubergines, maïs, melons, prunes et mûres",
+    "tomates, courgettes, poivrons, raisins, figues, pommes et prunes",
+    "potirons, courges, champignons, pommes, poires, raisins et coings",
+    "potirons, choux, poireaux, céleri, châtaignes, pommes et poires",
+    "choux, poireaux, endives, panais, clémentines, oranges et châtaignes"
+  ];
+  var NOMS_MOIS_LONGS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  function melanger(t) { for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = t[i]; t[i] = t[j]; t[j] = x; } return t; }
+  /* Une seule carte par ouverture, tirée au hasard parmi les catégories disponibles.
+     Un événement (Noël, Pâques, fête des mères…) a une chance sur deux de passer devant. */
+  function choisirCarte(d) {
+    var mj = messagesDuJour(d), alea = function (t) { return t[Math.floor(Math.random() * t.length)]; };
+    var gen = mj.generaux.map(function (t) { return { lbl: "Le mot du jour", txt: t }; });
+    if (mj.speciaux.length && Math.random() < 0.5) { var x0 = alea(mj.speciaux); return { type: "date", lbl: x0.lbl, txt: x0.txt }; }
+    var cats = [
+      function () { var x1 = alea(mj.speciaux.concat(gen)); return { type: "date", lbl: x1.lbl, txt: x1.txt }; },
+      function () { return { type: "saison", lbl: "De saison en " + NOMS_MOIS_LONGS[d.getMonth()], txt: "C'est le moment des " + SAISON_MOIS[d.getMonth()] + "." }; },
+      function () { return { type: "astuce", lbl: "Astuce de cuisine", txt: alea(ASTUCES) }; },
+      function () { var c = alea(CITATIONS); return { type: "citation", lbl: "Citation", txt: "« " + c[0] + " »", auteur: c[1] }; }
+    ];
+    var rec = recettesOubliees(d);
+    if (rec.length) cats.push(function () { return { type: "recette", lbl: "Ça fait longtemps…", txt: alea(rec) }; });
+    return alea(cats)();
+  }
+  function carteDuMoment(d) {
+    var carte = h("div", { class: "lock-carte" }), x = choisirCarte(d);
+    function remplir() {
+      clear(carte); carte.setAttribute("data-type", x.type);
+      var ico = h("span", { class: "lc-ico", "aria-hidden": "true" }); ico.innerHTML = ICONES_CARTE[x.type];
+      carte.append(ico, h("span", { class: "lc-corps" }, h("small", { class: "lbl", text: x.lbl }), h("span", { class: "lc-txt", text: x.txt }), x.auteur ? h("span", { class: "lc-auteur", text: "— " + x.auteur }) : null));
+    }
+    remplir();
+    return carte;
+  }
   function ecranVerrou(mode) {
     clear(verrouEl);
-    var tete = h("div", { class: "lock-head" }, h("img", { class: "famille", src: (document.querySelector(".top .famille") || {}).src || "famille.webp", alt: "", width: "720", height: "586" }), h("p", { class: "eyebrow", text: "Accès protégé" }), h("h1", { text: "Menu de la semaine" }));
-    var box = h("div", { class: "lock" }, tete);
+    var auj = new Date(), mois = COULEURS_MOIS[auj.getMonth()];
+    var JOURS_SEM = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    var MOIS_NOMS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+    var h0 = auj.getHours(), salut = h0 < 5 ? "Bonne nuit" : h0 < 18 ? "Bonjour" : "Bonsoir";
+    var affiche = h("div", { class: "lock-affiche", style: "--lk:" + couleurTexte(mois) },
+      decorDoodles(16),
+      h("div", { class: "lock-date" }, h("span", { class: "lock-num", text: String(auj.getDate()).padStart(2, "0") }),
+        h("span", { class: "lock-jour" }, h("b", { text: JOURS_SEM[auj.getDay()] }), h("span", { text: MOIS_NOMS[auj.getMonth()] + " " + auj.getFullYear() }),
+          pastillesDuJour(auj).map(function (e) { return h("span", { class: "lock-pastille" }, h("i", { "aria-hidden": "true", text: e.ico }), e.nom); }))),
+      h("img", { class: "famille", src: (document.querySelector(".top .famille") || {}).src || "famille.webp", alt: "", width: "720", height: "586" }));
+    var droite = h("div", { class: "lock-droite" }, h("div", { class: "lock-tete" }, h("p", { class: "eyebrow", text: salut + " la famille !" }), h("h1", { text: "Menu de la semaine" })));
+    var box = h("div", { class: "lock" }, affiche, droite);
     var note = h("p", { class: "status", role: "status" });
-    var c = champCode("code-acces", "Tapez le code");
+    // Code : un vrai champ invisible posé sur 4 cases (le collage et le clavier iPhone fonctionnent normalement).
+    var inp = h("input", { type: "text", id: "code-acces", class: "code-reel", autocomplete: "off", autocapitalize: "characters", autocorrect: "off", spellcheck: false, maxlength: String(LONGUEUR_CODE), "aria-label": "Tapez le code" });
+    var cases = h("div", { class: "code-cases", "aria-hidden": "true" });
+    var montre = false;
+    function majCases() {
+      clear(cases); var v = inp.value.toUpperCase(), actif = document.activeElement === inp;
+      for (var i = 0; i < LONGUEUR_CODE; i++) {
+        cases.append(h("span", { class: "code-case" + (v[i] ? " pleine" : "") + (actif && i === Math.min(v.length, LONGUEUR_CODE - 1) ? " curseur" : ""), text: v[i] ? (montre ? v[i] : "●") : "" }));
+      }
+    }
+    inp.addEventListener("input", function () { inp.value = inp.value.replace(/\s/g, "").slice(0, LONGUEUR_CODE); note.textContent = ""; cases.classList.remove("erreur"); majCases(); });
+    inp.addEventListener("focus", majCases); inp.addEventListener("blur", majCases);
+    var voir = h("button", { type: "button", class: "btn ghost mini voir", text: "Afficher", "aria-controls": "code-acces", "aria-pressed": "false", onclick: function () {
+      montre = !montre; voir.textContent = montre ? "Masquer" : "Afficher"; voir.setAttribute("aria-pressed", String(montre)); majCases(); inp.focus();
+    } });
     var ok = h("button", { type: "submit", class: "btn primary", text: "Validez" });
-    box.append(h("form", { class: "lock-form", onsubmit: function (e) {
+    if (mode === "accueil") {
+      // Appareil déjà déverrouillé ce mois-ci : simple porte d'entrée, sans code.
+      var entrer = h("button", { type: "button", class: "btn primary lock-entrer", text: "Accéder à l'application →", onclick: function () { accueilVu = true; ouvrir(); window.scrollTo(0, 0); } });
+      droite.append(h("div", { class: "lock-form" }, entrer));
+    } else droite.append(h("form", { class: "lock-form", onsubmit: function (e) {
       e.preventDefault();
-      var v = c.inp.value; if (!v.trim()) return;
+      var v = inp.value; if (!v.trim()) { inp.focus(); return; }
       var reste = Math.ceil((essais.jusqua - Date.now()) / 1000);
       if (reste > 0) { note.className = "status err"; note.textContent = "Trop d'essais. Réessayez dans " + reste + " s."; return; }
       ok.disabled = true;
       empreinte(v).then(function (hx) {
         ok.disabled = false;
         if (hx === EMPREINTE_ACCES) {
-          essais = { echecs: 0, jusqua: 0 }; sauverEssais(); lsSet("menus-deverrouille", { mois: moisCourant(), empreinte: hx }); ouvrir(); return;
+          essais = { echecs: 0, jusqua: 0 }; sauverEssais(); lsSet("menus-deverrouille", { mois: moisCourant(), empreinte: hx }); accueilVu = true; ouvrir(); return;
         }
         essais.echecs++;
         if (essais.echecs >= 5) { essais.jusqua = Date.now() + 30000; essais.echecs = 0; note.textContent = "Code incorrect. Trop d'essais : patientez 30 secondes."; }
         else note.textContent = "Code incorrect.";
         sauverEssais();
-        note.className = "status err"; c.inp.select(); c.inp.focus();
+        note.className = "status err";
+        cases.classList.remove("erreur"); void cases.offsetWidth; cases.classList.add("erreur");
+        inp.value = ""; majCases(); inp.focus();
       }, function () { ok.disabled = false; note.className = "status err"; note.textContent = "Vérification impossible sur cet appareil."; });
-    } }, c.el, note, ok));
-    verrouEl.append(box); c.inp.focus();
+    } },
+      h("div", { class: "codefield" }, h("div", { class: "bar end" }, h("label", { class: "lbl", for: "code-acces", text: "Tapez le code" }), voir),
+        h("div", { class: "code-zone" }, cases, inp)),
+      note, ok));
+    // Bas : la semaine en cours, jour par jour (aujourd'hui en surbrillance).
+    var sam = M.addDays(M.prochainSamedi(auj), -7), sem = h("div", { class: "lock-semaine", "aria-hidden": "true" });
+    for (var k = 0; k < 7; k++) {
+      var dk = M.addDays(sam, k);
+      sem.append(h("span", { class: "ls-j" + (M.iso(dk) === M.iso(auj) ? " auj" : ""), style: couleursJour(dk) }, h("small", { text: JOURS_SEM[dk.getDay()].slice(0, 3) }), h("b", { class: "dnum", text: String(dk.getDate()).padStart(2, "0") })));
+    }
+    droite.append(h("div", { class: "lock-pied" }, h("span", { class: "lbl", text: "Cette semaine" }), sem));
+    droite.append(carteDuMoment(auj));
+    verrouEl.style.setProperty("--lk", couleurTexte(mois));
+    verrouEl.append(box);
+    if (mode === "accueil") droite.querySelector(".lock-entrer").focus(); else { majCases(); inp.focus(); }
   }
   function carteCodeAcces() {
     return h("section", { class: "card" }, h("h2", { text: "Code d'accès", style: "font-size:1.2rem" }),
@@ -2503,7 +3118,7 @@ var Moteur = (function () {
   /* ---------- Animation de validation : un thème par mois ---------- */
   var THEMES_ANIM = ["Cotillons", "Neige", "Fleurs de printemps", "Pâques : lapins en chocolat et œufs", "Muguet", "Soleil", "Feu d'artifice du 14 juillet", "L'eau et le soleil", "La rentrée", "Halloween : citrouille et sorcière", "Feuilles d'automne", "Noël : sapin, étoile et traîneau"];
   function animationsActives() { try { return localStorage.getItem("menus-animation") !== "0"; } catch (e) { return true; } }
-  function lancerCotillons() { if (animationsActives()) animerValidation(moisMajoritaire(M.iso(debut))); }
+  function lancerCotillons() { return animationsActives() ? animerValidation(moisMajoritaire(M.iso(debut))) : 0; }
 
   var cacheEmoji = {};
   function emojiImg(ch, px) {
@@ -2518,7 +3133,7 @@ var Moteur = (function () {
   }
 
   function animerValidation(mois) {
-    try { if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) {}
+    try { if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return 0; } catch (e) {}
     var ancien = document.querySelector("canvas.cotillons"); if (ancien) ancien.remove();
     var cv = document.createElement("canvas"), dpr = Math.min(window.devicePixelRatio || 1, 2);
     var W0 = window.innerWidth, H0 = window.innerHeight, petit = W0 < 600;
@@ -2906,6 +3521,7 @@ var Moteur = (function () {
       if (el < duree) requestAnimationFrame(frame); else cv.remove();
     }
     requestAnimationFrame(frame);
+    return duree;
   }
 
   /* Clé « souple » pour repérer un même produit écrit autrement : œ/oe, pluriels, majuscules, accents. */
@@ -3522,7 +4138,7 @@ var Moteur = (function () {
   /* ---------- Navigation ---------- */
   var ONGLETS_HIST = ["hist", "rec", "art", "regl"];
   function choisirOnglet(n) {
-    if (n !== "prep") retour = null;
+    if (n !== "prep") { retour = null; document.body.classList.remove("tunnel"); }
     ongletActif = n;
     var groupe = ONGLETS_HIST.indexOf(n) !== -1 ? "hist" : n;
     document.body.setAttribute("data-onglet", groupe);
@@ -3548,7 +4164,7 @@ var Moteur = (function () {
     else renderRec();
   }
   function allerSemaine(d) {
-    sauver();
+    sauver(); finTunnel = false;
     debut = d;
     chargerSemaine();
     renderOnglet();
