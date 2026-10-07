@@ -2335,6 +2335,16 @@ var Moteur = (function () {
         if (!dl) {
           if (!window.claude) {
             return new Promise(function (res) { canvas.toBlob(res, "image/png"); }).then(function (blob) {
+              // Smartphone : feuille de partage (« Enregistrer l'image » → Photos) au lieu d'un fichier.
+              var fichier = typeof File === "function" ? new File([blob], nom, { type: "image/png" }) : null;
+              if (fichier && surMobile() && navigator.canShare && navigator.canShare({ files: [fichier] })) {
+                return navigator.share({ files: [fichier] }).then(function () {
+                  note.className = "status"; note.textContent = "Image partagée.";
+                }, function (e) {
+                  if (e && e.name === "AbortError") return;
+                  apercuPartage(canvas, fichier, nom); // le geste a expiré : un second appui relance le partage
+                });
+              }
               var url = URL.createObjectURL(blob), a = document.createElement("a");
               a.href = url; a.download = nom; document.body.append(a); a.click(); a.remove();
               setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
@@ -2354,6 +2364,19 @@ var Moteur = (function () {
         });
       });
     }).then(function () { btn.disabled = false; btn.textContent = texte; }, function () { btn.disabled = false; btn.textContent = texte; });
+  }
+  function surMobile() { try { return matchMedia("(pointer: coarse)").matches; } catch (e) { return false; } }
+  function apercuPartage(canvas, fichier, nom) {
+    var fermer = function () { ov.remove(); };
+    var go = h("button", { type: "button", class: "btn primary", text: "Enregistrer dans Photos", onclick: function () {
+      navigator.share({ files: [fichier] }).then(fermer, function () {});
+    } });
+    var ov = h("div", { class: "overlay", onclick: function (e) { if (e.target === ov) fermer(); } },
+      h("div", { class: "dialog apercu", role: "dialog", "aria-modal": "true", "aria-label": nom },
+        h("img", { src: canvas.toDataURL("image/png"), alt: nom }),
+        h("p", { text: "Touchez « Enregistrer dans Photos », puis « Enregistrer l'image »." }),
+        h("div", { class: "bar" }, go, h("button", { type: "button", class: "btn", text: "Fermer", onclick: fermer }))));
+    document.body.append(ov); go.focus();
   }
   function apercuImage(canvas, nom) {
     var fermer = function () { ov.remove(); };
