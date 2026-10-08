@@ -283,6 +283,7 @@ td .add { margin-left: 8px; }
 .chip[aria-pressed="true"], .chip[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .chip[aria-pressed="true"] small, .chip[aria-selected="true"] small { color: inherit; opacity: .75; }
 .chips.petits .chip { padding: 4px 11px; font-size: 13px; border-style: dashed; }
+.memoire a { color: var(--accent); font-weight: 700; }
 .cloud-form { display: flex; flex-direction: column; gap: 6px; }
 .cloud-form .bar { margin-top: 6px; }
 .memoire details summary { cursor: pointer; color: var(--muted); font-size: 14px; margin-top: 8px; }
@@ -1309,11 +1310,64 @@ var Moteur = (function () {
   function nomJour(i) { return JOURS[i]; }
   function dateCourte(isoStr) { var d = M.fromIso(isoStr); return M.fr(d).slice(0, 5); }
 
-  /* ---------- Mémoire partagée Google (feuille Google + script) ----------
+  /* ---------- Mémoire partagée (fichier privé GitHub, ou feuille Google) ----------
      Imite la petite base de données de Claude : mêmes collections, mêmes appels.
      Copie locale pour un démarrage immédiat et le hors-ligne ; écritures en file d'attente. */
   var CLOUD_CFG = "menus-cloud", CLOUD_CACHE = "menus-cloud-cache", CLOUD_FILE = "menus-cloud-attente";
-  function cloudConfig() { var c = lsGet(CLOUD_CFG); return c && c.url && c.cle ? c : null; }
+  function cloudConfig() { var c = lsGet(CLOUD_CFG); return c && ((c.type === "gist" && c.token && c.gist) || (c.url && c.cle)) ? c : null; }
+  /* GitHub : un « gist » secret contient toutes les données dans un seul fichier JSON. */
+  var GH_API = lsGet("menus-gh-api-test") || "https://api.github.com", GH_FICHIER = "menus-semaine.json", GH_DESC = "Menus de la semaine — mémoire partagée (ne pas modifier)";
+  function ghEntetes(token) { return { Authorization: "Bearer " + token, Accept: "application/vnd.github+json" }; }
+  function ghVerifier(r) {
+    if (r.status === 401 || r.status === 403) throw new Error("cle");
+    if (r.status === 404) throw new Error("introuvable");
+    if (!r.ok) throw new Error("http " + r.status);
+    return r.json();
+  }
+  /* Trouve le fichier de mémoire du compte (créé par le premier appareil), sinon le crée. */
+  function ghConnecter(token) {
+    var H = ghEntetes(token);
+    return fetch(GH_API + "/gists?per_page=100", { headers: H, cache: "no-store" }).then(ghVerifier).then(function (liste) {
+      var g = (liste || []).filter(function (x) { return x.description === GH_DESC && x.files && x.files[GH_FICHIER]; })[0];
+      if (g) return g.id;
+      var f = {}; f[GH_FICHIER] = { content: "{}" };
+      return fetch(GH_API + "/gists", { method: "POST", headers: H, body: JSON.stringify({ description: GH_DESC, public: false, files: f }) }).then(ghVerifier).then(function (n) { return n.id; });
+    });
+  }
+  function transportGist(cfg) {
+    var H = ghEntetes(cfg.token), URL_G = GH_API + "/gists/" + cfg.gist;
+    function extraire(g) {
+      var f = g && g.files && g.files[GH_FICHIER];
+      if (!f) return {};
+      if (f.truncated && f.raw_url) return fetch(f.raw_url, { cache: "no-store" }).then(function (r) { return r.json(); });
+      return f.content ? JSON.parse(f.content) : {};
+    }
+    function lire() { return fetch(URL_G, { headers: H, cache: "no-store" }).then(ghVerifier).then(extraire); }
+    return {
+      lire: lire,
+      // On relit juste avant d'écrire pour ne pas écraser ce que l'autre appareil vient d'enregistrer.
+      ecrire: function (ops) {
+        return lire().then(function (docs) {
+          docs = docs || {}; ops.forEach(function (op) { appliquerOp(docs, op); });
+          var f = {}; f[GH_FICHIER] = { content: JSON.stringify(docs) };
+          return fetch(URL_G, { method: "PATCH", headers: H, body: JSON.stringify({ files: f }) }).then(ghVerifier).then(function () { return docs; });
+        });
+      }
+    };
+  }
+  function transportGoogle(cfg) {
+    function appeler(req) {
+      req.cle = cfg.cle;
+      return fetch(cfg.url, { method: "POST", body: JSON.stringify(req), redirect: "follow" }).then(function (r) {
+        if (!r.ok) throw new Error("http " + r.status);
+        return r.json();
+      }).then(function (res) {
+        if (!res || !res.ok) throw new Error(res && res.erreur === "cle" ? "cle" : "serveur");
+        return res.docs;
+      });
+    }
+    return { lire: function () { return appeler({ action: "lire" }); }, ecrire: function (ops) { return appeler({ action: "ecrire", ops: ops }); } };
+  }
   function fusionPatch(a, p) {
     var o = Object.assign({}, a || {});
     Object.keys(p || {}).forEach(function (k) {
@@ -1345,16 +1399,7 @@ var Moteur = (function () {
       });
     }
     function majEtat(ok, err) { etat.connecte = ok; etat.erreur = err || ""; if (ok) etat.derniere = Date.now(); etat.attente = attente.length; self.surEtat(etat); }
-    function appeler(req) {
-      req.cle = cfg.cle;
-      return fetch(cfg.url, { method: "POST", body: JSON.stringify(req), redirect: "follow" }).then(function (r) {
-        if (!r.ok) throw new Error("http " + r.status);
-        return r.json();
-      }).then(function (res) {
-        if (!res || !res.ok) throw new Error(res && res.erreur === "cle" ? "cle" : "serveur");
-        return res;
-      });
-    }
+    var transport = cfg.type === "gist" ? transportGist(cfg) : transportGoogle(cfg);
     function recevoir(docs) {
       var avant = JSON.stringify(data); data = docs || {};
       lsSet(CLOUD_CACHE, data);
@@ -1363,11 +1408,12 @@ var Moteur = (function () {
     function synchro() {
       if (envoi) return envoi;
       var ops = attente.slice();
-      envoi = appeler(ops.length ? { action: "ecrire", ops: ops } : { action: "lire" }).then(function (res) {
+      envoi = (ops.length ? transport.ecrire(ops) : transport.lire()).then(function (docs) {
         attente = attente.slice(ops.length); lsSet(CLOUD_FILE, attente);
-        recevoir(res.docs); majEtat(true);
+        recevoir(docs); majEtat(true);
       }, function (e) {
-        majEtat(false, e && e.message === "cle" ? "Clé refusée par la feuille Google." : (navigator.onLine === false ? "Hors connexion." : "Feuille Google injoignable."));
+        var m = e && e.message;
+        majEtat(false, m === "cle" ? "Clé refusée : reconnectez cet appareil." : m === "introuvable" ? "Fichier de mémoire introuvable." : (navigator.onLine === false ? "Hors connexion." : "Mémoire en ligne injoignable."));
         if (etat.premier) { etat.premier = false; notifier(); }
       }).then(function () { envoi = null; if (attente.length && etat.connecte) return synchro(); });
       return envoi;
@@ -1417,7 +1463,8 @@ var Moteur = (function () {
     if (!m) return;
     try {
       var c = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
-      if (c && c.url && c.cle) lsSet(CLOUD_CFG, { url: c.url, cle: c.cle, depuisLien: true });
+      if (c && c.type === "gist" && c.token && c.gist) lsSet(CLOUD_CFG, { type: "gist", token: c.token, gist: c.gist, depuisLien: true });
+      else if (c && c.url && c.cle) lsSet(CLOUD_CFG, { url: c.url, cle: c.cle, depuisLien: true });
     } catch (e) {}
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { location.hash = ""; }
   })();
@@ -1674,8 +1721,8 @@ var Moteur = (function () {
     var txt = nb ? nb + " semaine" + (nb > 1 ? "s" : "") + " validée" + (nb > 1 ? "s" : "") + " dans l'historique" : "Aucune semaine validée pour l'instant";
     if (Store.cloud) {
       var ce = Store.cloud.etat;
-      if (!ce.connecte && ce.erreur) { st.className = "status warn"; txt += ". Mémoire Google non joignable" + (ce.attente ? ", " + ce.attente + " modification" + (ce.attente > 1 ? "s" : "") + " en attente" : "") + "."; }
-      else txt += " · mémoire partagée Google";
+      if (!ce.connecte && ce.erreur) { st.className = "status warn"; txt += ". Mémoire partagée non joignable" + (ce.attente ? ", " + ce.attente + " modification" + (ce.attente > 1 ? "s" : "") + " en attente" : "") + "."; }
+      else txt += " · mémoire partagée";
     } else if (Store.mode === "local") {
       st.className = "status warn";
       txt += Store.msg ? ". " + Store.msg : ". Historique conservé dans ce navigateur uniquement.";
@@ -4552,46 +4599,67 @@ var Moteur = (function () {
       : (ce.erreur || "Connexion en cours…") + (ce.attente ? " " + ce.attente + " modification(s) en attente, envoyées dès que possible." : "");
   }
   /* Mémoire partagée : seulement sur le site (dans Claude, la mémoire est déjà partagée). */
+  function lienConnexion(cfg) {
+    var c = cfg.type === "gist" ? { type: "gist", token: cfg.token, gist: cfg.gist } : { url: cfg.url, cle: cfg.cle };
+    return location.origin + location.pathname + "#memoire=" + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(c)))));
+  }
   function carteMemoire() {
     if (window.claude && window.claude.use) return null;
     var cfg = cloudConfig();
-    var card = h("section", { class: "card memoire" }, h("h2", { text: "Mémoire partagée (Google)", style: "font-size:1.2rem" }));
+    var card = h("section", { class: "card memoire" }, h("h2", { text: "Mémoire partagée", style: "font-size:1.2rem" }));
     if (cfg) {
       var etatEl = h("p", { id: "cloud-etat", role: "status" }); majCloudEtat(etatEl);
       var note = h("p", { class: "status", role: "status" });
-      var lien = location.origin + location.pathname + "#memoire=" + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify({ url: cfg.url, cle: cfg.cle })))));
-      card.append(h("p", { class: "status", text: "Menus, historique, listes cochées, articles, favoris et recettes sont enregistrés dans votre feuille Google et partagés entre vos appareils." }), etatEl,
+      var lien = lienConnexion(cfg);
+      card.append(h("p", { class: "status", text: "Menus, historique, listes cochées, articles, favoris et recettes sont enregistrés dans un fichier privé " + (cfg.type === "gist" ? "sur votre GitHub" : "Google") + " et partagés entre vos appareils." }), etatEl,
         h("div", { class: "bar" },
           h("button", { type: "button", class: "btn", text: "↻ Synchroniser", onclick: function () { Store.cloud.synchro(); } }),
-          h("button", { type: "button", class: "btn", text: "Copier le lien de connexion", onclick: function () {
+          h("button", { type: "button", class: "btn", text: "Envoyer le lien de connexion", onclick: function () {
             function ok() { note.className = "status"; note.textContent = "Lien copié : envoyez-le en privé (SMS, WhatsApp) et ouvrez-le sur l'autre appareil, il se connecte tout seul."; }
             if (navigator.share && /iPhone|iPad|Android/i.test(navigator.userAgent)) { navigator.share({ title: "Menus — connexion", url: lien }).then(function () {}, function () {}); return; }
             if (navigator.clipboard) navigator.clipboard.writeText(lien).then(ok, function () { window.prompt("Copiez ce lien :", lien); }); else window.prompt("Copiez ce lien :", lien);
           } })),
         note,
         h("details", null, h("summary", { text: "Déconnecter cet appareil" }),
-          h("p", { class: "status", text: "Cet appareil n'utilisera plus la feuille Google (elle n'est pas effacée). Il repartira de ses données locales." }),
+          h("p", { class: "status", text: "Cet appareil n'utilisera plus la mémoire partagée (elle n'est pas effacée). Il repartira de ses données locales." }),
           h("button", { type: "button", class: "btn danger", text: "Déconnecter", onclick: function () { lsDel(CLOUD_CFG); lsDel(CLOUD_CACHE); lsDel(CLOUD_FILE); location.reload(); } })));
       return card;
     }
-    var url = h("input", { type: "text", id: "cloud-url", placeholder: "https://script.google.com/macros/s/…/exec", autocomplete: "off", spellcheck: false });
-    var cle = h("input", { type: "password", id: "cloud-cle", placeholder: "Clé secrète", autocomplete: "off" });
+    var tok = h("input", { type: "password", id: "cloud-token", placeholder: "ghp_…", autocomplete: "off", spellcheck: false });
     var note2 = h("p", { class: "status", role: "status" });
     var go = h("button", { type: "submit", class: "btn primary", text: "Connecter" });
-    card.append(h("p", { class: "status", text: "Pour partager menus, historique, articles et recettes entre vos téléphones et votre ordinateur. Collez l'adresse du script Google et sa clé (une seule fois par appareil), ou ouvrez le lien de connexion envoyé depuis un appareil déjà connecté." }),
+    card.append(h("p", { class: "status", text: "Pour partager menus, historique, articles et recettes entre vos téléphones et votre ordinateur. Sur le premier appareil, collez votre clé GitHub (une seule fois). Sur les autres, ouvrez simplement le lien de connexion envoyé depuis un appareil déjà connecté." }),
+      h("p", null, h("a", { href: "https://github.com/settings/tokens/new?scopes=gist&description=Menus%20de%20la%20semaine", target: "_blank", rel: "noopener", text: "Créer ma clé GitHub ↗" })),
+      h("form", { class: "cloud-form", onsubmit: function (e) {
+        e.preventDefault();
+        var t = tok.value.trim();
+        if (!t) { note2.className = "status err"; note2.textContent = "Collez la clé GitHub."; return; }
+        go.disabled = true; note2.className = "status"; note2.textContent = "Connexion…";
+        ghConnecter(t).then(function (id) {
+          lsSet(CLOUD_CFG, { type: "gist", token: t, gist: id }); note2.textContent = "Connectée ! Rechargement…"; setTimeout(function () { location.reload(); }, 600);
+        }).catch(function (e2) {
+          go.disabled = false; note2.className = "status err";
+          note2.textContent = e2.message === "cle" ? "GitHub refuse cette clé : vérifiez qu'elle est complète et que la case « gist » est cochée." : "Impossible de joindre GitHub. Vérifiez la connexion et réessayez.";
+        });
+      } }, h("label", { class: "lbl", for: "cloud-token", text: "Clé GitHub" }), tok, h("div", { class: "bar" }, go), note2));
+    // Variante : script Google déjà déployé (adresse …/exec + clé secrète).
+    var url = h("input", { type: "text", id: "cloud-url", placeholder: "https://script.google.com/macros/s/…/exec", autocomplete: "off", spellcheck: false });
+    var cle = h("input", { type: "password", id: "cloud-cle", placeholder: "Clé secrète du script", autocomplete: "off" });
+    var note3 = h("p", { class: "status", role: "status" });
+    var go3 = h("button", { type: "submit", class: "btn", text: "Connecter avec Google" });
+    card.append(h("details", { class: "via-google" }, h("summary", { text: "Ou : utiliser un script Google déjà déployé" }),
       h("form", { class: "cloud-form", onsubmit: function (e) {
         e.preventDefault();
         var c = { url: url.value.trim(), cle: cle.value.trim() };
-        if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.url) || !c.cle) { note2.className = "status err"; note2.textContent = "Adresse (https://script.google.com/…/exec) et clé obligatoires."; return; }
-        go.disabled = true; note2.className = "status"; note2.textContent = "Vérification…";
-        fetch(c.url, { method: "POST", body: JSON.stringify({ action: "lire", cle: c.cle }), redirect: "follow" }).then(function (r) { return r.json(); }).then(function (res) {
-          if (!res || !res.ok) throw new Error(res && res.erreur === "cle" ? "cle" : "x");
-          lsSet(CLOUD_CFG, c); note2.textContent = "Connectée ! Rechargement…"; setTimeout(function () { location.reload(); }, 600);
+        if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.url) || !c.cle) { note3.className = "status err"; note3.textContent = "Adresse (https://script.google.com/…/exec) et clé obligatoires."; return; }
+        go3.disabled = true; note3.className = "status"; note3.textContent = "Vérification…";
+        transportGoogle(c).lire().then(function () {
+          lsSet(CLOUD_CFG, c); note3.textContent = "Connectée ! Rechargement…"; setTimeout(function () { location.reload(); }, 600);
         }).catch(function (e2) {
-          go.disabled = false; note2.className = "status err";
-          note2.textContent = e2.message === "cle" ? "La feuille refuse cette clé : vérifiez-la." : "Impossible de joindre le script. Vérifiez l'adresse et que le déploiement est accessible à « Tout le monde ».";
+          go3.disabled = false; note3.className = "status err";
+          note3.textContent = e2.message === "cle" ? "Le script refuse cette clé : vérifiez-la." : "Impossible de joindre le script. Vérifiez l'adresse et que l'accès est « Tout le monde ».";
         });
-      } }, h("label", { class: "lbl", for: "cloud-url", text: "Adresse du script" }), url, h("label", { class: "lbl", for: "cloud-cle", text: "Clé secrète" }), cle, h("div", { class: "bar" }, go), note2));
+      } }, h("label", { class: "lbl", for: "cloud-url", text: "Adresse du script" }), url, h("label", { class: "lbl", for: "cloud-cle", text: "Clé secrète" }), cle, h("div", { class: "bar" }, go3), note3)));
     return card;
   }
   function renderRegl() {
