@@ -1477,7 +1477,7 @@ var Moteur = (function () {
 
   /* ---------- Stockage (historique partagé côté serveur, sinon navigateur) ---------- */
   var Store = {
-    mode: null, db: null, menus: {}, manuels: {}, articles: {}, favoris: {}, recettes: {}, acces: null, accesCharge: false, ready: false, subs: [],
+    mode: null, db: null, menus: {}, manuels: {}, articles: {}, favoris: {}, recettes: {}, brouillons: {}, acces: null, accesCharge: false, ready: false, subs: [],
     onChange: function () {},
     init: function () {
       var self = this;
@@ -1505,6 +1505,10 @@ var Moteur = (function () {
           self.subs.push(db.collection("favoris").onSnapshot(function (snap) {
             var m = {}; snap.docs.forEach(function (d) { if (d.exists) m[d.id] = d.data(); });
             self.favoris = m; self.onChange("articles");
+          }, function () {}));
+          self.subs.push(db.collection("brouillons").onSnapshot(function (snap) {
+            var m = {}; snap.docs.forEach(function (d) { if (d.exists) m[d.id] = d.data(); });
+            self.brouillons = m; self.onChange("brouillons");
           }, function () {}));
           self.subs.push(db.collection("recettes").onSnapshot(function (snap) {
             var m = {}; snap.docs.forEach(function (d) { if (d.exists) m[d.id] = d.data(); });
@@ -1546,6 +1550,9 @@ var Moteur = (function () {
       if (this.mode === "db") return this.db.doc("articles/" + id).delete();
       delete this.articles[id]; this.persistLocal(); this.onChange("articles"); return Promise.resolve();
     },
+    /* Menu en préparation, partagé entre appareils (seulement avec une mémoire partagée). */
+    setBrouillon: function (id, data) { if (this.mode === "db") return this.db.doc("brouillons/" + id).set(data); return Promise.resolve(); },
+    deleteBrouillon: function (id) { if (this.mode === "db" && this.brouillons[id]) return this.db.doc("brouillons/" + id).delete(); return Promise.resolve(); },
     setRecette: function (id, data) {
       if (this.mode === "db") return this.db.doc("recettes/" + id).set(data);
       this.recettes[id] = data; this.persistLocal(); this.onChange("recettes"); return Promise.resolve();
@@ -1576,7 +1583,7 @@ var Moteur = (function () {
     },
     toutEffacer: function (avecArticles) {
       var self = this;
-      var cols = ["menus", "historique"].concat(avecArticles ? ["articles", "favoris", "recettes"] : []);
+      var cols = ["menus", "historique", "brouillons"].concat(avecArticles ? ["articles", "favoris", "recettes"] : []);
       if (this.mode !== "db") {
         this.menus = {}; this.manuels = {};
         if (avecArticles) { this.articles = {}; this.favoris = {}; this.recettes = {}; }
@@ -1585,7 +1592,7 @@ var Moteur = (function () {
       }
       var ids = [];
       cols.forEach(function (c) {
-        var src = c === "menus" ? self.menus : c === "historique" ? self.manuels : c === "articles" ? self.articles : c === "recettes" ? self.recettes : self.favoris;
+        var src = c === "menus" ? self.menus : c === "brouillons" ? self.brouillons : c === "historique" ? self.manuels : c === "articles" ? self.articles : c === "recettes" ? self.recettes : self.favoris;
         Object.keys(src).forEach(function (id) { ids.push(c + "/" + id); });
       });
       return ids.reduce(function (p, path) { return p.then(function () { return self.db.doc(path).delete(); }); }, Promise.resolve());
@@ -1658,13 +1665,26 @@ var Moteur = (function () {
   var ongletActif = "prep";
 
   function cleBrouillon() { return "menus-brouillon-" + M.iso(debut); }
+  var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
+  lsSet("menus-appareil", ID_APPAREIL);
+  /* Brouillon le plus récent entre celui de cet appareil et celui de la mémoire partagée. */
+  function brouillonDe(id) {
+    var l = lsGet("menus-brouillon-" + id), d = Store.brouillons && Store.brouillons[id];
+    if (d && (!l || (d.modifie || "") > (l.modifie || ""))) {
+      var c = clone(d);
+      if (c.appareil && c.appareil !== ID_APPAREIL) c.tunnel = false; // on reprend depuis la carte « Reprendre »
+      return c;
+    }
+    return l;
+  }
+  var minuteurBrouillon = null, derniereSaisie = 0;
   function etatVide() {
     return { stage: "questions", reponses: { evenements: {}, midis: [], imposees: [] }, ajouts: [], menu: null, retires: {} };
   }
   function chargerSemaine() {
     var id = M.iso(debut);
     var valide = Store.menus[id];
-    var brouillon = lsGet(cleBrouillon());
+    var brouillon = brouillonDe(id);
     if (brouillon && brouillon.stage !== "valide" && (!valide || brouillon.modifie > (valide.valideLe || ""))) {
       S = brouillon;
     } else if (valide) {
@@ -1685,9 +1705,15 @@ var Moteur = (function () {
   }
   function sauver() {
     if (!S) return;
-    if (S.stage === "valide") { lsDel(cleBrouillon()); return; }
-    S.modifie = new Date().toISOString();
+    var id = M.iso(debut);
+    if (S.stage === "valide") { lsDel(cleBrouillon()); Store.deleteBrouillon(id); return; }
+    S.modifie = new Date().toISOString(); S.appareil = ID_APPAREIL; derniereSaisie = Date.now();
     lsSet(cleBrouillon(), S);
+    if (Store.mode === "db") {
+      clearTimeout(minuteurBrouillon);
+      var copie = clone(S);
+      minuteurBrouillon = setTimeout(function () { Store.setBrouillon(id, copie); }, 1500);
+    }
   }
 
   /* ---------- En-tête ---------- */
@@ -1798,8 +1824,9 @@ var Moteur = (function () {
       h("div", { class: "statut-bloc" }, statut("todo", deja ? "Modification à valider" : enCours ? "Menu à valider" : "Menu à faire")),
       h("h2", { text: enCours ? "Votre menu est prêt" : "Préparez le menu de la semaine" }),
       h("p", { class: "status", text: enCours ? "Il reste à le relire et à valider la liste de courses." : "Trois petites questions, puis votre menu et votre liste de courses. Environ une minute." }),
+      commence && S.appareil && S.appareil !== ID_APPAREIL ? h("p", { class: "status ok-msg", text: "Commencé sur un autre appareil" + (S.modifie ? ", le " + M.fr(new Date(S.modifie)).slice(0, 5) + " à " + new Date(S.modifie).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "") + " : vous reprenez où il en est." }) : null,
       h("button", { type: "button", class: "btn primary tn-go", text: commence ? "Reprendre →" : "Commencer →", onclick: function () { sensTn = 1; S.tunnel = true; if (!S.page) S.page = "semaine"; sauver(); renderPrep(); window.scrollTo(0, 0); } }),
-      deja ? h("button", { type: "button", class: "btn ghost", text: "Annuler la modification", onclick: function () { S = depuisValide(deja); lsDel(cleBrouillon()); renderPrep(); } }) : null,
+      deja ? h("button", { type: "button", class: "btn ghost", text: "Annuler la modification", onclick: function () { S = depuisValide(deja); lsDel(cleBrouillon()); Store.deleteBrouillon(M.iso(debut)); renderPrep(); } }) : null,
       liste));
   }
 
@@ -2552,7 +2579,7 @@ var Moteur = (function () {
     var premiereValidation = !prev;
     Store.setMenu(id, doc).then(function () {
       S = depuisValide(doc);
-      lsDel(cleBrouillon());
+      lsDel(cleBrouillon()); clearTimeout(minuteurBrouillon); Store.deleteBrouillon(id);
       finTunnel = true;
       renderPrep();
       window.scrollTo(0, 0);
@@ -4617,7 +4644,7 @@ var Moteur = (function () {
       var etatEl = h("p", { id: "cloud-etat", role: "status" }); majCloudEtat(etatEl);
       var note = h("p", { class: "status", role: "status" });
       var lien = lienConnexion(cfg);
-      card.append(h("p", { class: "status", text: "Menus, historique, listes cochées, articles, favoris et recettes sont enregistrés dans un fichier privé " + (cfg.type === "gist" ? "sur votre GitHub" : "Google") + " et partagés entre vos appareils." }), etatEl,
+      card.append(h("p", { class: "status", text: "Menus (y compris ceux en préparation), historique, listes cochées, articles, favoris et recettes sont enregistrés " + (cfg.type === "gist" ? "dans un fichier privé sur votre GitHub" : "dans votre feuille Google") + " et partagés entre vos appareils." }), etatEl,
         h("div", { class: "bar" },
           h("button", { type: "button", class: "btn", text: "↻ Synchroniser", onclick: function () { Store.cloud.synchro(); } }),
           h("button", { type: "button", class: "btn", text: "Envoyer le lien de connexion", onclick: function () {
@@ -4747,6 +4774,19 @@ var Moteur = (function () {
   var premierChargement = true;
   Store.onChange = function (quoi) {
     if (quoi === "acces") return;
+    if (quoi === "brouillons") {
+      if (!Store.ready || premierChargement || !S) return;
+      // Un autre appareil a avancé le menu de cette semaine : on le reprend, sauf si on est en train de saisir.
+      var dist = Store.brouillons[M.iso(debut)];
+      if (dist && dist.appareil !== ID_APPAREIL && (dist.modifie || "") > (S.modifie || "") && Date.now() - derniereSaisie > 20000 && !(S.stage === "valide" && !dist)) {
+        var enTunnel = S.tunnel;
+        S = clone(dist); S.tunnel = false;
+        if (enTunnel && ongletActif === "prep") { S.tunnel = true; S.page = dist.page || "semaine"; }
+        lsSet(cleBrouillon(), S);
+        if (ongletActif === "prep") renderPrep();
+      }
+      return;
+    }
     if (quoi === "cloud") { renderEntete(); if (ongletActif === "regl") { var cs = document.getElementById("cloud-etat"); if (cs) majCloudEtat(cs); } return; }
     if (quoi === "recettes") {
       recalculerRecettes(); rafraichirSelectsArticles();
@@ -4777,7 +4817,7 @@ var Moteur = (function () {
     }
   };
   S = etatVide();
-  var b = lsGet(cleBrouillon()); if (b) S = b;
+  var b = brouillonDe(M.iso(debut)); if (b) S = b;
   appliquerVue();
   majVerrou();
   choisirOnglet("prep");
