@@ -1458,14 +1458,20 @@ var Moteur = (function () {
     return self;
   }
   /* Lien de connexion : #memoire=… ajouté à l'adresse du site, pour un autre appareil. */
-  (function lienMemoire() {
-    var m = /[#&]memoire=([^&]+)/.exec(location.hash || "");
-    if (!m) return;
+  function lireLienMemoire(texte) {
+    var m = /[#&]memoire=([^&\s]+)/.exec(texte || "");
+    if (!m) return null;
     try {
       var c = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
-      if (c && c.type === "gist" && c.token && c.gist) lsSet(CLOUD_CFG, { type: "gist", token: c.token, gist: c.gist, depuisLien: true });
-      else if (c && c.url && c.cle) lsSet(CLOUD_CFG, { url: c.url, cle: c.cle, depuisLien: true });
+      if (c && c.type === "gist" && c.token && c.gist) return { type: "gist", token: c.token, gist: c.gist, depuisLien: true };
+      if (c && c.url && c.cle) return { url: c.url, cle: c.cle, depuisLien: true };
     } catch (e) {}
+    return null;
+  }
+  (function lienMemoire() {
+    if (!/[#&]memoire=/.test(location.hash || "")) return;
+    var c = lireLienMemoire(location.hash);
+    if (c) lsSet(CLOUD_CFG, c);
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { location.hash = ""; }
   })();
 
@@ -4620,16 +4626,25 @@ var Moteur = (function () {
             if (navigator.clipboard) navigator.clipboard.writeText(lien).then(ok, function () { window.prompt("Copiez ce lien :", lien); }); else window.prompt("Copiez ce lien :", lien);
           } })),
         note,
+        h("p", { class: "status", text: "Sur l'autre appareil : ouvrez l'application (l'icône Menus de l'écran d'accueil si vous l'utilisez), allez dans Paramètres › Réglages › Mémoire partagée et collez le lien. Sur iPhone, l'icône et Safari ne partagent pas leurs données : connectez celle que vous utilisez." }),
         h("details", null, h("summary", { text: "Déconnecter cet appareil" }),
           h("p", { class: "status", text: "Cet appareil n'utilisera plus la mémoire partagée (elle n'est pas effacée). Il repartira de ses données locales." }),
           h("button", { type: "button", class: "btn danger", text: "Déconnecter", onclick: function () { lsDel(CLOUD_CFG); lsDel(CLOUD_CACHE); lsDel(CLOUD_FILE); location.reload(); } })));
       return card;
     }
+    var lienIn = h("input", { type: "text", id: "cloud-lien", placeholder: "Collez ici le lien de connexion reçu", autocomplete: "off", spellcheck: false });
+    var noteL = h("p", { class: "status", role: "status" });
+    card.append(h("form", { class: "cloud-form lien-form", onsubmit: function (e) {
+      e.preventDefault();
+      var c = lireLienMemoire(lienIn.value.trim());
+      if (!c) { noteL.className = "status err"; noteL.textContent = "Ce n'est pas un lien de connexion valide : copiez-le en entier."; return; }
+      lsSet(CLOUD_CFG, c); noteL.className = "status"; noteL.textContent = "Connectée ! Rechargement…"; setTimeout(function () { location.reload(); }, 600);
+    } }, h("label", { class: "lbl", for: "cloud-lien", text: "Vous avez reçu un lien de connexion ?" }), lienIn, h("div", { class: "bar" }, h("button", { type: "submit", class: "btn primary", text: "Connecter avec le lien" })), noteL),
+      h("p", { class: "status", style: "margin-top:14px", text: "Premier appareil à connecter ? Utilisez une clé GitHub, ou un script Google (tout en bas)." }));
     var tok = h("input", { type: "password", id: "cloud-token", placeholder: "ghp_…", autocomplete: "off", spellcheck: false });
     var note2 = h("p", { class: "status", role: "status" });
-    var go = h("button", { type: "submit", class: "btn primary", text: "Connecter" });
-    card.append(h("p", { class: "status", text: "Pour partager menus, historique, articles et recettes entre vos téléphones et votre ordinateur. Sur le premier appareil, collez votre clé GitHub (une seule fois). Sur les autres, ouvrez simplement le lien de connexion envoyé depuis un appareil déjà connecté." }),
-      h("p", null, h("a", { href: "https://github.com/settings/tokens/new?scopes=gist&description=Menus%20de%20la%20semaine", target: "_blank", rel: "noopener", text: "Créer ma clé GitHub ↗" })),
+    var go = h("button", { type: "submit", class: "btn", text: "Connecter" });
+    card.append(      h("p", null, h("a", { href: "https://github.com/settings/tokens/new?scopes=gist&description=Menus%20de%20la%20semaine", target: "_blank", rel: "noopener", text: "Créer ma clé GitHub ↗" })),
       h("form", { class: "cloud-form", onsubmit: function (e) {
         e.preventDefault();
         var t = tok.value.trim();
