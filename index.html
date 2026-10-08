@@ -300,6 +300,8 @@ td .add { margin-left: 8px; }
 .lecture-menu li { display: grid; grid-template-columns: 7.5em 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
 .lecture-menu .lm-j { color: var(--muted); font-size: 13px; text-transform: capitalize; }
 .nom-dialog { border-top-color: var(--accent); }
+.maj-dispo { position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 70; display: flex; gap: 10px; align-items: center; background: var(--surface); border: 2px solid var(--accent); border-radius: 12px; padding: 8px 10px 8px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.2); font-size: 14px; width: min(calc(100vw - 24px), 440px); justify-content: space-between; }
+.maj-dispo .btn { flex: none; }
 /* Glisser pour supprimer */
 .sw { position: relative; overflow: hidden; }
 .sw-fond { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; border: 0; background: #D32F2F; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -1399,7 +1401,9 @@ var Moteur = (function () {
     var cache = lsGet(CLOUD_CACHE) || {};
     if (!cache.docs) cache = { docs: cache, revs: {}, version: null }; // ancien format de cache
     var data = cache.docs || {}, revs = cache.revs || {}, version = cache.version == null ? null : cache.version;
-    var attente = lsGet(CLOUD_FILE) || [], ecouteurs = [], envoi = null, minuteur = null, relancer = false;
+    var attente = lsGet(CLOUD_FILE) || [], ecouteurs = [], envoi = null, minuteur = null, relancer = false, enVol = {};
+    function versionnee(op) { return transport.versions && (op.col === "brouillons" || op.col === "menus") && (op.op === "set" || op.op === "delete"); }
+    function cle(op) { return op.col + "/" + op.id; }
     var etat = { connecte: false, derniere: 0, erreur: "", premier: true, envoi: false, attente: attente.length };
     var self = { cloud: true, etat: etat, surEtat: function () {}, surConflit: function () {} };
     var transport = cfg.type === "gist" ? transportGist(cfg) : transportGoogle(cfg);
@@ -1438,16 +1442,34 @@ var Moteur = (function () {
     }
     function synchro() {
       if (envoi) { relancer = true; return envoi; }
-      var lot = attente.slice(), ops = compacter(clone(lot));
+      // Un seul enregistrement « versionné » par élément et par envoi : le suivant part avec la version
+      // renvoyée par la feuille (sinon l'appareil entrerait en conflit avec lui-même).
+      var lot = [], vus = {};
+      for (var i = 0; i < attente.length; i++) {
+        var o = attente[i];
+        if (versionnee(o)) {
+          var prec = lot.length ? lot[lot.length - 1] : null;
+          var fusionnable = prec && prec.op === "set" && o.op === "set" && cle(prec) === cle(o);
+          if (vus[cle(o)] && !fusionnable) break;
+          vus[cle(o)] = true;
+        }
+        lot.push(o);
+      }
+      var ops = compacter(clone(lot));
+      ops.forEach(function (o) { if (versionnee(o) && o.chaine) { o.base = revs[cle(o)] || 0; delete o.chaine; } });
+      enVol = {}; lot.forEach(function (o) { enVol[cle(o)] = true; });
       majEtat(etat.connecte, etat.erreur);
       envoi = (ops.length ? transport.ecrire(ops) : transport.lire(version)).then(function (res) {
-        attente = attente.slice(lot.length); lsSet(CLOUD_FILE, attente);
+        attente = attente.slice(lot.length);
         var conflits = res.conflits || [];
+        // Si l'enregistrement de tête a été refusé, ses suites (même appareil) le sont aussi.
+        if (conflits.length) attente = attente.filter(function (o) { return !(o.chaine && conflits.indexOf(cle(o)) !== -1); });
+        lsSet(CLOUD_FILE, attente); enVol = {};
         envoi = null;
         recevoir(res); majEtat(true);
         if (conflits.length) self.surConflit(conflits);
       }, function (e) {
-        envoi = null;
+        envoi = null; enVol = {};
         var m = e && e.message;
         majEtat(false, m === "cle" ? "Clé refusée : reconnectez cet appareil." : m === "introuvable" ? "Fichier de mémoire introuvable." : (navigator.onLine === false ? "Hors connexion." : "Mémoire en ligne injoignable."));
         if (etat.premier) { etat.premier = false; notifier(); }
@@ -1459,8 +1481,12 @@ var Moteur = (function () {
     }
     function ecrire(op) {
       // Les menus et les brouillons portent la version sur laquelle on s'appuie : la feuille refuse si quelqu'un l'a changée entre-temps.
-      if (transport.versions && op.op === "set" && (op.col === "brouillons" || op.col === "menus")) op.base = revs[op.col + "/" + op.id] || 0;
-      if (transport.versions && op.op === "delete" && op.col === "brouillons") op.base = revs[op.col + "/" + op.id] || 0;
+      if (versionnee(op)) {
+        // Suite d'un enregistrement de cet appareil pas encore confirmé : sa version sera prise à l'envoi.
+        var k = cle(op);
+        if (enVol[k] || attente.some(function (o) { return cle(o) === k; })) op.chaine = true;
+        else op.base = revs[k] || 0;
+      }
       attente.push(op); lsSet(CLOUD_FILE, attente); notifier(); majEtat(etat.connecte, etat.erreur);
       clearTimeout(minuteur); minuteur = setTimeout(synchro, 250);
       return Promise.resolve();
@@ -1710,7 +1736,21 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "8 oct. 17h45";
+  var VERSION_SITE = "8 oct. 20h20";
+  /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
+  function verifierMiseAJour() {
+    if (window.claude || !/^https?:$/.test(location.protocol)) return;
+    fetch(location.pathname + "?v=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) {
+      var m = /var VERSION_SITE = "([^"]+)"/.exec(t || "");
+      if (!m || m[1] === VERSION_SITE || document.getElementById("maj-dispo")) return;
+      document.body.append(h("div", { class: "maj-dispo", id: "maj-dispo", role: "status" },
+        h("span", { text: "Nouvelle version de l'application disponible." }),
+        h("button", { type: "button", class: "btn primary mini", text: "Mettre à jour", onclick: function () { location.reload(); } })));
+    }).catch(function () {});
+  }
+  setTimeout(verifierMiseAJour, 4000);
+  setInterval(function () { if (document.visibilityState === "visible") verifierMiseAJour(); }, 10 * 60000);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") verifierMiseAJour(); });
   function partage() { return Store.mode === "db"; }
   var DUREE_MAIN = 10 * 60000; // sans action pendant 10 min, la main se libère toute seule
   function editeurActif(d) { var e = d && d.editeur; return e && e.id && (Date.now() - (e.vu || 0) < DUREE_MAIN) ? e : null; }
