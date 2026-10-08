@@ -1678,6 +1678,13 @@ var Moteur = (function () {
     return l;
   }
   var minuteurBrouillon = null, derniereSaisie = 0;
+  /* Un menu commencé sur cet appareil (même avant la mémoire partagée) est envoyé s'il est plus récent. */
+  function pousserBrouillonLocal() {
+    if (Store.mode !== "db" || !S || S.stage === "valide" || !S.modifie) return;
+    var id = M.iso(debut), dist = Store.brouillons[id];
+    if (S.appareil && S.appareil !== ID_APPAREIL) return;
+    if (!dist || (S.modifie || "") > (dist.modifie || "")) { S.appareil = ID_APPAREIL; Store.setBrouillon(id, clone(S)); }
+  }
   function etatVide() {
     return { stage: "questions", reponses: { evenements: {}, midis: [], imposees: [] }, ajouts: [], menu: null, retires: {} };
   }
@@ -4758,7 +4765,7 @@ var Moteur = (function () {
   function allerSemaine(d) {
     sauver(); finTunnel = false;
     debut = d;
-    chargerSemaine();
+    chargerSemaine(); setTimeout(pousserBrouillonLocal, 0);
     renderOnglet();
   }
   document.getElementById("tab-prep").addEventListener("click", function () { choisirOnglet("prep"); });
@@ -4771,11 +4778,12 @@ var Moteur = (function () {
   document.getElementById("next").addEventListener("click", function () { allerSemaine(M.addDays(debut, 7)); });
 
   /* ---------- Démarrage ---------- */
-  var premierChargement = true;
+  var premierChargement = true, brouillonsVus = false;
   Store.onChange = function (quoi) {
     if (quoi === "acces") return;
     if (quoi === "brouillons") {
       if (!Store.ready || premierChargement || !S) return;
+      if (!brouillonsVus) { brouillonsVus = true; setTimeout(pousserBrouillonLocal, 500); }
       // Un autre appareil a avancé le menu de cette semaine : on le reprend, sauf si on est en train de saisir.
       var dist = Store.brouillons[M.iso(debut)];
       if (dist && dist.appareil !== ID_APPAREIL && (dist.modifie || "") > (S.modifie || "") && Date.now() - derniereSaisie > 20000 && !(S.stage === "valide" && !dist)) {
