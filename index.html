@@ -1418,6 +1418,7 @@ var Moteur = (function () {
     function majEtat(ok, err) { etat.connecte = ok; etat.erreur = err || ""; if (ok) etat.derniere = Date.now(); etat.attente = attente.length; etat.envoi = !!envoi; self.surEtat(etat); }
     function memoriser() { lsSet(CLOUD_CACHE, { docs: data, revs: revs, version: version }); }
     function recevoir(res) {
+      if (transport.versions) etat.ancienScript = res.version == null;
       if (res.version != null) version = res.version;
       if (res.inchange) { memoriser(); if (etat.premier) { etat.premier = false; notifier(); } return; }
       var avant = JSON.stringify(data);
@@ -1709,6 +1710,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
+  var VERSION_SITE = "8 oct. 17h45";
   function partage() { return Store.mode === "db"; }
   var DUREE_MAIN = 10 * 60000; // sans action pendant 10 min, la main se libère toute seule
   function editeurActif(d) { var e = d && d.editeur; return e && e.id && (Date.now() - (e.vu || 0) < DUREE_MAIN) ? e : null; }
@@ -1735,6 +1737,7 @@ var Moteur = (function () {
   /* Un menu commencé sur cet appareil avant la mémoire partagée y est envoyé une fois, puis oublié localement. */
   function pousserBrouillonLocal() {
     if (!partage()) return;
+    if (Store.cloud && !Store.cloud.etat.derniere) { brouillonsVus = false; return; } // attendre des données fraîches
     var id = M.iso(debut), l = lsGet(cleBrouillon()); if (!l) return;
     var d = Store.brouillons[id], v = Store.menus[id];
     if (l.stage !== "valide" && (!d || (l.modifie || "") > (d.modifie || "")) && !editeurActif(d) && (!v || (l.modifie || "") > (v.valideLe || ""))) {
@@ -1829,6 +1832,7 @@ var Moteur = (function () {
     if (Store.cloud) {
       var ce = Store.cloud.etat, hh = function (t) { return new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); };
       if (!ce.connecte && ce.erreur) pastille = h("span", { class: "syncpill hors", text: "Hors ligne" + (ce.attente ? " · " + ce.attente + " modif. en attente" : "") });
+      else if (ce.ancienScript) pastille = h("span", { class: "syncpill hors", text: "⚠ Script Google à mettre à jour" });
       else if (ce.attente) pastille = h("span", { class: "syncpill envoi", text: "⟳ Envoi…" });
       else if (ce.derniere) pastille = h("span", { class: "syncpill ok", text: "✓ À jour " + hh(ce.derniere) });
       else pastille = h("span", { class: "syncpill envoi", text: "⟳ Connexion…" });
@@ -4782,6 +4786,9 @@ var Moteur = (function () {
       var etatEl = h("p", { id: "cloud-etat", role: "status" }); majCloudEtat(etatEl);
       var note = h("p", { class: "status", role: "status" });
       var lien = lienConnexion(cfg);
+      var ceR = Store.cloud && Store.cloud.etat;
+      if (ceR && ceR.ancienScript) card.append(h("p", { class: "status err", text: "⚠ Le script Google utilisé est l'ancienne version : la protection contre les écrasements ne fonctionne pas. Dans Apps Script : collez le nouveau Code.gs, puis Déployer › Gérer les déploiements › ✏️ › Version : Nouvelle version › Déployer." }));
+      card.append(h("p", { class: "status", text: "Version du site : " + VERSION_SITE + (ceR && ceR.connecte ? (ceR.ancienScript ? " · script Google : ancienne version" : " · script Google : à jour") : "") }));
       card.append(h("div", { class: "bar" }, h("span", null, "Cet appareil : ", h("b", { text: NOM_APPAREIL || "sans nom" })), h("button", { type: "button", class: "btn ghost mini", text: "Renommer", onclick: function () { demanderNom(true); } })),
         h("p", { class: "status", text: "Menus (y compris ceux en préparation), historique, listes cochées, articles, favoris et recettes sont enregistrés " + (cfg.type === "gist" ? "dans un fichier privé sur votre GitHub" : "dans votre feuille Google") + " et partagés entre vos appareils." }), etatEl,
         h("div", { class: "bar" },
