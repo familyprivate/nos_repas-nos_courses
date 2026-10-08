@@ -1452,7 +1452,9 @@ var Moteur = (function () {
     // Démarrage : la copie locale s'affiche tout de suite, puis on synchronise.
     if (lsGet(CLOUD_CACHE)) { etat.premier = false; setTimeout(notifier, 0); }
     setTimeout(synchro, 0);
-    setInterval(function () { if (document.visibilityState === "visible") synchro(); }, 20000);
+    setInterval(function () { if (document.visibilityState === "visible") synchro(); }, 15000);
+    window.addEventListener("focus", function () { synchro(); });
+    window.addEventListener("pageshow", function () { synchro(); });
     document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") synchro(); });
     window.addEventListener("online", function () { synchro(); });
     return self;
@@ -1761,7 +1763,7 @@ var Moteur = (function () {
     if (Store.cloud) {
       var ce = Store.cloud.etat;
       if (!ce.connecte && ce.erreur) { st.className = "status warn"; txt += ". Mémoire partagée non joignable" + (ce.attente ? ", " + ce.attente + " modification" + (ce.attente > 1 ? "s" : "") + " en attente" : "") + "."; }
-      else txt += " · mémoire partagée";
+      else txt += " · mémoire partagée" + (ce.derniere ? " (synchro " + new Date(ce.derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + ")" : "");
     } else if (Store.mode === "local") {
       st.className = "status warn";
       txt += Store.msg ? ". " + Store.msg : ". Historique conservé dans ce navigateur uniquement.";
@@ -4810,9 +4812,12 @@ var Moteur = (function () {
     if (premierChargement) { premierChargement = false; chargerSemaine(); renderOnglet(); return; }
     // Mise à jour de l'historique : ne pas écraser une saisie en cours.
     var etaitValide = S && S.stage === "valide";
+    var v = Store.menus[M.iso(debut)];
     if (etaitValide) {
-      var v = Store.menus[M.iso(debut)];
       S = v ? depuisValide(v) : etatVide();
+    } else if (v && S && (v.valideLe || "") > (S.modifie || "") && Date.now() - derniereSaisie > 20000 && !finTunnel) {
+      // Le menu de cette semaine vient d'être validé sur un autre appareil : on l'affiche.
+      S = depuisValide(v); lsDel(cleBrouillon()); etaitValide = true;
     }
     renderEntete();
     if (ongletActif === "hist") renderHist();
