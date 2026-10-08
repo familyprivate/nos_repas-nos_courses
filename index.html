@@ -287,6 +287,19 @@ td .add { margin-left: 8px; }
 .cloud-form { display: flex; flex-direction: column; gap: 6px; }
 .cloud-form .bar { margin-top: 6px; }
 .memoire details summary { cursor: pointer; color: var(--muted); font-size: 14px; margin-top: 8px; }
+.syncpill { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.syncpill.ok { background: #E3F4E8; color: #1B6B35; }
+.syncpill.envoi { background: var(--sunk); color: var(--muted); }
+.syncpill.hors { background: #FDEBD8; color: #9A4A06; }
+:root[data-theme="dark"] .syncpill.ok { background: #16321F; color: #7FD39A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .syncpill.ok { background: #16321F; color: #7FD39A; } :root:not([data-theme="light"]) .syncpill.hors { background: #3A2614; color: #F3B27A; } }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 10px; font-size: 14px; max-width: min(92vw, 460px); box-shadow: 0 10px 30px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 60; }
+.toast.visible { opacity: 1; transform: translate(-50%, 0); }
+.lecture-autre .lecture-resume { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 6px; }
+.lecture-menu { list-style: none; margin: 4px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.lecture-menu li { display: grid; grid-template-columns: 7.5em 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.lecture-menu .lm-j { color: var(--muted); font-size: 13px; text-transform: capitalize; }
+.nom-dialog { border-top-color: var(--accent); }
 /* Glisser pour supprimer */
 .sw { position: relative; overflow: hidden; }
 .sw-fond { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; border: 0; background: #D32F2F; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -1344,13 +1357,13 @@ var Moteur = (function () {
     }
     function lire() { return fetch(URL_G, { headers: H, cache: "no-store" }).then(ghVerifier).then(extraire); }
     return {
-      lire: lire,
+      lire: function () { return lire().then(function (docs) { return { docs: docs, revs: {}, conflits: [] }; }); },
       // On relit juste avant d'écrire pour ne pas écraser ce que l'autre appareil vient d'enregistrer.
       ecrire: function (ops) {
         return lire().then(function (docs) {
           docs = docs || {}; ops.forEach(function (op) { appliquerOp(docs, op); });
           var f = {}; f[GH_FICHIER] = { content: JSON.stringify(docs) };
-          return fetch(URL_G, { method: "PATCH", headers: H, body: JSON.stringify({ files: f }) }).then(ghVerifier).then(function () { return docs; });
+          return fetch(URL_G, { method: "PATCH", headers: H, body: JSON.stringify({ files: f }) }).then(ghVerifier).then(function () { return { docs: docs, revs: {}, conflits: [] }; });
         });
       }
     };
@@ -1358,15 +1371,15 @@ var Moteur = (function () {
   function transportGoogle(cfg) {
     function appeler(req) {
       req.cle = cfg.cle;
-      return fetch(cfg.url, { method: "POST", body: JSON.stringify(req), redirect: "follow" }).then(function (r) {
+      return fetch(cfg.url, { method: "POST", body: JSON.stringify(req), redirect: "follow", cache: "no-store" }).then(function (r) {
         if (!r.ok) throw new Error("http " + r.status);
         return r.json();
       }).then(function (res) {
         if (!res || !res.ok) throw new Error(res && res.erreur === "cle" ? "cle" : "serveur");
-        return res.docs;
+        return res;
       });
     }
-    return { lire: function () { return appeler({ action: "lire" }); }, ecrire: function (ops) { return appeler({ action: "ecrire", ops: ops }); } };
+    return { versions: true, lire: function (depuis) { return appeler({ action: "lire", depuis: depuis }); }, ecrire: function (ops) { return appeler({ action: "ecrire", ops: ops }); } };
   }
   function fusionPatch(a, p) {
     var o = Object.assign({}, a || {});
@@ -1383,9 +1396,13 @@ var Moteur = (function () {
     else c[op.id] = clone(op.doc);
   }
   function SheetDB(cfg) {
-    var data = lsGet(CLOUD_CACHE) || {}, attente = lsGet(CLOUD_FILE) || [], ecouteurs = [], envoi = null, minuteur = null;
-    var etat = { connecte: false, derniere: 0, erreur: "", premier: true };
-    var self = { cloud: true, etat: etat, surEtat: function () {} };
+    var cache = lsGet(CLOUD_CACHE) || {};
+    if (!cache.docs) cache = { docs: cache, revs: {}, version: null }; // ancien format de cache
+    var data = cache.docs || {}, revs = cache.revs || {}, version = cache.version == null ? null : cache.version;
+    var attente = lsGet(CLOUD_FILE) || [], ecouteurs = [], envoi = null, minuteur = null, relancer = false;
+    var etat = { connecte: false, derniere: 0, erreur: "", premier: true, envoi: false, attente: attente.length };
+    var self = { cloud: true, etat: etat, surEtat: function () {}, surConflit: function () {} };
+    var transport = cfg.type === "gist" ? transportGist(cfg) : transportGoogle(cfg);
     function vue() { var v = clone(data); attente.forEach(function (op) { appliquerOp(v, op); }); return v; }
     function snapCol(v, col) {
       var c = v[col] || {};
@@ -1398,34 +1415,56 @@ var Moteur = (function () {
         else l.cb(snapCol(v, l.col));
       });
     }
-    function majEtat(ok, err) { etat.connecte = ok; etat.erreur = err || ""; if (ok) etat.derniere = Date.now(); etat.attente = attente.length; self.surEtat(etat); }
-    var transport = cfg.type === "gist" ? transportGist(cfg) : transportGoogle(cfg);
-    function recevoir(docs) {
-      var avant = JSON.stringify(data); data = docs || {};
-      lsSet(CLOUD_CACHE, data);
+    function majEtat(ok, err) { etat.connecte = ok; etat.erreur = err || ""; if (ok) etat.derniere = Date.now(); etat.attente = attente.length; etat.envoi = !!envoi; self.surEtat(etat); }
+    function memoriser() { lsSet(CLOUD_CACHE, { docs: data, revs: revs, version: version }); }
+    function recevoir(res) {
+      if (res.version != null) version = res.version;
+      if (res.inchange) { memoriser(); if (etat.premier) { etat.premier = false; notifier(); } return; }
+      var avant = JSON.stringify(data);
+      data = res.docs || {}; revs = res.revs || {};
+      memoriser();
       if (JSON.stringify(data) !== avant || etat.premier) { etat.premier = false; notifier(); }
     }
+    /* Plusieurs enregistrements successifs du même élément ne font qu'un (le dernier), avec la version de départ. */
+    function compacter(ops) {
+      var out = [];
+      ops.forEach(function (op) {
+        var prec = out.length ? out[out.length - 1] : null;
+        if (prec && op.op === "set" && prec.op === "set" && prec.col === op.col && prec.id === op.id) { prec.doc = op.doc; return; }
+        out.push(op);
+      });
+      return out;
+    }
     function synchro() {
-      if (envoi) return envoi;
-      var ops = attente.slice();
-      envoi = (ops.length ? transport.ecrire(ops) : transport.lire()).then(function (docs) {
-        attente = attente.slice(ops.length); lsSet(CLOUD_FILE, attente);
-        recevoir(docs); majEtat(true);
+      if (envoi) { relancer = true; return envoi; }
+      var lot = attente.slice(), ops = compacter(clone(lot));
+      majEtat(etat.connecte, etat.erreur);
+      envoi = (ops.length ? transport.ecrire(ops) : transport.lire(version)).then(function (res) {
+        attente = attente.slice(lot.length); lsSet(CLOUD_FILE, attente);
+        var conflits = res.conflits || [];
+        envoi = null;
+        recevoir(res); majEtat(true);
+        if (conflits.length) self.surConflit(conflits);
       }, function (e) {
+        envoi = null;
         var m = e && e.message;
         majEtat(false, m === "cle" ? "Clé refusée : reconnectez cet appareil." : m === "introuvable" ? "Fichier de mémoire introuvable." : (navigator.onLine === false ? "Hors connexion." : "Mémoire en ligne injoignable."));
         if (etat.premier) { etat.premier = false; notifier(); }
-      }).then(function () { envoi = null; if (attente.length && etat.connecte) return synchro(); });
+      }).then(function () {
+        if ((relancer || attente.length) && etat.connecte) { relancer = false; return synchro(); }
+        relancer = false;
+      });
       return envoi;
     }
     function ecrire(op) {
+      // Les menus et les brouillons portent la version sur laquelle on s'appuie : la feuille refuse si quelqu'un l'a changée entre-temps.
+      if (transport.versions && op.op === "set" && (op.col === "brouillons" || op.col === "menus")) op.base = revs[op.col + "/" + op.id] || 0;
+      if (transport.versions && op.op === "delete" && op.col === "brouillons") op.base = revs[op.col + "/" + op.id] || 0;
       attente.push(op); lsSet(CLOUD_FILE, attente); notifier(); majEtat(etat.connecte, etat.erreur);
-      clearTimeout(minuteur); minuteur = setTimeout(synchro, 300);
+      clearTimeout(minuteur); minuteur = setTimeout(synchro, 250);
       return Promise.resolve();
     }
-    function ref(path) {
-      var p = path.split("/"); return { col: p[0], id: p[1] };
-    }
+    function ref(path) { var p = path.split("/"); return { col: p[0], id: p[1] }; }
     self.collection = function (col) {
       return {
         onSnapshot: function (cb) { var l = { col: col, cb: cb }; ecouteurs.push(l); if (!etat.premier) setTimeout(function () { cb(snapCol(vue(), col)); }, 0); return function () { ecouteurs.splice(ecouteurs.indexOf(l), 1); }; },
@@ -1452,10 +1491,10 @@ var Moteur = (function () {
     // Démarrage : la copie locale s'affiche tout de suite, puis on synchronise.
     if (lsGet(CLOUD_CACHE)) { etat.premier = false; setTimeout(notifier, 0); }
     setTimeout(synchro, 0);
-    setInterval(function () { if (document.visibilityState === "visible") synchro(); }, 15000);
+    setInterval(function () { if (document.visibilityState === "visible") synchro(); }, 10000);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") synchro(); });
     window.addEventListener("focus", function () { synchro(); });
     window.addEventListener("pageshow", function () { synchro(); });
-    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") synchro(); });
     window.addEventListener("online", function () { synchro(); });
     return self;
   }
@@ -1487,7 +1526,7 @@ var Moteur = (function () {
       var use = claudeDb ? window.claude.use("db") : Promise.resolve(null);
       Promise.resolve(use).catch(function () { return null; }).then(function (db) {
         var cfg = !db && !claudeDb ? cloudConfig() : null;
-        if (cfg) { db = SheetDB(cfg); self.cloud = db; db.surEtat = function () { self.onChange("cloud"); }; migrerVersCloud(db); }
+        if (cfg) { db = SheetDB(cfg); self.cloud = db; db.surEtat = function () { self.onChange("cloud"); }; db.surConflit = function (c) { self.onChange("conflit", c); }; migrerVersCloud(db); }
         if (db) {
           self.mode = "db"; self.db = db;
           var got = { menus: false, historique: false };
@@ -1669,23 +1708,40 @@ var Moteur = (function () {
   function cleBrouillon() { return "menus-brouillon-" + M.iso(debut); }
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
-  /* Brouillon le plus récent entre celui de cet appareil et celui de la mémoire partagée. */
+  var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
+  function partage() { return Store.mode === "db"; }
+  var DUREE_MAIN = 10 * 60000; // sans action pendant 10 min, la main se libère toute seule
+  function editeurActif(d) { var e = d && d.editeur; return e && e.id && (Date.now() - (e.vu || 0) < DUREE_MAIN) ? e : null; }
+  function jeSuisEditeur() { return !!(S && S.tunnel && S.editeur && S.editeur.id === ID_APPAREIL); }
+  /* Quelqu'un d'autre est en train de préparer le menu de cette semaine ? */
+  function editeurAutre() {
+    if (!partage() || !S || jeSuisEditeur()) return null;
+    var e = editeurActif(Store.brouillons[M.iso(debut)]);
+    return e && e.id !== ID_APPAREIL ? e : null;
+  }
+  /* Avec la mémoire partagée, le menu en préparation est celui de la mémoire, le même pour tous. */
   function brouillonDe(id) {
-    var l = lsGet("menus-brouillon-" + id), d = Store.brouillons && Store.brouillons[id];
-    if (d && (!l || (d.modifie || "") > (l.modifie || ""))) {
-      var c = clone(d);
-      if (c.appareil && c.appareil !== ID_APPAREIL) c.tunnel = false; // on reprend depuis la carte « Reprendre »
-      return c;
+    if (partage()) {
+      var d = Store.brouillons && Store.brouillons[id];
+      if (d) {
+        var c = clone(d);
+        if (!(c.editeur && c.editeur.id === ID_APPAREIL && editeurActif(c))) c.tunnel = false;
+        return c;
+      }
     }
-    return l;
+    return lsGet("menus-brouillon-" + id); // cet appareil seul, ou menu commencé avant la mémoire partagée
   }
   var minuteurBrouillon = null, derniereSaisie = 0;
-  /* Un menu commencé sur cet appareil (même avant la mémoire partagée) est envoyé s'il est plus récent. */
+  /* Un menu commencé sur cet appareil avant la mémoire partagée y est envoyé une fois, puis oublié localement. */
   function pousserBrouillonLocal() {
-    if (Store.mode !== "db" || !S || S.stage === "valide" || !S.modifie) return;
-    var id = M.iso(debut), dist = Store.brouillons[id];
-    if (S.appareil && S.appareil !== ID_APPAREIL) return;
-    if (!dist || (S.modifie || "") > (dist.modifie || "")) { S.appareil = ID_APPAREIL; Store.setBrouillon(id, clone(S)); }
+    if (!partage()) return;
+    var id = M.iso(debut), l = lsGet(cleBrouillon()); if (!l) return;
+    var d = Store.brouillons[id], v = Store.menus[id];
+    if (l.stage !== "valide" && (!d || (l.modifie || "") > (d.modifie || "")) && !editeurActif(d) && (!v || (l.modifie || "") > (v.valideLe || ""))) {
+      l.editeur = null; l.tunnel = false; l.appareil = ID_APPAREIL;
+      Store.setBrouillon(id, l);
+    }
+    lsDel(cleBrouillon());
   }
   function etatVide() {
     return { stage: "questions", reponses: { evenements: {}, midis: [], imposees: [] }, ajouts: [], menu: null, retires: {} };
@@ -1712,18 +1768,27 @@ var Moteur = (function () {
       valideLe: v.valideLe
     };
   }
-  function sauver() {
+  function sauver(liberer) {
     if (!S) return;
     var id = M.iso(debut);
-    if (S.stage === "valide") { lsDel(cleBrouillon()); Store.deleteBrouillon(id); return; }
-    S.modifie = new Date().toISOString(); S.appareil = ID_APPAREIL; derniereSaisie = Date.now();
-    lsSet(cleBrouillon(), S);
-    if (Store.mode === "db") {
-      clearTimeout(minuteurBrouillon);
-      var copie = clone(S);
-      minuteurBrouillon = setTimeout(function () { Store.setBrouillon(id, copie); }, 1500);
+    if (!partage()) {
+      if (S.stage === "valide") { lsDel(cleBrouillon()); return; }
+      S.modifie = new Date().toISOString(); S.appareil = ID_APPAREIL;
+      lsSet(cleBrouillon(), S);
+      return;
     }
+    // Mémoire partagée : seul l'appareil qui prépare le menu l'enregistre (ou le libère en sortant).
+    if (S.stage === "valide") return;
+    if (!S.tunnel && !liberer) return;
+    S.modifie = new Date().toISOString(); S.appareil = ID_APPAREIL; derniereSaisie = Date.now();
+    S.editeur = S.tunnel ? { id: ID_APPAREIL, nom: NOM_APPAREIL || "Un appareil", vu: Date.now() } : null;
+    clearTimeout(minuteurBrouillon);
+    var copie = clone(S);
+    if (liberer) Store.setBrouillon(id, copie);
+    else minuteurBrouillon = setTimeout(function () { Store.setBrouillon(id, copie); }, 600);
   }
+  // Signe de vie toutes les minutes pendant la préparation (la main reste à cet appareil).
+  setInterval(function () { if (partage() && jeSuisEditeur() && document.visibilityState === "visible") sauver(); }, 60000);
 
   /* ---------- En-tête ---------- */
   /* Couleur du mois (mois majoritaire de la semaine) appliquée à toute l'interface. */
@@ -1760,16 +1825,20 @@ var Moteur = (function () {
     if (!Store.ready) { st.textContent = "Chargement de l'historique…"; return; }
     var nb = Object.keys(Store.menus).length;
     var txt = nb ? nb + " semaine" + (nb > 1 ? "s" : "") + " validée" + (nb > 1 ? "s" : "") + " dans l'historique" : "Aucune semaine validée pour l'instant";
+    var pastille = null;
     if (Store.cloud) {
-      var ce = Store.cloud.etat;
-      if (!ce.connecte && ce.erreur) { st.className = "status warn"; txt += ". Mémoire partagée non joignable" + (ce.attente ? ", " + ce.attente + " modification" + (ce.attente > 1 ? "s" : "") + " en attente" : "") + "."; }
-      else txt += " · mémoire partagée" + (ce.derniere ? " (synchro " + new Date(ce.derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + ")" : "");
+      var ce = Store.cloud.etat, hh = function (t) { return new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); };
+      if (!ce.connecte && ce.erreur) pastille = h("span", { class: "syncpill hors", text: "Hors ligne" + (ce.attente ? " · " + ce.attente + " modif. en attente" : "") });
+      else if (ce.attente) pastille = h("span", { class: "syncpill envoi", text: "⟳ Envoi…" });
+      else if (ce.derniere) pastille = h("span", { class: "syncpill ok", text: "✓ À jour " + hh(ce.derniere) });
+      else pastille = h("span", { class: "syncpill envoi", text: "⟳ Connexion…" });
     } else if (Store.mode === "local") {
       st.className = "status warn";
       txt += Store.msg ? ". " + Store.msg : ". Historique conservé dans ce navigateur uniquement.";
     }
     if (M.iso(debut) !== M.iso(defautDebut)) txt += " · semaine choisie manuellement";
     st.textContent = txt;
+    if (pastille) st.prepend(pastille, " ");
   }
 
   /* ---------- Onglet Préparer ---------- */
@@ -1813,12 +1882,47 @@ var Moteur = (function () {
     if ((p === "semaine" || p === "imposee" || p === "articles") && S.stage === "proposition") S.stage = "questions";
     S.page = p; S.tunnel = true; sauver(); renderPrep(); window.scrollTo(0, 0);
   }
-  function quitterTunnel() { S.tunnel = false; sauver(); finTunnel = false; renderPrep(); window.scrollTo(0, 0); }
+  function quitterTunnel() { S.tunnel = false; sauver(true); finTunnel = false; renderPrep(); window.scrollTo(0, 0); }
   var prepaTimer = null;
   function lancerPrepa() { S.page = "prepa"; S.tunnel = true; sensTn = 1; sauver(); renderPrep(); window.scrollTo(0, 0); }
   function armerPrepa() {
     if (prepaTimer) return;
     prepaTimer = setTimeout(function () { prepaTimer = null; if (S.page !== "prepa") return; S.page = "menu"; generer(); }, 2200);
+  }
+
+  /* Quelqu'un d'autre prépare le menu : on suit en direct, sans pouvoir modifier (sauf en prenant la main). */
+  function renderLectureAutre(e) {
+    var nom = e.nom || "Un autre appareil";
+    var heure = new Date(e.vu || Date.now()).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    var enCours = S.stage === "proposition";
+    var etape = enCours ? (S.page === "liste" ? 4 : 3) : idxEtape(S.page || "semaine");
+    var COURTS = ["La semaine", "Recette imposée", "Articles en plus", "Votre menu", "La liste"];
+    var liste = h("ol", { class: "tn-plan" });
+    ETAPES_TN.forEach(function (x, i) { liste.append(h("li", { class: i < etape ? "fait" : i === etape ? "encours" : "" }, h("b", { text: i < etape ? "✓" : String(i + 1) }), h("span", { text: COURTS[i] }))); });
+    var resume = h("div", { class: "lecture-resume" });
+    var imp = (S.reponses && S.reponses.imposees || []).filter(function (im) { return im.recette; });
+    if (imp.length) resume.append(h("p", null, h("b", { text: "Imposée : " }), imp.map(function (im) { return im.recette; }).join(", ")));
+    if (S.ajouts && S.ajouts.length) resume.append(h("p", null, h("b", { text: "Articles en plus : " }), S.ajouts.filter(function (a) { return a.produit; }).map(function (a) { return a.produit; }).join(", ")));
+    if (S.menu && S.menu.creneaux) {
+      var ul = h("ul", { class: "lecture-menu" });
+      S.menu.creneaux.slice().sort(function (a, b) { return a.jour - b.jour || (a.repas === "Midi" ? -1 : 1); }).forEach(function (c) {
+        var quoi = c.type === "recette" ? c.recette : c.type === "exclu" ? "—" : (c.texte || c.type);
+        ul.append(h("li", null, h("span", { class: "lm-j", text: JOURS[c.jour].slice(0, 3) + ". " + c.repas.toLowerCase() }), h("span", { text: quoi })));
+      });
+      resume.append(ul);
+    }
+    var confirmer = false;
+    var prendre = h("button", { type: "button", class: "btn", text: "Prendre la main", onclick: function () {
+      if (!confirmer) { confirmer = true; prendre.textContent = "Confirmer : " + nom + " ne pourra plus modifier"; prendre.classList.add("danger"); return; }
+      sensTn = 1; S.tunnel = true; if (!S.page) S.page = "semaine"; sauver(); renderPrep(); window.scrollTo(0, 0);
+    } });
+    panelPrep.append(h("section", { class: "tn-entree lecture-autre" },
+      h("div", { class: "statut-bloc" }, statut("todo", "Menu en préparation")),
+      h("h2", { text: nom + " prépare le menu" }),
+      h("p", { class: "status", text: "Dernière action à " + heure + ". Vous voyez ses choix en direct ; une seule personne modifie à la fois." }),
+      resume.childNodes.length ? resume : null,
+      liste,
+      h("div", { class: "bar" }, prendre)));
   }
 
   /* Carte d'entrée (onglet Menu, semaine pas encore validée) */
@@ -1975,6 +2079,8 @@ var Moteur = (function () {
     document.body.classList.toggle("tunnel", dansTunnel && ongletActif === "prep");
     if (dansTunnel) { clear(panelPrep); if (S.stage === "valide") renderFinTunnel(); else renderTunnel(); return; }
     if (semainePassee() && S.stage !== "valide") { renderSemainePassee(); return; }
+    var autre = editeurAutre();
+    if (autre && S.stage !== "valide") { renderLectureAutre(autre); return; }
     if (S.stage === "questions" || S.stage === "proposition") renderAccueilTunnel();
     else renderValide();
   }
@@ -2588,7 +2694,7 @@ var Moteur = (function () {
     var premiereValidation = !prev;
     Store.setMenu(id, doc).then(function () {
       S = depuisValide(doc);
-      lsDel(cleBrouillon()); clearTimeout(minuteurBrouillon); Store.deleteBrouillon(id);
+      lsDel(cleBrouillon()); clearTimeout(minuteurBrouillon); if (partage()) Store.deleteBrouillon(id);
       finTunnel = true;
       renderPrep();
       window.scrollTo(0, 0);
@@ -3024,6 +3130,7 @@ var Moteur = (function () {
   function ouvrir() {
     document.body.classList.remove("verrouille");
     verrouEl.hidden = true; clear(verrouEl); verrouEtat = "ouvert";
+    setTimeout(function () { demanderNom(); }, 300);
   }
   function fermerContenu() { document.body.classList.add("verrouille"); verrouEl.hidden = false; }
   var accueilVu = false;
@@ -4645,6 +4752,27 @@ var Moteur = (function () {
     var c = cfg.type === "gist" ? { type: "gist", token: cfg.token, gist: cfg.gist } : { url: cfg.url, cle: cfg.cle };
     return location.origin + location.pathname + "#memoire=" + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(c)))));
   }
+  /* Nom de l'appareil (« Yann », « Sabrina », « PC salon »…), demandé une fois : il apparaît dans les messages. */
+  var nomDemande = false;
+  function demanderNom(forcer) {
+    if (!forcer && (NOM_APPAREIL || nomDemande || !Store.cloud || verrouEtat !== "ouvert")) return;
+    nomDemande = true;
+    var champ = h("input", { type: "text", id: "nom-appareil", value: NOM_APPAREIL, placeholder: "Ex. : Yann", autocomplete: "off", maxlength: 24 });
+    function ok(n) {
+      n = String(n || "").trim(); if (!n) { champ.focus(); return; }
+      NOM_APPAREIL = n; lsSet("menus-appareil-nom", n); overlay.remove();
+      if (jeSuisEditeur()) sauver();
+      if (ongletActif === "regl") renderRegl();
+    }
+    var choix = h("div", { class: "chips" }, ["Yann", "Sabrina", "PC"].map(function (n) { return h("button", { type: "button", class: "chip", text: n, onclick: function () { ok(n); } }); }));
+    var form = h("form", { class: "dialog nom-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "nom-titre", onsubmit: function (e) { e.preventDefault(); ok(champ.value); } },
+      h("h2", { id: "nom-titre", text: "Qui utilise cet appareil ?" }),
+      h("p", { text: "Ce nom s'affiche chez les autres quand vous préparez le menu (« Yann prépare le menu… »)." }),
+      choix, h("label", { class: "lbl", for: "nom-appareil", text: "Ou un autre nom" }), champ,
+      h("div", { class: "bar" }, h("button", { type: "submit", class: "btn primary", text: "Valider" })));
+    var overlay = h("div", { class: "overlay", id: "nom-overlay" }, form);
+    document.body.append(overlay);
+  }
   function carteMemoire() {
     if (window.claude && window.claude.use) return null;
     var cfg = cloudConfig();
@@ -4653,7 +4781,8 @@ var Moteur = (function () {
       var etatEl = h("p", { id: "cloud-etat", role: "status" }); majCloudEtat(etatEl);
       var note = h("p", { class: "status", role: "status" });
       var lien = lienConnexion(cfg);
-      card.append(h("p", { class: "status", text: "Menus (y compris ceux en préparation), historique, listes cochées, articles, favoris et recettes sont enregistrés " + (cfg.type === "gist" ? "dans un fichier privé sur votre GitHub" : "dans votre feuille Google") + " et partagés entre vos appareils." }), etatEl,
+      card.append(h("div", { class: "bar" }, h("span", null, "Cet appareil : ", h("b", { text: NOM_APPAREIL || "sans nom" })), h("button", { type: "button", class: "btn ghost mini", text: "Renommer", onclick: function () { demanderNom(true); } })),
+        h("p", { class: "status", text: "Menus (y compris ceux en préparation), historique, listes cochées, articles, favoris et recettes sont enregistrés " + (cfg.type === "gist" ? "dans un fichier privé sur votre GitHub" : "dans votre feuille Google") + " et partagés entre vos appareils." }), etatEl,
         h("div", { class: "bar" },
           h("button", { type: "button", class: "btn", text: "↻ Synchroniser", onclick: function () { Store.cloud.synchro(); } }),
           h("button", { type: "button", class: "btn", text: "Envoyer le lien de connexion", onclick: function () {
@@ -4781,20 +4910,46 @@ var Moteur = (function () {
 
   /* ---------- Démarrage ---------- */
   var premierChargement = true, brouillonsVus = false;
-  Store.onChange = function (quoi) {
+  /* ---------- Synchronisation de l'écran avec la mémoire partagée (règles fixes, sans devinette) ----------
+     - Celui qui prépare le menu garde son écran ; il le quitte seulement si quelqu'un prend la main
+       ou si le menu est validé ailleurs.
+     - Tous les autres affichent exactement ce que contient la mémoire. */
+  function renderPrepSi() { renderEntete(); if (ongletActif === "prep") renderPrep(); }
+  function resync() {
+    if (!partage() || !S || premierChargement || finTunnel) return;
+    var id = M.iso(debut), d = Store.brouillons[id], v = Store.menus[id];
+    if (jeSuisEditeur()) {
+      var e = editeurActif(d);
+      if (e && e.id !== ID_APPAREIL) { chargerSemaine(); renderPrepSi(); toast((e.nom || "Un autre appareil") + " a pris la main sur le menu."); return; }
+      if (!d && v && (v.valideLe || "") > (S.modifie || "")) { chargerSemaine(); renderPrepSi(); toast("Le menu a été validé sur un autre appareil."); }
+      return;
+    }
+    var avant = JSON.stringify(S);
+    chargerSemaine();
+    if (JSON.stringify(S) !== avant) renderPrepSi();
+  }
+  /* Un enregistrement refusé car quelqu'un a modifié entre-temps : on affiche sa version. */
+  function surConflit(cles) {
+    var id = M.iso(debut);
+    if (cles.indexOf("brouillons/" + id) === -1 && cles.indexOf("menus/" + id) === -1) return;
+    var d = Store.brouillons[id], e = d && d.editeur;
+    finTunnel = false; chargerSemaine(); renderPrepSi();
+    toast("Modifié entre-temps" + (e && e.nom ? " par " + e.nom : " sur un autre appareil") + " : vous voyez maintenant sa version.");
+  }
+  var toastEl = null, toastMinuteur = null;
+  function toast(msg) {
+    if (!toastEl) { toastEl = h("div", { class: "toast", role: "status", "aria-live": "polite" }); document.body.append(toastEl); }
+    toastEl.textContent = msg; toastEl.classList.add("visible");
+    clearTimeout(toastMinuteur); toastMinuteur = setTimeout(function () { toastEl.classList.remove("visible"); }, 6000);
+  }
+
+  Store.onChange = function (quoi, detail) {
     if (quoi === "acces") return;
+    if (quoi === "conflit") { surConflit(detail || []); return; }
     if (quoi === "brouillons") {
       if (!Store.ready || premierChargement || !S) return;
       if (!brouillonsVus) { brouillonsVus = true; setTimeout(pousserBrouillonLocal, 500); }
-      // Un autre appareil a avancé le menu de cette semaine : on le reprend, sauf si on est en train de saisir.
-      var dist = Store.brouillons[M.iso(debut)];
-      if (dist && dist.appareil !== ID_APPAREIL && (dist.modifie || "") > (S.modifie || "") && Date.now() - derniereSaisie > 20000 && !(S.stage === "valide" && !dist)) {
-        var enTunnel = S.tunnel;
-        S = clone(dist); S.tunnel = false;
-        if (enTunnel && ongletActif === "prep") { S.tunnel = true; S.page = dist.page || "semaine"; }
-        lsSet(cleBrouillon(), S);
-        if (ongletActif === "prep") renderPrep();
-      }
+      resync();
       return;
     }
     if (quoi === "cloud") { renderEntete(); if (ongletActif === "regl") { var cs = document.getElementById("cloud-etat"); if (cs) majCloudEtat(cs); } return; }
@@ -4809,7 +4964,15 @@ var Moteur = (function () {
       return;
     }
     if (!Store.ready) { renderEntete(); return; }
-    if (premierChargement) { premierChargement = false; chargerSemaine(); renderOnglet(); return; }
+    if (premierChargement) { premierChargement = false; chargerSemaine(); renderOnglet(); setTimeout(function () { demanderNom(); }, 300); return; }
+    if (partage()) {
+      resync();
+      renderEntete();
+      if (ongletActif === "hist") renderHist();
+      else if (ongletActif === "rec") renderRec();
+      else if (ongletActif === "courses") renderCoursesOnglet();
+      return;
+    }
     // Mise à jour de l'historique : ne pas écraser une saisie en cours.
     var etaitValide = S && S.stage === "valide";
     var v = Store.menus[M.iso(debut)];
