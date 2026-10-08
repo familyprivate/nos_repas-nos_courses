@@ -140,7 +140,7 @@ h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); line-height: .95; font-weight: 800; 
 .slotrow { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 6px 8px; align-items: center; }
 .slotrow label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .slotrow input { grid-column: 2; }
-select, input[type="text"], input[type="date"], input[type="search"] {
+select, input[type="text"], input[type="date"], input[type="search"], .cloud-form input[type="password"] {
   background: var(--surface); border: 1.5px solid var(--line); border-radius: 4px; padding: 8px 10px; width: 100%; min-width: 0;
 }
 select.etat { font-weight: 600; }
@@ -283,6 +283,9 @@ td .add { margin-left: 8px; }
 .chip[aria-pressed="true"], .chip[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .chip[aria-pressed="true"] small, .chip[aria-selected="true"] small { color: inherit; opacity: .75; }
 .chips.petits .chip { padding: 4px 11px; font-size: 13px; border-style: dashed; }
+.cloud-form { display: flex; flex-direction: column; gap: 6px; }
+.cloud-form .bar { margin-top: 6px; }
+.memoire details summary { cursor: pointer; color: var(--muted); font-size: 14px; margin-top: 8px; }
 /* Glisser pour supprimer */
 .sw { position: relative; overflow: hidden; }
 .sw-fond { position: absolute; top: 0; right: 0; bottom: 0; width: 84px; border: 0; background: #D32F2F; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -616,7 +619,7 @@ body.vue-mobile .seg { align-self: stretch; }
 body.vue-mobile .seg button { flex: 1; padding-inline: 6px; }
 body.vue-mobile .weeknav { flex: 1; justify-content: space-between; }
 body.vue-mobile .weeknav button { width: 46px; height: 42px; }
-body.vue-mobile select, body.vue-mobile input[type="text"], body.vue-mobile input[type="date"], body.vue-mobile input[type="search"] { font-size: 16px; padding-block: 10px; }
+body.vue-mobile select, body.vue-mobile input[type="text"], body.vue-mobile input[type="date"], body.vue-mobile input[type="search"], body.vue-mobile .cloud-form input[type="password"] { font-size: 16px; padding-block: 10px; }
 body.vue-mobile .daygrid { grid-template-columns: 1fr; }
 body.vue-mobile .irow, body.vue-mobile .arow, body.vue-mobile .mform { grid-template-columns: 1fr 1fr; }
 body.vue-mobile .irow > :first-child, body.vue-mobile .arow > :first-child, body.vue-mobile .mform > :first-child { grid-column: 1 / -1; }
@@ -1306,14 +1309,130 @@ var Moteur = (function () {
   function nomJour(i) { return JOURS[i]; }
   function dateCourte(isoStr) { var d = M.fromIso(isoStr); return M.fr(d).slice(0, 5); }
 
+  /* ---------- Mémoire partagée Google (feuille Google + script) ----------
+     Imite la petite base de données de Claude : mêmes collections, mêmes appels.
+     Copie locale pour un démarrage immédiat et le hors-ligne ; écritures en file d'attente. */
+  var CLOUD_CFG = "menus-cloud", CLOUD_CACHE = "menus-cloud-cache", CLOUD_FILE = "menus-cloud-attente";
+  function cloudConfig() { var c = lsGet(CLOUD_CFG); return c && c.url && c.cle ? c : null; }
+  function fusionPatch(a, p) {
+    var o = Object.assign({}, a || {});
+    Object.keys(p || {}).forEach(function (k) {
+      var v = p[k];
+      o[k] = v && typeof v === "object" && !Array.isArray(v) ? Object.assign({}, o[k] && typeof o[k] === "object" && !Array.isArray(o[k]) ? o[k] : {}, v) : v;
+    });
+    return o;
+  }
+  function appliquerOp(base, op) {
+    var c = base[op.col] = base[op.col] || {};
+    if (op.op === "delete") delete c[op.id];
+    else if (op.op === "update") { if (c[op.id]) c[op.id] = fusionPatch(c[op.id], op.doc); }
+    else c[op.id] = clone(op.doc);
+  }
+  function SheetDB(cfg) {
+    var data = lsGet(CLOUD_CACHE) || {}, attente = lsGet(CLOUD_FILE) || [], ecouteurs = [], envoi = null, minuteur = null;
+    var etat = { connecte: false, derniere: 0, erreur: "", premier: true };
+    var self = { cloud: true, etat: etat, surEtat: function () {} };
+    function vue() { var v = clone(data); attente.forEach(function (op) { appliquerOp(v, op); }); return v; }
+    function snapCol(v, col) {
+      var c = v[col] || {};
+      return { docs: Object.keys(c).map(function (id) { var d = c[id]; return { id: id, exists: true, data: function () { return clone(d); } }; }) };
+    }
+    function notifier() {
+      var v = vue();
+      ecouteurs.slice().forEach(function (l) {
+        if (l.id) { var d = (v[l.col] || {})[l.id]; l.cb({ exists: !!d, data: function () { return d ? clone(d) : undefined; } }); }
+        else l.cb(snapCol(v, l.col));
+      });
+    }
+    function majEtat(ok, err) { etat.connecte = ok; etat.erreur = err || ""; if (ok) etat.derniere = Date.now(); etat.attente = attente.length; self.surEtat(etat); }
+    function appeler(req) {
+      req.cle = cfg.cle;
+      return fetch(cfg.url, { method: "POST", body: JSON.stringify(req), redirect: "follow" }).then(function (r) {
+        if (!r.ok) throw new Error("http " + r.status);
+        return r.json();
+      }).then(function (res) {
+        if (!res || !res.ok) throw new Error(res && res.erreur === "cle" ? "cle" : "serveur");
+        return res;
+      });
+    }
+    function recevoir(docs) {
+      var avant = JSON.stringify(data); data = docs || {};
+      lsSet(CLOUD_CACHE, data);
+      if (JSON.stringify(data) !== avant || etat.premier) { etat.premier = false; notifier(); }
+    }
+    function synchro() {
+      if (envoi) return envoi;
+      var ops = attente.slice();
+      envoi = appeler(ops.length ? { action: "ecrire", ops: ops } : { action: "lire" }).then(function (res) {
+        attente = attente.slice(ops.length); lsSet(CLOUD_FILE, attente);
+        recevoir(res.docs); majEtat(true);
+      }, function (e) {
+        majEtat(false, e && e.message === "cle" ? "Clé refusée par la feuille Google." : (navigator.onLine === false ? "Hors connexion." : "Feuille Google injoignable."));
+        if (etat.premier) { etat.premier = false; notifier(); }
+      }).then(function () { envoi = null; if (attente.length && etat.connecte) return synchro(); });
+      return envoi;
+    }
+    function ecrire(op) {
+      attente.push(op); lsSet(CLOUD_FILE, attente); notifier(); majEtat(etat.connecte, etat.erreur);
+      clearTimeout(minuteur); minuteur = setTimeout(synchro, 300);
+      return Promise.resolve();
+    }
+    function ref(path) {
+      var p = path.split("/"); return { col: p[0], id: p[1] };
+    }
+    self.collection = function (col) {
+      return {
+        onSnapshot: function (cb) { var l = { col: col, cb: cb }; ecouteurs.push(l); if (!etat.premier) setTimeout(function () { cb(snapCol(vue(), col)); }, 0); return function () { ecouteurs.splice(ecouteurs.indexOf(l), 1); }; },
+        add: function (doc) { return ecrire({ op: "set", col: col, id: "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), doc: doc }); }
+      };
+    };
+    self.doc = function (path) {
+      var r = ref(path);
+      return {
+        onSnapshot: function (cb) { var l = { col: r.col, id: r.id, cb: cb }; ecouteurs.push(l); if (!etat.premier) setTimeout(function () { var d = (vue()[r.col] || {})[r.id]; cb({ exists: !!d, data: function () { return d; } }); }, 0); return function () { ecouteurs.splice(ecouteurs.indexOf(l), 1); }; },
+        set: function (doc) { return ecrire({ op: "set", col: r.col, id: r.id, doc: doc }); },
+        update: function (patch) { return ecrire({ op: "update", col: r.col, id: r.id, doc: patch }); },
+        delete: function () { return ecrire({ op: "delete", col: r.col, id: r.id }); }
+      };
+    };
+    self.synchro = synchro;
+    self.ajouterSiAbsent = function (col, docs) {
+      var v = vue(), n = 0;
+      Object.keys(docs || {}).forEach(function (id) { if (!(v[col] || {})[id]) { attente.push({ op: "set", col: col, id: id, doc: docs[id] }); n++; } });
+      if (n) { lsSet(CLOUD_FILE, attente); notifier(); synchro(); }
+      return n;
+    };
+    self.vide = function () { var v = vue(); return !Object.keys(v).some(function (c) { return Object.keys(v[c] || {}).length; }); };
+    // Démarrage : la copie locale s'affiche tout de suite, puis on synchronise.
+    if (lsGet(CLOUD_CACHE)) { etat.premier = false; setTimeout(notifier, 0); }
+    setTimeout(synchro, 0);
+    setInterval(function () { if (document.visibilityState === "visible") synchro(); }, 20000);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") synchro(); });
+    window.addEventListener("online", function () { synchro(); });
+    return self;
+  }
+  /* Lien de connexion : #memoire=… ajouté à l'adresse du site, pour un autre appareil. */
+  (function lienMemoire() {
+    var m = /[#&]memoire=([^&]+)/.exec(location.hash || "");
+    if (!m) return;
+    try {
+      var c = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+      if (c && c.url && c.cle) lsSet(CLOUD_CFG, { url: c.url, cle: c.cle, depuisLien: true });
+    } catch (e) {}
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { location.hash = ""; }
+  })();
+
   /* ---------- Stockage (historique partagé côté serveur, sinon navigateur) ---------- */
   var Store = {
     mode: null, db: null, menus: {}, manuels: {}, articles: {}, favoris: {}, recettes: {}, acces: null, accesCharge: false, ready: false, subs: [],
     onChange: function () {},
     init: function () {
       var self = this;
-      var use = window.claude && window.claude.use ? window.claude.use("db") : Promise.resolve(null);
+      var claudeDb = !!(window.claude && window.claude.use);
+      var use = claudeDb ? window.claude.use("db") : Promise.resolve(null);
       Promise.resolve(use).catch(function () { return null; }).then(function (db) {
+        var cfg = !db && !claudeDb ? cloudConfig() : null;
+        if (cfg) { db = SheetDB(cfg); self.cloud = db; db.surEtat = function () { self.onChange("cloud"); }; migrerVersCloud(db); }
         if (db) {
           self.mode = "db"; self.db = db;
           var got = { menus: false, historique: false };
@@ -1441,6 +1560,20 @@ var Moteur = (function () {
     }
   };
 
+  /* Première connexion d'un appareil : la feuille vide reçoit tout ; sinon on n'ajoute que l'historique absent. */
+  function migrerVersCloud(db) {
+    var cfg = lsGet(CLOUD_CFG); if (!cfg || cfg.migre) return;
+    var l = lsGet("menus-historique-local") || {};
+    if (!l.articles && window.ARTICLES_DEPART) l.articles = window.ARTICLES_DEPART;
+    db.synchro().then(function () {
+      if (!db.etat.connecte) return;
+      var vide = db.vide();
+      db.ajouterSiAbsent("menus", l.menus); db.ajouterSiAbsent("historique", l.manuels);
+      if (vide) { db.ajouterSiAbsent("articles", l.articles); db.ajouterSiAbsent("favoris", l.favoris); db.ajouterSiAbsent("recettes", l.recettes); }
+      cfg.migre = true; lsSet(CLOUD_CFG, cfg);
+    });
+  }
+
   function recalculerRecettes() {
     var perso = Store.recettes || {}, out = [];
     RECETTES_BASE.forEach(function (r) {
@@ -1539,7 +1672,11 @@ var Moteur = (function () {
     if (!Store.ready) { st.textContent = "Chargement de l'historique…"; return; }
     var nb = Object.keys(Store.menus).length;
     var txt = nb ? nb + " semaine" + (nb > 1 ? "s" : "") + " validée" + (nb > 1 ? "s" : "") + " dans l'historique" : "Aucune semaine validée pour l'instant";
-    if (Store.mode === "local") {
+    if (Store.cloud) {
+      var ce = Store.cloud.etat;
+      if (!ce.connecte && ce.erreur) { st.className = "status warn"; txt += ". Mémoire Google non joignable" + (ce.attente ? ", " + ce.attente + " modification" + (ce.attente > 1 ? "s" : "") + " en attente" : "") + "."; }
+      else txt += " · mémoire partagée Google";
+    } else if (Store.mode === "local") {
       st.className = "status warn";
       txt += Store.msg ? ". " + Store.msg : ". Historique conservé dans ce navigateur uniquement.";
     }
@@ -4405,6 +4542,58 @@ var Moteur = (function () {
 
   /* ---------- Réglages ---------- */
   var panelRegl = document.getElementById("panel-regl");
+  function majCloudEtat(el) {
+    clear(el);
+    var ce = Store.cloud && Store.cloud.etat;
+    if (!ce) return;
+    var ok = ce.connecte;
+    el.className = "status " + (ok ? "ok-msg" : "warn");
+    el.textContent = ok ? "✓ Connectée. Dernière synchronisation à " + new Date(ce.derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "." + (ce.attente ? " " + ce.attente + " modification(s) en cours d'envoi." : "")
+      : (ce.erreur || "Connexion en cours…") + (ce.attente ? " " + ce.attente + " modification(s) en attente, envoyées dès que possible." : "");
+  }
+  /* Mémoire partagée : seulement sur le site (dans Claude, la mémoire est déjà partagée). */
+  function carteMemoire() {
+    if (window.claude && window.claude.use) return null;
+    var cfg = cloudConfig();
+    var card = h("section", { class: "card memoire" }, h("h2", { text: "Mémoire partagée (Google)", style: "font-size:1.2rem" }));
+    if (cfg) {
+      var etatEl = h("p", { id: "cloud-etat", role: "status" }); majCloudEtat(etatEl);
+      var note = h("p", { class: "status", role: "status" });
+      var lien = location.origin + location.pathname + "#memoire=" + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify({ url: cfg.url, cle: cfg.cle })))));
+      card.append(h("p", { class: "status", text: "Menus, historique, listes cochées, articles, favoris et recettes sont enregistrés dans votre feuille Google et partagés entre vos appareils." }), etatEl,
+        h("div", { class: "bar" },
+          h("button", { type: "button", class: "btn", text: "↻ Synchroniser", onclick: function () { Store.cloud.synchro(); } }),
+          h("button", { type: "button", class: "btn", text: "Copier le lien de connexion", onclick: function () {
+            function ok() { note.className = "status"; note.textContent = "Lien copié : envoyez-le en privé (SMS, WhatsApp) et ouvrez-le sur l'autre appareil, il se connecte tout seul."; }
+            if (navigator.share && /iPhone|iPad|Android/i.test(navigator.userAgent)) { navigator.share({ title: "Menus — connexion", url: lien }).then(function () {}, function () {}); return; }
+            if (navigator.clipboard) navigator.clipboard.writeText(lien).then(ok, function () { window.prompt("Copiez ce lien :", lien); }); else window.prompt("Copiez ce lien :", lien);
+          } })),
+        note,
+        h("details", null, h("summary", { text: "Déconnecter cet appareil" }),
+          h("p", { class: "status", text: "Cet appareil n'utilisera plus la feuille Google (elle n'est pas effacée). Il repartira de ses données locales." }),
+          h("button", { type: "button", class: "btn danger", text: "Déconnecter", onclick: function () { lsDel(CLOUD_CFG); lsDel(CLOUD_CACHE); lsDel(CLOUD_FILE); location.reload(); } })));
+      return card;
+    }
+    var url = h("input", { type: "text", id: "cloud-url", placeholder: "https://script.google.com/macros/s/…/exec", autocomplete: "off", spellcheck: false });
+    var cle = h("input", { type: "password", id: "cloud-cle", placeholder: "Clé secrète", autocomplete: "off" });
+    var note2 = h("p", { class: "status", role: "status" });
+    var go = h("button", { type: "submit", class: "btn primary", text: "Connecter" });
+    card.append(h("p", { class: "status", text: "Pour partager menus, historique, articles et recettes entre vos téléphones et votre ordinateur. Collez l'adresse du script Google et sa clé (une seule fois par appareil), ou ouvrez le lien de connexion envoyé depuis un appareil déjà connecté." }),
+      h("form", { class: "cloud-form", onsubmit: function (e) {
+        e.preventDefault();
+        var c = { url: url.value.trim(), cle: cle.value.trim() };
+        if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.url) || !c.cle) { note2.className = "status err"; note2.textContent = "Adresse (https://script.google.com/…/exec) et clé obligatoires."; return; }
+        go.disabled = true; note2.className = "status"; note2.textContent = "Vérification…";
+        fetch(c.url, { method: "POST", body: JSON.stringify({ action: "lire", cle: c.cle }), redirect: "follow" }).then(function (r) { return r.json(); }).then(function (res) {
+          if (!res || !res.ok) throw new Error(res && res.erreur === "cle" ? "cle" : "x");
+          lsSet(CLOUD_CFG, c); note2.textContent = "Connectée ! Rechargement…"; setTimeout(function () { location.reload(); }, 600);
+        }).catch(function (e2) {
+          go.disabled = false; note2.className = "status err";
+          note2.textContent = e2.message === "cle" ? "La feuille refuse cette clé : vérifiez-la." : "Impossible de joindre le script. Vérifiez l'adresse et que le déploiement est accessible à « Tout le monde ».";
+        });
+      } }, h("label", { class: "lbl", for: "cloud-url", text: "Adresse du script" }), url, h("label", { class: "lbl", for: "cloud-cle", text: "Clé secrète" }), cle, h("div", { class: "bar" }, go), note2));
+    return card;
+  }
   function renderRegl() {
     clear(panelRegl);
     var actuel = vueChoisie || "auto";
@@ -4421,7 +4610,7 @@ var Moteur = (function () {
       h("p", { class: "status", text: "Elle se lance à la première validation d'un menu, selon le mois de la semaine. Pas quand on modifie un menu déjà validé." }),
       h("label", { class: "check", for: "anim-on" }, on, " Activer l'animation"),
       h("div", { class: "pickbar" }, sel, h("button", { type: "button", class: "btn", text: "▶ Voir", onclick: function () { animerValidation(+sel.value); } })));
-    panelRegl.append(carteCodeAcces(), c1, c2);
+    panelRegl.append(carteCodeAcces(), carteMemoire(), c1, c2);
   }
 
   Array.prototype.forEach.call(document.querySelectorAll(".bottombar button"), function (b) {
@@ -4475,6 +4664,7 @@ var Moteur = (function () {
   var premierChargement = true;
   Store.onChange = function (quoi) {
     if (quoi === "acces") return;
+    if (quoi === "cloud") { renderEntete(); if (ongletActif === "regl") { var cs = document.getElementById("cloud-etat"); if (cs) majCloudEtat(cs); } return; }
     if (quoi === "recettes") {
       recalculerRecettes(); rafraichirSelectsArticles();
       if (ongletActif === "rec") { if (!fiche) renderRec(); else if (fiche.mode === "lecture" && fiche.id && TOUTES.some(function (x) { return x._id === fiche.id; })) rouvrir(fiche.id, fiche.msg); }
