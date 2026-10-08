@@ -3110,7 +3110,7 @@ var Moteur = (function () {
   /* ---------- Code d'accès (redemandé une fois par mois et par appareil) ---------- */
   var SEL_ACCES = "menus-semaine/acces:";
   /* Empreinte SHA-256 du code d'accès défini en amont (le code lui-même n'est pas dans la page). */
-  var EMPREINTE_ACCES = "f2012e71b0185a5402d31cf00e5eccdd52b94738b6432c317679a0de6e04ff7f";
+  var EMPREINTE_ACCES = "2aa53a138d32cbdb69f7263b1b334fe39e126fa90ed709fd256180eb59ba7977";
   function empreinte(texte) {
     if (!window.crypto || !crypto.subtle || !window.TextEncoder) return Promise.reject(new Error("crypto"));
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(SEL_ACCES + String(texte).trim().toUpperCase())).then(function (buf) {
