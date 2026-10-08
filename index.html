@@ -1911,15 +1911,16 @@ var Moteur = (function () {
       });
       resume.append(ul);
     }
-    var confirmer = false;
-    var prendre = h("button", { type: "button", class: "btn", text: "Prendre la main", onclick: function () {
+    var moi = NOM_APPAREIL && e.nom && M.norm(e.nom) === M.norm(NOM_APPAREIL);
+    var confirmer = moi;
+    var prendre = h("button", { type: "button", class: moi ? "btn primary" : "btn", text: moi ? "Continuer ici →" : "Prendre la main", onclick: function () {
       if (!confirmer) { confirmer = true; prendre.textContent = "Confirmer : " + nom + " ne pourra plus modifier"; prendre.classList.add("danger"); return; }
       sensTn = 1; S.tunnel = true; if (!S.page) S.page = "semaine"; sauver(); renderPrep(); window.scrollTo(0, 0);
     } });
     panelPrep.append(h("section", { class: "tn-entree lecture-autre" },
       h("div", { class: "statut-bloc" }, statut("todo", "Menu en préparation")),
-      h("h2", { text: nom + " prépare le menu" }),
-      h("p", { class: "status", text: "Dernière action à " + heure + ". Vous voyez ses choix en direct ; une seule personne modifie à la fois." }),
+      h("h2", { text: moi ? "Vous préparez ce menu sur un autre appareil" : nom + " prépare le menu" }),
+      h("p", { class: "status", text: moi ? "Dernière action à " + heure + ". Continuez ici : l'autre appareil passera en lecture." : "Dernière action à " + heure + ". Vous voyez ses choix en direct ; une seule personne modifie à la fois." }),
       resume.childNodes.length ? resume : null,
       liste,
       h("div", { class: "bar" }, prendre)));
@@ -4764,10 +4765,10 @@ var Moteur = (function () {
       if (jeSuisEditeur()) sauver();
       if (ongletActif === "regl") renderRegl();
     }
-    var choix = h("div", { class: "chips" }, ["Yann", "Sabrina", "PC"].map(function (n) { return h("button", { type: "button", class: "chip", text: n, onclick: function () { ok(n); } }); }));
+    var choix = h("div", { class: "chips" }, ["Yann", "Sabrina"].map(function (n) { return h("button", { type: "button", class: "chip", text: n, onclick: function () { ok(n); } }); }));
     var form = h("form", { class: "dialog nom-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "nom-titre", onsubmit: function (e) { e.preventDefault(); ok(champ.value); } },
-      h("h2", { id: "nom-titre", text: "Qui utilise cet appareil ?" }),
-      h("p", { text: "Ce nom s'affiche chez les autres quand vous préparez le menu (« Yann prépare le menu… »)." }),
+      h("h2", { id: "nom-titre", text: "Qui êtes-vous ?" }),
+      h("p", { text: "Pour afficher « Yann prépare le menu… » chez les autres. Mettez le même prénom sur tous vos appareils (téléphone et PC)." }),
       choix, h("label", { class: "lbl", for: "nom-appareil", text: "Ou un autre nom" }), champ,
       h("div", { class: "bar" }, h("button", { type: "submit", class: "btn primary", text: "Valider" })));
     var overlay = h("div", { class: "overlay", id: "nom-overlay" }, form);
@@ -4920,7 +4921,7 @@ var Moteur = (function () {
     var id = M.iso(debut), d = Store.brouillons[id], v = Store.menus[id];
     if (jeSuisEditeur()) {
       var e = editeurActif(d);
-      if (e && e.id !== ID_APPAREIL) { chargerSemaine(); renderPrepSi(); toast((e.nom || "Un autre appareil") + " a pris la main sur le menu."); return; }
+      if (e && e.id !== ID_APPAREIL) { chargerSemaine(); renderPrepSi(); toast(NOM_APPAREIL && e.nom && M.norm(e.nom) === M.norm(NOM_APPAREIL) ? "Vous avez repris le menu sur un autre appareil." : (e.nom || "Un autre appareil") + " a pris la main sur le menu."); return; }
       if (!d && v && (v.valideLe || "") > (S.modifie || "")) { chargerSemaine(); renderPrepSi(); toast("Le menu a été validé sur un autre appareil."); }
       return;
     }
