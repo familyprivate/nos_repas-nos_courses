@@ -5177,7 +5177,7 @@ var Moteur = (function () {
             if (navigator.clipboard) navigator.clipboard.writeText(lien).then(ok, function () { window.prompt("Copiez ce lien :", lien); }); else window.prompt("Copiez ce lien :", lien);
           } })),
         note,
-        h("p", { class: "status", text: "Sur l'autre appareil : ouvrez l'application (l'icône Menus de l'écran d'accueil si vous l'utilisez), allez dans Paramètres › Réglages › Mémoire partagée et collez le lien. Sur iPhone, l'icône et Safari ne partagent pas leurs données : connectez celle que vous utilisez." }),
+        h("p", { class: "status", text: "Sur l'autre appareil : ouvrez l'application (l'icône « À table ! » de l'écran d'accueil si vous l'utilisez), allez dans Paramètres › Réglages › Mémoire partagée et collez le lien. Sur iPhone, l'icône et Safari ne partagent pas leurs données : connectez celle que vous utilisez." }),
         h("details", null, h("summary", { text: "Déconnecter cet appareil" }),
           h("p", { class: "status", text: "Cet appareil n'utilisera plus la mémoire partagée (elle n'est pas effacée). Il repartira de ses données locales." }),
           h("button", { type: "button", class: "btn danger", text: "Déconnecter", onclick: function () { lsDel(CLOUD_CFG); lsDel(CLOUD_CACHE); lsDel(CLOUD_FILE); location.reload(); } })));
