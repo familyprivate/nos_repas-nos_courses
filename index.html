@@ -4557,9 +4557,15 @@ var Moteur = (function () {
       h("div", { class: "bar fiche-actions" }, h("button", { type: "button", class: "btn primary", text: "✎ Modifier la recette", onclick: function () { f.mode = "edition"; f.msg = ""; renderRec(); window.scrollTo(0, 0); } })));
   }
 
+  /* Fiches recettes : elles vivent dans la mémoire partagée. Appareil pas encore relié → on le dit. */
+  function noteFichesHorsLigne() {
+    return h("section", { class: "card fiche-liee vide" }, h("span", { class: "lbl", text: "Fiche recette" }),
+      h("p", { class: "status", text: "Les fiches recettes sont enregistrées dans la mémoire partagée : reliez d'abord cet appareil (Paramètres › Réglages › Mémoire partagée)." }),
+      h("div", { class: "bar" }, h("button", { type: "button", class: "btn", text: "Relier cet appareil →", onclick: function () { choisirOnglet("regl"); setTimeout(function () { var m = document.querySelector("#panel-regl .memoire, #panel-regl input[placeholder*='lien de connexion']"); if (m && m.scrollIntoView) m.scrollIntoView({ block: "center" }); }, 200); } })));
+  }
   /* Lien vers la fiche illustrée (page Fiches recettes). */
   function blocFicheRecette(src) {
-    if (!fichesDispo()) return null;
+    if (!fichesDispo()) return noteFichesHorsLigne();
     var f = ficheDe(src);
     if (f) {
       var img = f.thumb ? h("img", { class: "fr-mini", src: f.thumb, alt: "Fiche " + src.nom }) : null;
@@ -4760,6 +4766,7 @@ var Moteur = (function () {
     var c7 = null;
     // Recette sans ingrédients (grignotage, restes…) : pas de fiche, la question n'est pas posée.
     if (rec.sansIngredients) { f.veutFiche = false; f.ficheMaintenant = false; rec.ficheAFaire = false; }
+    if (!f.id && !fichesDispo() && !rec.sansIngredients && !f.depuisFiche) c7 = noteFichesHorsLigne();
     if (!f.id && fichesDispo() && !rec.sansIngredients && !f.depuisFiche) {
       if (f.veutFiche == null) f.veutFiche = false;
       var choixFiche = h("div", { class: "chips" }), choixMaint = h("div", { class: "chips" });
