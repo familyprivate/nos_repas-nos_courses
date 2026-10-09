@@ -362,11 +362,9 @@ a.btn.primary { color: var(--on-ink, #fff); }
 @keyframes ventre { from { transform: scale(1, 1); } to { transform: scale(1.05, .96); } }
 @media (prefers-reduced-motion: reduce) { .cuisine * { animation: none !important; } .cuisine-barre i { width: 100%; } .cuisine .lignes line { stroke-dashoffset: 0; } }
 /* Fiches recettes (module intégré à la page) */
-body.mode-fiches .top, body.mode-fiches #storestatus { display: none !important; }
-body.vue-mobile.mode-fiches .navrow { display: none !important; }
 #hote-fiches { display: block; }
 body.vue-mobile .panel-fiches { margin-inline: -16px; }
-body.fiches-immersif .bottombar, body.fiches-immersif #basenav, body.fiches-immersif .navrow { display: none !important; }
+body.fiches-immersif .bottombar, body.fiches-immersif #basenav, body.fiches-immersif .navrow, body.fiches-immersif .top, body.fiches-immersif #storestatus { display: none !important; }
 body.vue-mobile.fiches-immersif { padding-block: 0 !important; }
 body[data-onglet="recettes"] .weeknav { display: none; }
 body[data-onglet="recettes"] .eyebrow { visibility: hidden; }
@@ -379,11 +377,14 @@ body.vue-mobile .seg.seg4 button { font-size: 10.5px; letter-spacing: .02em; pad
 .perso-onglet { position: absolute; right: 6px; bottom: -24px; height: 150px; width: auto; pointer-events: none; opacity: 0; transition: opacity .25s; }
 .perso-onglet.pret { opacity: 1; }
 #panel-rec { border-top: 3px solid var(--rule); padding-top: 18px; }
+#panel-fiches { background: linear-gradient(var(--rule), var(--rule)) no-repeat center top / 100% 3px; padding-top: 6px; }
+body.vue-mobile #panel-fiches { background-size: calc(100% - 32px) 3px; }
+body.fiches-immersif #panel-fiches { background: none; padding-top: 0; }
 body[data-onglet="courses"] .perso-onglet { height: 116px; }
 body.vue-mobile .perso-onglet { bottom: calc(100% - 2px); right: 2px; height: 80px; }
 body.vue-mobile[data-onglet="courses"] .perso-onglet { height: 70px; }
 body.vue-mobile[data-sous="regl"] .perso-onglet { height: 72px; }
-body.vue-mobile.a-perso:not(.mode-fiches) #storestatus { padding-right: 74px; }
+body.vue-mobile.a-perso #storestatus { padding-right: 74px; }
 body.vue-mobile.a-perso[data-sous="regl"] #storestatus { padding-right: 100px; }
 
 .stats .chips { margin-top: 4px; }
@@ -5304,14 +5305,13 @@ var Moteur = (function () {
     var n = ongletActif, couleur = COULEURS_MOIS[moisMajoritaire(M.iso(debut))], cle = n + couleur + (document.body.classList.contains("vue-mobile") ? "m" : "d");
     var ombre = document.getElementById("hote-fiches"); ombre = ombre && ombre.shadowRoot;
     var hote = null;
-    if (estFiches(n)) { hote = ombre && ombre.querySelector(n === "flivres" ? "#livres .hero" : "#library .hero"); }
-    else if (document.getElementById("p-" + n + "-src")) hote = document.getElementById("basenav");
+    if (document.getElementById("p-" + n + "-src")) hote = document.getElementById("basenav");
     var deja = hote && hote.querySelector(":scope > .perso-onglet");
     if (deja && deja.getAttribute("data-cle") === cle) return;
     [document, ombre].forEach(function (r) { if (r) Array.prototype.forEach.call(r.querySelectorAll(".perso-onglet"), function (e) { e.remove(); }); });
     document.body.classList.toggle("a-perso", !!hote);
-    if (!hote || document.getElementById("basenav").hidden && !estFiches(n)) return;
-    var fic = estFiches(n), img = document.createElement(fic ? "span" : "img");
+    if (!hote || document.getElementById("basenav").hidden) return;
+    var fic = false, img = document.createElement("img");
     img.className = "perso-onglet"; img.setAttribute("aria-hidden", "true"); img.setAttribute("data-cle", cle);
     if (!fic) img.alt = "";
     if (fic) {
