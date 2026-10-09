@@ -8597,7 +8597,7 @@ function orthoLanguageTool(ch){
       var c=null;for(var k=ch.length-1;k>=0;k--){if(m.offset>=ch[k]._debut){c=ch[k];break;}}
       if(!c) return;
       var off=m.offset-c._debut,txt=c.get();if(off+m.length>txt.length) return;
-      res.push({champ:c,off:off,len:m.length,mot:txt.substr(off,m.length),sugg:(m.replacements||[]).slice(0,3).map(function(x){return x.value;}),msg:m.message||'',orth:type==='misspelling'||/TYPOS/.test(cat)});
+      res.push({champ:c,off:off,len:m.length,mot:txt.substr(off,m.length),sugg:(m.replacements||[]).slice(0,8).map(function(x){return x.value;}),msg:m.message||'',orth:type==='misspelling'||/TYPOS/.test(cat)});
     });
     return res;
   });
@@ -8623,17 +8623,61 @@ function orthoClaude(ch){
     return res;
   });
 }
+/* Vocabulaire de cuisine : sert à choisir la bonne suggestion (« Sucr » → « Sucre », pas « Sur »). */
+var LEXIQUE_CUISINE=('sucre sucres sel poivre farine beurre lait oeuf oeufs œuf œufs huile olive vinaigre moutarde creme crème fraiche fraîche epaisse épaisse liquide fromage rape râpé gruyere gruyère emmental parmesan mozzarella burrata chevre chèvre comte comté '+
+'ail oignon oignons echalote échalote echalotes échalotes persil ciboulette basilic thym laurier romarin coriandre menthe aneth estragon cumin curry paprika muscade cannelle vanille gingembre piment safran curcuma herbes provence '+
+'tomate tomates carotte carottes courgette courgettes aubergine aubergines poivron poivrons champignon champignons pomme pommes poire poires citron citrons orange oranges banane bananes fraise fraises framboise framboises '+
+'salade laitue epinard épinard epinards épinards brocoli brocolis chou fleur poireau poireaux celeri céleri radis concombre avocat haricot haricots pois petits lentilles pois chiches mais maïs patate douce '+
+'pates pâtes riz semoule quinoa boulgour nouilles spaghetti tagliatelles lasagne lasagnes gnocchis raviolis pain chapelure panko baguette brioche '+
+'poulet boeuf bœuf porc veau agneau dinde canard jambon lardons bacon saucisse saucisses chorizo merguez steak steaks hache haché hachée viande saumon thon cabillaud crevettes moules colin truite poisson '+
+'paella risotto quiche tarte gratin soupe veloute velouté crepe crêpe crepes crêpes gaufre gaufres gateau gâteau cake muffin muffins cookie cookies brownie mousse flan clafoutis tiramisu compote confiture caramel chocolat noisette noisettes amande amandes noix pistache '+
+'levure chimique boulanger bicarbonate maizena maïzena fecule fécule gelatine gélatine miel sirop bouillon cube fond vin blanc rouge biere bière rhum cognac porto '+
+'cuire cuisson four poele poêle casserole cocotte marmite plat moule saladier fouet spatule mixeur mixer melanger mélanger battre fouetter incorporer ajouter verser emincer émincer hacher couper decouper découper eplucher éplucher peler laver egoutter égoutter '+
+'faire revenir dorer saisir mijoter bouillir fremir frémir reduire réduire napper parsemer saupoudrer assaisonner saler poivrer reserver réserver prechauffer préchauffer enfourner servir deguster déguster refroidir chauffer fondre '+
+'minutes minute heure heures degres degrés thermostat pincee pincée cuillere cuillère soupe cafe café verre tasse sachet gousse gousses tranche tranches morceau morceaux feuille feuilles brin brins botte bouquet zeste jus pulpe '+
+'chaud chaude froid froide tiede tiède dore doré dorée croustillant moelleux fondant fondante leger léger').split(' ');
+function lexiqueComplet(){
+  var m={};function aj(w){w=String(w||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/œ/g,'oe');if(w.length>1) m[w]=1;}
+  LEXIQUE_CUISINE.forEach(aj);
+  // mots déjà validés dans les fiches existantes
+  (library||[]).forEach(function(f){var t=[f.title];['ingr','steps'].forEach(function(k){((f.lists&&f.lists[k])||[]).forEach(function(i){t.push(i&&i.text);});});
+    t.join(' ').split(/[^A-Za-zÀ-ÿœŒ]+/).forEach(aj);});
+  motsIgnores().forEach(aj);
+  return m;
+}
+function damerau(a,b){a=sansAccent(a);b=sansAccent(b);var d=[],i,j;for(i=0;i<=a.length;i++){d[i]=[i];}for(j=0;j<=b.length;j++) d[0][j]=j;
+  for(i=1;i<=a.length;i++) for(j=1;j<=b.length;j++){var c=a[i-1]===b[j-1]?0:1;d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]) d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);}
+  return d[a.length][b.length];}
+function sansAccent(w){return String(w||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/œ/g,'oe');}
+/* Classe les suggestions : vocabulaire de cuisine, mot tapé incomplet (« sucr » → « sucre »), distance. */
+function classerSuggestions(mot,sugg,lex){
+  var m=sansAccent(mot);
+  var l=sugg.map(function(sg,i){
+    var g=sansAccent(sg),sc=-damerau(mot,sg)-i*0.15;
+    if(lex[g]) sc+=3;
+    if(g.indexOf(m)===0&&g.length-m.length<=2) sc+=2;
+    if(g.charAt(0)===m.charAt(0)) sc+=0.5;
+    if(/\s/.test(sg)&&!/\s/.test(mot)) sc-=1;
+    (sg.match(/[à-ÿ]/gi)||[]).forEach(function(ch){if(mot.toLowerCase().indexOf(ch.toLowerCase())<0) sc-=0.6;}); // accent ajouté : moins probable
+    return {v:sg,sc:sc};
+  });
+  l.sort(function(a,b){return b.sc-a.sc;});
+  return l;
+}
 function controlerOrthographe(){
   var ch=champsTexte();
   if(!ch.length) return Promise.resolve({source:'vide',corrections:[],doutes:[]});
   var source='LanguageTool';
   return orthoLanguageTool(ch).catch(function(){source='Claude';return orthoClaude(ch);}).then(function(res){
-    var ign=motsIgnores(),corr=[],doutes=[],parChamp={};
+    var ign=motsIgnores(),corr=[],doutes=[],parChamp={},lex=lexiqueComplet();
     res.forEach(function(r){
       if(ign.indexOf(r.mot.toLowerCase())>=0) return;
+      if(lex[sansAccent(r.mot)]&&r.orth) return; // mot de cuisine connu : pas une faute
+      var nette=true;
+      if(r.sugg.length>1){var cl=classerSuggestions(r.mot,r.sugg,lex);nette=cl[0].sc-cl[1].sc>=0.5;r.sugg=cl.slice(0,3).map(function(x){return x.v;});}
       var premier=r.sugg[0],debutChamp=r.off===0;
       var nomPropre=/^[A-ZÉÈÀÂÎÔ]/.test(r.mot)&&!debutChamp&&!/[.!?:]\s*$/.test(r.champ.get().slice(0,r.off));
-      var auto=premier&&!nomPropre&&!/\d/.test(r.mot)&&(r.sur===true||(r.sur===undefined&&r.orth&&r.sugg.length>=1&&lev(r.mot,premier)<=2&&r.mot.length>3));
+      var auto=premier&&!nomPropre&&!/\d/.test(r.mot)&&(r.sur===true||(r.sur===undefined&&r.orth&&nette&&lev(r.mot,premier)<=2&&r.mot.length>3));
       if(auto){(parChamp[r.champ.id]=parChamp[r.champ.id]||{champ:r.champ,l:[]}).l.push(r);}
       else doutes.push(r);
     });
