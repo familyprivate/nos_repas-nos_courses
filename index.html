@@ -292,6 +292,23 @@ button.art-grp-btn.ouvert .chev { transform: rotate(90deg); }
 #lock-cesoir:empty { display: none; }
 #lock-cesoir { margin: 4px 0 6px; }
 .jourcarte-accueil .jd-plat { font-size: 22px; }
+.lien-proch { align-self: flex-start; display: inline-flex; flex-wrap: nowrap; white-space: nowrap; gap: 4px; align-items: baseline; border: 1.5px dashed var(--todo-line, var(--accent)); background: var(--todo-soft, transparent); color: var(--ink); border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.lien-proch b { color: var(--todo, var(--accent)); }
+.lien-proch.prete { border-style: solid; border-color: var(--line); background: transparent; }
+.lien-proch.prete b { color: var(--ok); }
+/* « Ce soir » compact (pastille) */
+.cesoir { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.cesoir-menu { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; }
+.cesoir-menu .puce-suite { grid-column: 1 / -1; }
+.puce-soir { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; min-height: 44px; background: color-mix(in srgb, var(--accent) 12%, var(--bg)); border: 1.5px solid var(--accent); color: var(--ink); border-radius: 999px; padding: 8px 16px; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; text-align: left; justify-self: start; }
+.puce-soir em { font-style: normal; color: var(--accent); font-size: 11.5px; letter-spacing: .1em; font-weight: 800; flex: none; }
+.puce-soir span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.puce-soir.evt, .puce-soir.vide { cursor: default; border-style: dashed; }
+.puce-suite { margin: 0 0 0 6px; font-size: 13px; color: var(--muted); }
+.puce-suite b { color: var(--ink); font-weight: 600; }
+.dl-icone { width: 46px; min-width: 46px; height: 46px; padding: 0; font-size: 20px; }
+.badge-jour { display: inline-block; margin-left: 8px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .06em; padding: 2px 6px; border-radius: 4px; vertical-align: 2px; text-decoration: none; }
+#lock-cesoir .cesoir { margin: 2px 0 4px; }
 /* Fenêtre « plat » (fiche ou recette par-dessus la page) */
 html.plat-ouvert, html.plat-ouvert body { overflow: hidden; }
 .plat-fond { position: fixed; inset: 0; z-index: 900; background: rgba(15, 17, 21, .55); display: flex; align-items: flex-end; justify-content: center; animation: platFond .2s ease-out; }
@@ -1964,6 +1981,7 @@ var Moteur = (function () {
   /* ---------- État de la semaine affichée ---------- */
   var S = null;
   var defautDebut = M.prochainSamedi(new Date());
+  var SEMAINE_EN_COURS = M.addDays(defautDebut, -7), SEMAINE_A_PREPARER = defautDebut, debutRepris = false;
   var debut = defautDebut;
   var ongletActif = "prep";
 
@@ -2828,7 +2846,8 @@ var Moteur = (function () {
     var nameEl, tags = h("div", { class: "tags" });
     if (slot && slot.type === "recette") {
       nameEl = editable ? h("span", { class: "mname" }, slot.recette, boutonFicheMenu(slot.recette))
-        : h("button", { type: "button", class: "mname mname-lien", "aria-label": "Voir " + slot.recette, onclick: function () { ouvrirPlat(slot.recette); } }, slot.recette, boutonFicheMenu(slot.recette));
+        : h("button", { type: "button", class: "mname mname-lien", "aria-label": "Voir " + slot.recette, onclick: function () { ouvrirPlat(slot.recette); } }, slot.recette, boutonFicheMenu(slot.recette),
+          estAujourdhui(j) && (repas === "Soir" || new Date().getHours() < 14) ? h("span", { class: "badge-jour", text: repas === "Midi" ? "CE MIDI" : "CE SOIR" }) : null);
       if (slot.source === "imposee") tags.append(h("span", { class: "tag", text: "imposée" }));
     } else if (slot && (slot.type === "invitation" || slot.type === "resto")) {
       nameEl = h("span", { class: "mname evt", text: slot.texte });
@@ -3026,8 +3045,17 @@ var Moteur = (function () {
         valideLe ? h("p", { class: "status", text: "Le " + valideLe.toLocaleDateString("fr-FR") + " à " + valideLe.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + ". Les recettes comptent dans l'historique." }) : null),
       null));
 
-    var carte = carteDuJour(S.menu, new Date());
-    if (carte) panelPrep.append(carte);
+    var note = h("p", { class: "status", role: "status" });
+    var ic = h("button", { type: "button", class: "btn dl-icone", title: "Télécharger le menu", "aria-label": "Télécharger le menu", text: "⤓" });
+    var proxy = { set disabled(v) { ic.disabled = v; }, get textContent() { return "⤓"; }, set textContent(v) { ic.textContent = v === "⤓" ? "⤓" : "…"; } };
+    ic.addEventListener("click", function () { telecharger("menu", proxy, note); });
+    if (M.iso(debut) === M.iso(SEMAINE_EN_COURS)) {
+      var proch = SEMAINE_A_PREPARER, prete = !!Store.menus[M.iso(proch)];
+      panelPrep.append(h("button", { type: "button", class: "lien-proch" + (prete ? " prete" : ""), onclick: function () { allerSemaine(proch); window.scrollTo(0, 0); } },
+        h("span", { text: "Semaine prochaine · " }), h("b", { text: prete ? "prête ✓" : "à préparer" }), h("span", { class: "fl", text: " →" })));
+    }
+    var puce = pastilleCeSoir(S.menu, new Date());
+    if (puce) { puce.classList.add("cesoir-menu"); puce.insertBefore(ic, puce.children[1] || null); panelPrep.append(puce, note); }
     var cpl = complementDe(Store.menus[M.iso(debut)]);
     if (cpl.plus.length || cpl.moins.length) {
       var n = cpl.plus.length;
@@ -3035,13 +3063,43 @@ var Moteur = (function () {
         h("p", null, h("b", { text: "Liste de courses mise à jour. " }), n ? n + " article" + (n > 1 ? "s" : "") + " à acheter en plus." : "Certains articles ne sont plus nécessaires."),
         h("button", { type: "button", class: "btn", text: "Voir le complément", onclick: function () { choisirOnglet("courses"); window.scrollTo(0, 0); } })));
     }
-    var note = h("p", { class: "status", role: "status" });
-    var btn = h("button", { type: "button", class: "btn primary dlbtn", text: "Télécharger le menu", onclick: function () { telecharger("menu", btn, note); } });
-    panelPrep.append(h("div", { class: "bar" }, btn, note));
+    if (!puce) {
+      var btn = h("button", { type: "button", class: "btn primary dlbtn", text: "Télécharger le menu", onclick: function () { telecharger("menu", btn, note); } });
+      panelPrep.append(h("div", { class: "bar" }, btn, note));
+    }
     panelPrep.append(renderMenuGrille(false));
     if (modif) panelPrep.append(h("div", { class: "bar actions-rares" }, modif));
   }
 
+  /* Pastille « Ce soir » (version compacte) : prochain repas du jour + ligne « Demain soir · … ». */
+  function prochainsRepas(menu, maintenant) {
+    var auj = M.iso(maintenant);
+    if (!menu || !menu.creneaux || auj < menu.debut || auj > menu.fin) return null;
+    var jAuj = Math.round((M.fromIso(auj) - M.fromIso(menu.debut)) / 86400000), suite = [], apresMidi = maintenant.getHours() >= 14;
+    function repas(j, r) {
+      var c = menu.creneaux.filter(function (x) { return x.key === j + "-" + r; })[0];
+      if (!c) return null;
+      if (c.type === "recette") return { t: c.recette, evt: false };
+      if (c.type === "invitation" || c.type === "resto") return { t: c.texte, evt: true };
+      return null;
+    }
+    for (var j = jAuj; j < 7; j++) ["Midi", "Soir"].forEach(function (r) { if (j === jAuj && r === "Midi" && apresMidi) return; var x = repas(j, r); if (x) suite.push({ j: j, r: r, x: x }); });
+    function quand(it) { if (it.j === jAuj) return it.r === "Midi" ? "Ce midi" : "Ce soir"; if (it.j === jAuj + 1) return "Demain " + it.r.toLowerCase(); return nomJour(it.j) + " " + it.r.toLowerCase(); }
+    var principal = suite[0] && suite[0].j === jAuj ? suite[0] : null;
+    return { jAuj: jAuj, principal: principal, ensuite: principal ? suite[1] : suite[0], quand: quand };
+  }
+  function pastilleCeSoir(menu, maintenant, surClic) {
+    var pr = prochainsRepas(menu, maintenant); if (!pr) return null;
+    var p = pr.principal, z = h("div", { class: "cesoir" });
+    if (p) {
+      var cliquable = !p.x.evt;
+      z.append(h(cliquable ? "button" : "div", { type: cliquable ? "button" : null, class: "puce-soir" + (cliquable ? "" : " evt"), "aria-label": cliquable ? pr.quand(p) + " : " + p.x.t + " — voir la fiche ou la recette" : null,
+        onclick: cliquable ? function () { (surClic || ouvrirPlat)(p.x.t); } : null },
+        h("em", { text: pr.quand(p).toUpperCase() }), h("span", { text: p.x.t + (cliquable ? " ›" : "") })));
+    } else z.append(h("div", { class: "puce-soir vide" }, h("em", { text: "AUJOURD'HUI" }), h("span", { text: "Rien de prévu" })));
+    if (pr.ensuite) z.append(h("p", { class: "puce-suite" }, pr.quand(pr.ensuite) + " · ", h("b", { text: pr.ensuite.x.t })));
+    return z;
+  }
   /* Carte « Ce soir » : le prochain repas du jour, le suivant, et la frise de la semaine. */
   function carteDuJour(menu, maintenant) {
     var auj = M.iso(maintenant);
@@ -3747,14 +3805,8 @@ var Moteur = (function () {
     var auj = M.iso(new Date()), doc = null;
     Object.keys(Store.menus || {}).forEach(function (id) { var d = Store.menus[id]; if (d && d.debut <= auj && auj <= d.fin && d.creneaux) doc = d; });
     if (!doc) return;
-    var carte = carteDuJour(doc, new Date()); if (!carte) return;
-    carte.classList.add("jourcarte-accueil");
-    var lien = carte.querySelector(".jd-lien"), plat = carte.querySelector(".jd-plat");
-    if (lien && plat) {
-      var nom = plat.textContent;
-      lien.addEventListener("click", function (e) { e.stopImmediatePropagation(); accueilVu = true; ouvrir(); window.scrollTo(0, 0); setTimeout(function () { ouvrirPlat(nom); }, 250); }, true);
-    }
-    z.append(carte);
+    var puce = pastilleCeSoir(doc, new Date(), function (nom) { accueilVu = true; ouvrir(); window.scrollTo(0, 0); setTimeout(function () { ouvrirPlat(nom); }, 250); });
+    if (puce) z.append(puce);
   }
   function ecranVerrou(mode) {
     clear(verrouEl);
@@ -5488,7 +5540,7 @@ var Moteur = (function () {
       h("p", { class: "status", text: "Elle se lance à la première validation d'un menu, selon le mois de la semaine. Pas quand on modifie un menu déjà validé." }),
       h("label", { class: "check", for: "anim-on" }, on, " Activer l'animation"),
       h("div", { class: "pickbar" }, sel, h("button", { type: "button", class: "btn", text: "▶ Voir", onclick: function () { animerValidation(+sel.value); } })));
-    panelRegl.append(carteCodeAcces(), carteMemoire(), c1, c2, carteRepartir());
+    panelRegl.append(carteCodeAcces(), c1, c2, carteMemoire(), carteRepartir());
   }
 
   /* ---------- Statistiques : repas réellement consommés (semaines terminées + repas ajoutés à la main) ---------- */
@@ -5817,7 +5869,11 @@ var Moteur = (function () {
       return;
     }
     if (!Store.ready) { renderEntete(); return; }
-    if (premierChargement) { premierChargement = false; chargerSemaine(); renderOnglet(); setTimeout(function () { demanderNom(); }, 300); return; }
+    if (premierChargement) {
+      premierChargement = false;
+      // Semaine en cours déjà validée : on ouvre dessus (Ce soir, la liste du magasin) plutôt que sur la suivante.
+      if (!debutRepris && M.iso(debut) === M.iso(SEMAINE_A_PREPARER) && Store.menus[M.iso(SEMAINE_EN_COURS)]) { debut = SEMAINE_EN_COURS; defautDebut = SEMAINE_EN_COURS; S = brouillonDe(M.iso(debut)) || etatVide(); }
+      chargerSemaine(); renderOnglet(); setTimeout(function () { demanderNom(); }, 300); return; }
     if (partage()) {
       resync();
       renderEntete();
@@ -5864,6 +5920,7 @@ var Moteur = (function () {
   majVerrou();
   choisirOnglet("prep");
   if (reprise && !/[#&]recette=/.test(location.hash || "")) {
+    if (reprise.debut) debutRepris = true;
     if (reprise.debut && reprise.debut !== M.iso(debut)) { try { debut = M.fromIso(reprise.debut); S = brouillonDe(M.iso(debut)) || etatVide(); } catch (e) {} }
     if (reprise.onglet && reprise.onglet !== "prep") choisirOnglet(reprise.onglet);
     if (reprise.recette) setTimeout(function () { if (TOUTES.some(function (x) { return x._id === reprise.recette; })) { choisirOnglet("rec"); ouvrirFiche(reprise.recette); } }, 400);
