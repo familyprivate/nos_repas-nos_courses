@@ -313,6 +313,7 @@ body.vue-mobile .lien-proch { font-size: 11.5px; padding: 3px 7px; }
 .dl-icone { width: 46px; min-width: 46px; height: 46px; padding: 0; font-size: 20px; }
 .badge-jour { display: inline-block; margin-left: 8px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .06em; padding: 2px 6px; border-radius: 4px; vertical-align: 2px; text-decoration: none; }
 #lock-cesoir .cesoir { margin: 2px 0 4px; }
+.envois{margin:8px 0}.envois-liste{margin:6px 0 8px;padding-left:18px;font-size:.92rem}.envois-liste li{margin:3px 0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 /* Fenêtre « plat » (fiche ou recette par-dessus la page) */
 html.plat-ouvert, html.plat-ouvert body { overflow: hidden; }
 .plat-fond { position: fixed; inset: 0; z-index: 900; background: rgba(15, 17, 21, .55); display: flex; align-items: flex-end; justify-content: center; animation: platFond .2s ease-out; }
@@ -1540,7 +1541,7 @@ var Moteur = (function () {
   /* ---------- Mémoire partagée (fichier privé GitHub, ou feuille Google) ----------
      Imite la petite base de données de Claude : mêmes collections, mêmes appels.
      Copie locale pour un démarrage immédiat et le hors-ligne ; écritures en file d'attente. */
-  var CLOUD_CFG = "menus-cloud", CLOUD_CACHE = "menus-cloud-cache", CLOUD_FILE = "menus-cloud-attente";
+  var CLOUD_CFG = "menus-cloud", CLOUD_CACHE = "menus-cloud-cache", CLOUD_FILE = "menus-cloud-attente", CLOUD_REFUS = "menus-cloud-refus";
   function cloudConfig() {
     if (window.MEMOIRE_DEMO) return { type: "demo", migre: true }; // brouillon : mémoire simulée dans ce navigateur
     var c = lsGet(CLOUD_CFG); return c && ((c.type === "gist" && c.token && c.gist) || (c.url && c.cle)) ? c : null;
@@ -1647,12 +1648,15 @@ var Moteur = (function () {
     if (!cache.docs) cache = { docs: cache, revs: {}, version: null }; // ancien format de cache
     var data = cache.docs || {}, revs = cache.revs || {}, version = cache.version == null ? null : cache.version;
     var attente = lsGet(CLOUD_FILE) || [], ecouteurs = [], envoi = null, minuteur = null, relancer = false, enVol = {};
+    // Éléments que la feuille a refusés plusieurs fois : mis de côté pour ne pas bloquer le reste, retentés à chaque lancement.
+    var refus = lsGet(CLOUD_REFUS) || [], echecs = 0, unParUn = false, echecRecent = false;
+    if (refus.length) { attente = refus.concat(attente); refus = []; lsSet(CLOUD_FILE, attente); lsDel(CLOUD_REFUS); }
     function versionnee(op) { return transport.versions && (op.col === "brouillons" || op.col === "menus") && (op.op === "set" || op.op === "delete"); }
     function cle(op) { return op.col + "/" + op.id; }
-    var etat = { connecte: false, derniere: 0, erreur: "", premier: true, envoi: false, attente: attente.length };
+    var etat = { connecte: false, derniere: 0, erreur: "", premier: true, envoi: false, attente: attente.length, bloque: false, refus: 0 };
     var self = { cloud: true, etat: etat, surEtat: function () {}, surConflit: function () {} };
     var transport = cfg.type === "demo" ? transportDemo() : cfg.type === "gist" ? transportGist(cfg) : transportGoogle(cfg);
-    function vue() { var v = clone(data); attente.forEach(function (op) { appliquerOp(v, op); }); return v; }
+    function vue() { var v = clone(data); refus.concat(attente).forEach(function (op) { appliquerOp(v, op); }); return v; }
     function snapCol(v, col) {
       var c = v[col] || {};
       return { docs: Object.keys(c).map(function (id) { var d = c[id]; return { id: id, exists: true, data: function () { return clone(d); } }; }) };
@@ -1664,7 +1668,7 @@ var Moteur = (function () {
         else l.cb(snapCol(v, l.col));
       });
     }
-    function majEtat(ok, err) { etat.connecte = ok; etat.erreur = err || ""; if (ok) etat.derniere = Date.now(); etat.attente = attente.length; etat.envoi = !!envoi; self.surEtat(etat); }
+    function majEtat(ok, err) { etat.connecte = ok; etat.erreur = err || ""; if (ok) etat.derniere = Date.now(); etat.attente = attente.length; etat.refus = refus.length; etat.envoi = !!envoi; self.surEtat(etat); }
     function memoriser() { var d = data; if (d.photos) { d = Object.assign({}, d); delete d.photos; } lsSet(CLOUD_CACHE, { docs: d, revs: revs, version: version }); }
     function recevoir(res) {
       if (transport.versions) etat.ancienScript = res.version == null;
@@ -1699,6 +1703,7 @@ var Moteur = (function () {
           vus[cle(o)] = true;
         }
         lot.push(o);
+        if (unParUn) break;
       }
       var ops = compacter(clone(lot));
       ops.forEach(function (o) { if (versionnee(o) && o.chaine) { o.base = revs[cle(o)] || 0; delete o.chaine; } });
@@ -1710,16 +1715,32 @@ var Moteur = (function () {
         // Si l'enregistrement de tête a été refusé, ses suites (même appareil) le sont aussi.
         if (conflits.length) attente = attente.filter(function (o) { return !(o.chaine && conflits.indexOf(cle(o)) !== -1); });
         lsSet(CLOUD_FILE, attente); enVol = {};
-        envoi = null;
+        envoi = null; echecs = 0; etat.bloque = false; echecRecent = false;
+        if (!attente.length) unParUn = false;
         recevoir(res); majEtat(true);
         if (conflits.length) self.surConflit(conflits);
       }, function (e) {
-        envoi = null; enVol = {};
+        envoi = null; enVol = {}; echecRecent = true;
         var m = e && e.message;
-        majEtat(false, m === "cle" ? "Clé refusée : reconnectez cet appareil." : m === "introuvable" ? "Fichier de mémoire introuvable." : (navigator.onLine === false ? "Hors connexion." : "Mémoire en ligne injoignable."));
-        if (etat.premier) { etat.premier = false; notifier(); }
+        function horsLigne() {
+          majEtat(false, m === "cle" ? "Clé refusée : reconnectez cet appareil." : m === "introuvable" ? "Fichier de mémoire introuvable." : (navigator.onLine === false ? "Hors connexion." : "Mémoire en ligne injoignable."));
+          if (etat.premier) { etat.premier = false; notifier(); }
+        }
+        if (!ops.length || m === "cle") { horsLigne(); return; }
+        // L'envoi a échoué : on lit quand même la mémoire, pour que les nouveautés des autres appareils arrivent.
+        // Si la lecture marche, c'est cet envoi précis qui pose problème : on l'isole au lieu de tout bloquer.
+        return transport.lire(null).then(function (res) {
+          recevoir(res); etat.premier = false;
+          echecs++; etat.bloque = true;
+          if (lot.length > 1) unParUn = true;
+          else if (echecs >= 3 && !versionnee(lot[0])) {
+            refus.push(attente.shift()); lsSet(CLOUD_REFUS, refus); lsSet(CLOUD_FILE, attente);
+            echecs = 0; etat.bloque = false; echecRecent = false; notifier();
+          }
+          majEtat(true, etat.bloque ? "Un envoi est refusé par la mémoire en ligne, nouvel essai…" : "");
+        }, horsLigne);
       }).then(function () {
-        if ((relancer || attente.length) && etat.connecte) { relancer = false; return synchro(); }
+        if ((relancer || attente.length) && etat.connecte && !echecRecent) { relancer = false; return synchro(); }
         relancer = false;
       });
       return envoi;
@@ -1759,6 +1780,13 @@ var Moteur = (function () {
       };
     };
     self.synchro = synchro;
+    self.enAttente = function (col, id) {
+      function a(o) { return o.col === col && o.id === id; }
+      return refus.some(a) ? "refus" : attente.some(a) ? "attente" : "";
+    };
+    self.enCours = function () { return { attente: clone(attente), refus: clone(refus) }; };
+    self.reessayer = function () { if (refus.length) { attente = refus.concat(attente); refus = []; lsDel(CLOUD_REFUS); lsSet(CLOUD_FILE, attente); } echecs = 0; unParUn = false; echecRecent = false; majEtat(etat.connecte, etat.erreur); return synchro(); };
+    self.abandonner = function (i) { refus.splice(i, 1); lsSet(CLOUD_REFUS, refus); notifier(); majEtat(etat.connecte, etat.erreur); };
     self.ajouterSiAbsent = function (col, docs) {
       var v = vue(), n = 0;
       Object.keys(docs || {}).forEach(function (id) { if (!(v[col] || {})[id]) { attente.push({ op: "set", col: col, id: id, doc: docs[id] }); n++; } });
@@ -1993,7 +2021,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "8 oct. 20h20";
+  var VERSION_SITE = "10 oct. 15h00";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -2129,6 +2157,8 @@ var Moteur = (function () {
     if (Store.cloud) {
       var ce = Store.cloud.etat, hh = function (t) { return new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); };
       if (!ce.connecte && ce.erreur) pastille = h("span", { class: "syncpill hors", text: "Hors ligne" + (ce.attente ? " · " + ce.attente + " modif. en attente" : "") });
+      else if (ce.refus) pastille = h("span", { class: "syncpill hors", text: "⚠ " + ce.refus + " non envoyée" + (ce.refus > 1 ? "s" : "") });
+      else if (ce.bloque) pastille = h("span", { class: "syncpill hors", text: "⚠ Envoi bloqué · " + ce.attente + " modif." });
       else if (ce.ancienScript) pastille = h("span", { class: "syncpill hors", text: "⚠ Script Google à mettre à jour" });
       else if (ce.attente) pastille = h("span", { class: "syncpill envoi", text: "⟳ Envoi…" });
       else if (ce.derniere) pastille = h("span", { class: "syncpill ok", text: "✓ À jour " + hh(ce.derniere) });
@@ -5420,8 +5450,34 @@ var Moteur = (function () {
     if (!ce) return;
     var ok = ce.connecte;
     el.className = "status " + (ok ? "ok-msg" : "warn");
-    el.textContent = ok ? "✓ Connectée. Dernière synchronisation à " + new Date(ce.derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "." + (ce.attente ? " " + ce.attente + " modification(s) en cours d'envoi." : "")
+    el.textContent = ok && ce.bloque ? "⚠ Connectée, mais un envoi est refusé par la mémoire en ligne (nouvel essai toutes les 10 s)." : ok ? "✓ Connectée. Dernière synchronisation à " + new Date(ce.derniere).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "." + (ce.attente ? " " + ce.attente + " modification(s) en cours d'envoi." : "")
       : (ce.erreur || "Connexion en cours…") + (ce.attente ? " " + ce.attente + " modification(s) en attente, envoyées dès que possible." : "");
+  }
+  function libelleOp(o) {
+    var d = o.doc || {};
+    var noms = { fiches: "Fiche", photos: "Photo de fiche", recettes: "Recette", menus: "Menu", brouillons: "Menu en préparation", articles: "Article", historique: "Historique", favoris: "Favori", livres: "Livre" };
+    var nom = d.title || d.nom || d.produit || "";
+    if (o.col === "photos") { var fi = (Store.fiches || {})[o.id]; nom = fi && fi.title || ""; }
+    if ((o.col === "menus" || o.col === "brouillons") && /^\d{4}-\d{2}-\d{2}$/.test(o.id)) nom = "semaine du " + o.id.split("-").reverse().slice(0, 2).join("/");
+    return (noms[o.col] || o.col) + (o.op === "delete" ? " (suppression)" : "") + (nom ? " « " + nom + " »" : "");
+  }
+  function detailEnvois() {
+    var c = Store.cloud; if (!c || !c.enCours) return null;
+    var e = c.enCours(); if (!e.attente.length && !e.refus.length) return null;
+    var box = h("div", { class: "envois" });
+    if (e.refus.length) {
+      box.append(h("p", { class: "status err", text: "⚠ La mémoire en ligne a refusé " + (e.refus.length > 1 ? "ces éléments" : "cet élément") + " plusieurs fois. Il reste visible sur cet appareil seulement ; un nouvel essai est fait à chaque lancement." }));
+      var ul = h("ul", { class: "envois-liste" });
+      e.refus.forEach(function (o, i) { ul.append(h("li", null, h("span", { text: libelleOp(o) }), h("button", { type: "button", class: "btn ghost mini", text: "Abandonner", onclick: function () { if (confirm("Abandonner l'envoi de : " + libelleOp(o) + " ? Il sera retiré de cet appareil.")) { c.abandonner(i); renderRegl(); } } }))); });
+      box.append(ul, h("button", { type: "button", class: "btn", text: "Réessayer l'envoi", onclick: function () { c.reessayer(); renderRegl(); } }));
+    }
+    if (e.attente.length) {
+      var ul2 = h("ul", { class: "envois-liste" });
+      e.attente.slice(0, 8).forEach(function (o) { ul2.append(h("li", { text: libelleOp(o) })); });
+      if (e.attente.length > 8) ul2.append(h("li", { text: "… et " + (e.attente.length - 8) + " autre(s)" }));
+      box.append(h("details", null, h("summary", { text: e.attente.length + " modification(s) pas encore envoyée(s)" }), ul2));
+    }
+    return box;
   }
   /* Mémoire partagée : seulement sur le site (dans Claude, la mémoire est déjà partagée). */
   function lienConnexion(cfg) {
@@ -5458,13 +5514,14 @@ var Moteur = (function () {
     var card = h("section", { class: "card memoire" }, h("h2", { text: "Mémoire partagée", style: "font-size:1.2rem" }));
     if (cfg) {
       var etatEl = h("p", { id: "cloud-etat", role: "status" }); majCloudEtat(etatEl);
+      var envoisEl = detailEnvois();
       var note = h("p", { class: "status", role: "status" });
       var lien = lienConnexion(cfg);
       var ceR = Store.cloud && Store.cloud.etat;
       if (ceR && ceR.ancienScript) card.append(h("p", { class: "status err", text: "⚠ Le script Google utilisé est l'ancienne version : la protection contre les écrasements ne fonctionne pas. Dans Apps Script : collez le nouveau Code.gs, puis Déployer › Gérer les déploiements › ✏️ › Version : Nouvelle version › Déployer." }));
       card.append(h("p", { class: "status", text: "Version du site : " + VERSION_SITE + (ceR && ceR.connecte ? (ceR.ancienScript ? " · script Google : ancienne version" : " · script Google : à jour") : "") }));
       card.append(h("div", { class: "bar" }, h("span", null, "Cet appareil : ", h("b", { text: NOM_APPAREIL || "sans nom" })), h("button", { type: "button", class: "btn ghost mini", text: "Renommer", onclick: function () { demanderNom(true); } })),
-        h("p", { class: "status", text: "Menus (y compris ceux en préparation), historique, listes cochées, articles, favoris et recettes sont enregistrés " + (cfg.type === "gist" ? "dans un fichier privé sur votre GitHub" : "dans votre feuille Google") + " et partagés entre vos appareils." }), etatEl,
+        h("p", { class: "status", text: "Menus (y compris ceux en préparation), historique, listes cochées, articles, favoris et recettes sont enregistrés " + (cfg.type === "gist" ? "dans un fichier privé sur votre GitHub" : "dans votre feuille Google") + " et partagés entre vos appareils." }), etatEl, envoisEl || "",
         h("div", { class: "bar" },
           h("button", { type: "button", class: "btn", text: "↻ Synchroniser", onclick: function () { Store.cloud.synchro(); } }),
           h("button", { type: "button", class: "btn", text: "Envoyer le lien de connexion", onclick: function () {
@@ -5673,6 +5730,8 @@ var Moteur = (function () {
   window.MEMOIRE = {
     connectee: function () { return !!Store.cloud; },
     ouvrir: function () { return Store.cloud || null; },
+    prevue: function () { return !Store.cloud && !!cloudConfig(); },
+    enAttente: function (col, id) { return Store.cloud && Store.cloud.enAttente ? Store.cloud.enAttente(col, id) : ""; },
     nomsBase: (typeof RECETTES !== "undefined" ? RECETTES : []).map(function (r) { return { id: "base-" + r.n, nom: r.nom }; }),
     deverrouille: true
   };
@@ -6365,6 +6424,8 @@ h1,h2,h3,p{margin:0}
 .alerte{width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;background:#fff1cc;color:#8f6406;border:1.5px solid #e5c37a;flex:none}
 .alerte svg{width:15px;height:15px}
 .alerte.al-lien{background:#fde8e8;color:#a32020;border-color:#efb3b3}
+.envoi-fiche{display:inline-block;align-self:flex-start;margin-top:4px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#fff4dc;color:#8a5a00;border:1px solid #f0d79a;white-space:nowrap}
+.envoi-fiche.refus{background:#fde8e8;color:#a32020;border-color:#efb3b3}
 .alerte.al-doublon{background:#e8eefc;color:#2346a0;border-color:#b3c3ef}
 .doublon-box{border-color:#b3c3ef;background:#f6f8ff;margin-top:10px}.doublon-box p{margin:6px 0}.ctl-doublon{border-color:#b3c3ef!important;background:#f6f8ff}
 .alertes.sur-image{position:absolute;top:8px;left:8px}
@@ -9404,6 +9465,29 @@ majLienMenus=function(f){
     var r=el('div','row-btns');r.appendChild(voir);r.appendChild(non);box.appendChild(p);box.appendChild(r);
   });
   var ref=$('viewer-menus');if(ref&&ref.parentNode) ref.parentNode.insertBefore(box,ref.nextSibling);
+};
+
+/* ---------- Envoi vers la mémoire partagée : fiches pas encore parties, reconnexion ---------- */
+function etatEnvoi(f){
+  var M=window.MEMOIRE;if(!M||!M.enAttente) return '';
+  var a=M.enAttente('fiches',f.id),b=M.enAttente('photos',f.id);
+  return a==='refus'||b==='refus'?'refus':(a||b?'attente':'');
+}
+function marquerEnvoi(n,f){
+  var e=etatEnvoi(f);if(!e||!n) return n;
+  var t=el('span','envoi-fiche '+e,e==='refus'?'⚠ Pas envoyée':'⟳ Pas encore envoyée');
+  t.title=e==='refus'?'La mémoire partagée a refusé cette fiche : voir Réglages › Mémoire partagée.':'Elle n’est visible que sur cet appareil tant qu’elle n’est pas partie.';
+  n.appendChild(t);n.classList.add('a-envoyer');return n;
+}
+var ficheCard0=ficheCard;ficheCard=function(f){return marquerEnvoi(ficheCard0(f),f);};
+if(typeof ligneFiche==='function'){var ligneFiche0=ligneFiche;ligneFiche=function(f){return marquerEnvoi(ligneFiche0(f),f);};}
+/* Si la mémoire n'était pas encore prête à l'ouverture, on réessaie : sinon Mes fiches resterait vide jusqu'au prochain lancement. */
+var initLibrary0=initLibrary,essaisLib=0;
+initLibrary=function(){
+  if(window.MEMOIRE&&!window.MEMOIRE.ouvrir()&&window.MEMOIRE.prevue&&window.MEMOIRE.prevue()&&essaisLib<40){
+    essaisLib++;libState='off';renderLibrary();setTimeout(initLibrary,500);return;
+  }
+  initLibrary0();
 };
 
 (function(){var lib=$('library'),ref=$('livre-zone'),n=$('new-card'),d=$('draft-card');if(lib&&ref&&n&&d){ref.parentNode.insertBefore(n,ref);ref.parentNode.insertBefore(d,ref);}})();
