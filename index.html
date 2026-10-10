@@ -292,7 +292,11 @@ button.art-grp-btn.ouvert .chev { transform: rotate(90deg); }
 #lock-cesoir:empty { display: none; }
 #lock-cesoir { margin: 4px 0 6px; }
 .jourcarte-accueil .jd-plat { font-size: 22px; }
-.lien-proch { align-self: flex-start; display: inline-flex; flex-wrap: nowrap; white-space: nowrap; gap: 4px; align-items: baseline; border: 1.5px dashed var(--todo-line, var(--accent)); background: var(--todo-soft, transparent); color: var(--ink); border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.statut-ligne { display: flex; align-items: center; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; }
+.lien-proch { display: inline-flex; align-items: baseline; gap: 2px; white-space: nowrap; border: 1.5px dashed var(--todo-line, var(--accent)); background: var(--todo-soft, transparent); color: var(--ink); border-radius: 999px; padding: 3px 8px; font: inherit; font-size: 12px; cursor: pointer; }
+body.vue-mobile .statut-ligne .statut { font-size: 1.3rem; }
+.statut-ligne { flex-wrap: nowrap; } .statut-ligne .statut { white-space: nowrap; flex: none; }
+body.vue-mobile .lien-proch { font-size: 11.5px; padding: 3px 7px; }
 .lien-proch b { color: var(--todo, var(--accent)); }
 .lien-proch.prete { border-style: solid; border-color: var(--line); background: transparent; }
 .lien-proch.prete b { color: var(--ok); }
@@ -3041,19 +3045,14 @@ var Moteur = (function () {
     var mobV = vueMobile();
     var modif = semainePassee() ? null : h("button", { type: "button", class: "btn", text: "Modifier ce menu", onclick: function () { S.stage = "proposition"; S.tunnel = true; S.page = "menu"; sensTn = 1; sauver(); renderPrep(); window.scrollTo(0, 0); } });
     panelPrep.append(h("div", { class: "bar end" },
-      h("div", { class: "statut-bloc" }, statut("ok", "Menu validé"),
-        valideLe ? h("p", { class: "status", text: "Le " + valideLe.toLocaleDateString("fr-FR") + " à " + valideLe.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + ". Les recettes comptent dans l'historique." }) : null),
+      h("div", { class: "statut-bloc" }, h("div", { class: "statut-ligne" }, statut("ok", "Menu validé"), lienSemaineProchaine()),
+        valideLe ? h("p", { class: "status", text: "Validé le " + valideLe.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + " à " + valideLe.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "." }) : null),
       null));
 
     var note = h("p", { class: "status", role: "status" });
     var ic = h("button", { type: "button", class: "btn dl-icone", title: "Télécharger le menu", "aria-label": "Télécharger le menu", text: "⤓" });
     var proxy = { set disabled(v) { ic.disabled = v; }, get textContent() { return "⤓"; }, set textContent(v) { ic.textContent = v === "⤓" ? "⤓" : "…"; } };
     ic.addEventListener("click", function () { telecharger("menu", proxy, note); });
-    if (M.iso(debut) === M.iso(SEMAINE_EN_COURS)) {
-      var proch = SEMAINE_A_PREPARER, prete = !!Store.menus[M.iso(proch)];
-      panelPrep.append(h("button", { type: "button", class: "lien-proch" + (prete ? " prete" : ""), onclick: function () { allerSemaine(proch); window.scrollTo(0, 0); } },
-        h("span", { text: "Semaine prochaine · " }), h("b", { text: prete ? "prête ✓" : "à préparer" }), h("span", { class: "fl", text: " →" })));
-    }
     var puce = pastilleCeSoir(S.menu, new Date());
     if (puce) { puce.classList.add("cesoir-menu"); puce.insertBefore(ic, puce.children[1] || null); panelPrep.append(puce, note); }
     var cpl = complementDe(Store.menus[M.iso(debut)]);
@@ -3071,6 +3070,13 @@ var Moteur = (function () {
     if (modif) panelPrep.append(h("div", { class: "bar actions-rares" }, modif));
   }
 
+  /* Petit lien vers la semaine suivante, sur la ligne « Menu validé » (semaine en cours seulement). */
+  function lienSemaineProchaine() {
+    if (M.iso(debut) !== M.iso(SEMAINE_EN_COURS)) return null;
+    var proch = SEMAINE_A_PREPARER, prete = !!Store.menus[M.iso(proch)];
+    return h("button", { type: "button", class: "lien-proch" + (prete ? " prete" : ""), "aria-label": "Semaine prochaine : " + (prete ? "prête" : "à préparer"), onclick: function () { allerSemaine(proch); window.scrollTo(0, 0); } },
+      h("span", { text: "Sem. suivante · " }), h("b", { text: prete ? "prête ✓" : "à préparer" }), " ›");
+  }
   /* Pastille « Ce soir » (version compacte) : prochain repas du jour + ligne « Demain soir · … ». */
   function prochainsRepas(menu, maintenant) {
     var auj = M.iso(maintenant);
@@ -3097,7 +3103,7 @@ var Moteur = (function () {
         onclick: cliquable ? function () { (surClic || ouvrirPlat)(p.x.t); } : null },
         h("em", { text: pr.quand(p).toUpperCase() }), h("span", { text: p.x.t + (cliquable ? " ›" : "") })));
     } else z.append(h("div", { class: "puce-soir vide" }, h("em", { text: "AUJOURD'HUI" }), h("span", { text: "Rien de prévu" })));
-    if (pr.ensuite) z.append(h("p", { class: "puce-suite" }, pr.quand(pr.ensuite) + " · ", h("b", { text: pr.ensuite.x.t })));
+
     return z;
   }
   /* Carte « Ce soir » : le prochain repas du jour, le suivant, et la frise de la semaine. */
