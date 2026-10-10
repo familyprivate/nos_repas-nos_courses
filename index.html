@@ -381,9 +381,11 @@ body.vue-mobile .seg.seg4 button { font-size: 10.5px; letter-spacing: .02em; pad
 body.vue-mobile #panel-fiches { background-size: calc(100% - 32px) 3px; }
 body.fiches-immersif #panel-fiches { background: none; padding-top: 0; }
 body[data-onglet="courses"] .perso-onglet { height: 116px; }
-body.vue-mobile .perso-onglet { bottom: calc(100% - 2px); right: 2px; height: 80px; }
-body.vue-mobile[data-onglet="courses"] .perso-onglet { height: 70px; }
-body.vue-mobile[data-sous="regl"] .perso-onglet { height: 72px; }
+/* Mobile : le personnage passe derrière le cadre des sous-onglets → ses pieds sont toujours pile sur le trait. */
+body.vue-mobile #basenav .seg { position: relative; z-index: 1; background: var(--bg); }
+body.vue-mobile .perso-onglet { z-index: 0; bottom: calc(100% - 6px); right: 2px; height: 84px; }
+body.vue-mobile[data-onglet="courses"] .perso-onglet { height: 74px; }
+body.vue-mobile[data-sous="regl"] .perso-onglet { height: 76px; }
 body.vue-mobile.a-perso #storestatus { padding-right: 74px; }
 body.vue-mobile.a-perso[data-sous="regl"] #storestatus { padding-right: 100px; }
 
