@@ -259,6 +259,8 @@ td .add { margin-left: 8px; }
 .pill.ok { background: var(--accent-soft); color: var(--accent); }
 .pill.wait { background: var(--sunk); color: var(--muted); }
 .pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.cat-manque { background: transparent; color: var(--warn); border: 1.5px dashed var(--warn); }
+.card.cat-manque { border-color: var(--warn); box-shadow: inset 4px 0 0 var(--warn); }
 .filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .filter input { max-width: 260px; }
 
@@ -859,6 +861,88 @@ body.vue-mobile .tn-entree h2 { font-size: 1.6rem; }
 .tj-slot[data-etat="exclu"] b { color: var(--muted); font-weight: 600; }
 .tj-slot[data-etat="invitation"] { background: var(--st-invit); border-color: var(--st-invit-line); }
 .tj-slot[data-etat="resto"] { background: var(--st-resto); border-color: var(--st-resto-line); }
+.tj-slot[data-etat="fete"] { background: #FCE4F1; border-color: #E9A6CB; }
+.tj-slot[data-etat="amoureux"] { background: #FDE2E4; border-color: #F0A3AA; }
+:root[data-theme="dark"] .tj-slot[data-etat="amoureux"] { background: #3A1E22; border-color: #6E3640; }
+:root[data-theme="dark"] .tj-slot[data-etat="fete"] { background: #3A1F31; border-color: #6E3A5C; }
+.fete-carte { display: flex; flex-direction: column; gap: 12px; }
+.fete-tete { display: flex; gap: 12px; align-items: center; }
+.fete-ico { font-size: 2rem; }
+.fete-tete > div { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.fete-nom { font: 400 1.2rem/1.2 var(--font); border: 0; border-bottom: 2px dashed var(--line); background: none; color: var(--ink); padding: 4px 0; width: 100%; }
+.fete-tete small { color: var(--muted); }
+.fete-cats { display: flex; flex-direction: column; gap: 10px; }
+.fete-cat { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.fete-cat > b { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.fete-puces { display: flex; flex-wrap: wrap; gap: 6px; }
+.fete-puce { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-soft); border-radius: 999px; padding: 4px 4px 4px 12px; font-weight: 600; font-size: .95rem; }
+.fete-puce .icon { width: 26px; height: 26px; }
+.fete-puce.libre { background: transparent; border: 1.5px dashed var(--accent); }
+.fete-apart { display: flex; gap: 10px; align-items: flex-start; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; font-weight: 600; cursor: pointer; }
+.fete-apart input { width: 20px; height: 20px; margin-top: 1px; flex: none; accent-color: var(--accent); }
+.fete-apart span { display: flex; flex-direction: column; gap: 2px; }
+label.fete-apart small { font-weight: 500; color: var(--muted); font-size: .82rem; text-transform: none; letter-spacing: 0; }
+.fete-liste .fp-apart .fete-apart { border: 0; padding-top: 4px; font-size: .85rem; }
+.fete-liste .fp-apart-info { color: var(--muted); font-size: .78rem; font-weight: 600; }
+.liste-fete { margin-top: 22px; border: 2px solid var(--accent); border-radius: 14px; padding: 12px 14px; background: var(--accent-soft); }
+.liste-fete > summary { cursor: pointer; display: flex; flex-direction: column; gap: 2px; font-weight: 800; font-size: 1.05rem; list-style: none; }
+.liste-fete > summary::-webkit-details-marker { display: none; }
+.liste-fete > summary small { font-weight: 600; color: var(--muted); font-size: .82rem; }
+.liste-fete .shop-aisle { margin-top: 10px; }
+.fete-apart-apercu { border: 1.5px dashed var(--accent); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.mname.fete { color: var(--ink); font-weight: 400; }
+.mname.fete { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.combo-fete { position: relative; flex: 1; min-width: 0; }
+.combo-fete .fete-nom { width: 100%; }
+.combo-fete.grille .fete-nom { font: 400 1rem/1.3 var(--font); color: var(--ink); }
+.fete-titre-or { color: #1a1a1a; font-weight: 700; border: 1.5px solid #8c6216; border-radius: 10px; padding: 3px 10px; text-shadow: 0 1px 0 rgba(255,255,255,.35);
+  background: linear-gradient(135deg, #b8862b 0%, #e2b955 25%, #f7e08d 45%, #dcae48 62%, #b8862b 82%, #e6c262 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 1px 2px rgba(120,80,10,.25); }
+.fete-sym { font-size: 1.1rem; flex: none; }
+.prevu-barre, .prevu-barre .fete-titre-or { text-decoration: line-through; text-decoration-thickness: 2px; opacity: .55; }
+.tags .reel { font-size: .9rem; color: var(--ink); }
+.tags .reel b { font-weight: 700; }
+.chg-zone { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.chg-zone > .btn { align-self: flex-start; }
+.chg-plan { border: 1px dashed var(--line); background: none; color: var(--muted); font: 600 .72rem var(--font); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
+.chg-plan:hover { color: var(--accent); border-color: var(--accent); }
+.mtools .repas-verrou { font-size: .85rem; opacity: .55; padding: 4px; }
+.tj-slot.tj-fige { opacity: .5; cursor: default; }
+.combo-fete .cherche-opt.choisi { background: var(--accent-soft); font-weight: 600; }
+.vin-rappel { align-items: center; text-align: center; gap: 12px; padding: 28px 20px; }
+.vin-ico { font-size: 72px; line-height: 1; animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
+.vin-texte { font-size: 1.25rem; font-weight: 800; line-height: 1.3; }
+.vin-bandeau { background: color-mix(in srgb, #7b1e3a 10%, transparent); border-left: 4px solid #7b1e3a; border-radius: 8px; padding: 10px 12px; font-weight: 700; }
+.alerte-courses { display: flex; gap: 12px; align-items: flex-start; background: #FFF8DC; border: 1.5px solid #E0B400; border-radius: 12px; padding: 12px 14px; color: #1a1a1a; margin-top: 8px; }
+.alerte-courses p { display: flex; flex-direction: column; gap: 4px; font-size: .95rem; line-height: 1.35; }
+.alerte-courses p b { display: inline; }
+.alerte-courses small { color: #5b5030; font-size: .8rem; }
+.alerte-ico { flex: none; width: 26px; height: 26px; display: inline-grid; place-items: center; }
+.alerte-ico svg { width: 26px; height: 26px; }
+.sans-ingr-q { display: flex; gap: 10px; align-items: flex-start; background: #FFF8DC; border: 1.5px solid #E0B400; border-radius: 12px; padding: 12px 14px; color: #1a1a1a; font-weight: 600; cursor: pointer; }
+.sans-ingr-q input { width: 22px; height: 22px; flex: none; margin-top: 1px; accent-color: #2e8b4f; }
+.sans-recettes { display: flex; gap: 10px; align-items: center; margin-top: 20px; padding: 10px 12px; border-radius: 10px; font-weight: 600; font-size: .92rem; }
+.sans-recettes.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.sans-recettes.ok .alerte-ico { background: var(--ok); color: #fff; border-radius: 50%; width: 24px; height: 24px; font-weight: 800; }
+.sans-recettes.ko { color: #1a1a1a; background: #FFF8DC; border: 1.5px solid #E0B400; }
+.combo-fete.tj-txt { margin-top: 6px; }
+.combo-fete.tj-txt .fete-nom { font: 400 .9rem var(--font); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--surface); }
+.combo-fete .cherche-opt { display: flex; justify-content: space-between; gap: 8px; }
+.combo-fete .cherche-opt small { color: var(--muted); }
+.plat-dl { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font-size: 1.2rem; cursor: pointer; margin-right: 6px; }
+.fete-liste { list-style: none; margin: 4px 0 0; padding: 0; font-size: .88rem; display: flex; flex-direction: column; gap: 2px; width: 100%; }
+.fete-liste small { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+.fete-liste .vide { color: var(--muted); font-style: italic; }
+.fete-liste li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.fete-liste li > small { flex: 0 0 auto; margin-right: 2px; }
+.fete-plat { display: inline-flex; align-items: center; gap: 6px; margin-right: 6px; }
+.fete-plat .fiche-mini { flex: 0 0 auto; }
+.fp-sans { display: inline-block; width: 0; }
+.fp-lien { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; cursor: pointer; text-align: left; }
+.fete-liste.edit .fete-plat { background: var(--accent-soft); border-radius: 999px; padding: 2px 2px 2px 10px; }
+.fp-x { width: 26px; height: 26px; }
+.fp-ajout { margin-top: 6px; display: flex; gap: 6px; flex-wrap: nowrap !important; }
+.fp-ajout .fp-cat { flex: 0 0 auto; max-width: 42%; }
+.fp-ajout .cherche { flex: 1; min-width: 0; }
 .tj-txt { font-size: 14px !important; padding: 6px 10px !important; }
 .tj-passe { padding: 8px 12px; }
 /* Préparation */
@@ -882,7 +966,7 @@ body.vue-mobile .tn-entree h2 { font-size: 1.6rem; }
 .fin-coche { color: var(--ok); animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
 .fin-coche svg { width: 120px; height: 120px; display: block; }
 .fin-titre { color: var(--ok); animation: monte .5s .15s ease-out both; }
-.tn-fin.deja .fin-coche, .tn-fin.deja .fin-titre { animation: none; }
+.tn-fin.deja, .tn-fin.deja .fin-coche, .tn-fin.deja .fin-titre { animation: none; }
 @keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes monte { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
 
@@ -1464,6 +1548,8 @@ var Moteur = (function () {
       if (ev && ev.etat === "exclu") slot.type = "exclu";
       else if (ev && ev.etat === "invitation") { slot.type = "invitation"; slot.texte = (ev.texte || "").trim() || "Invitation"; }
       else if (ev && ev.etat === "resto") { slot.type = "resto"; slot.texte = "Restaurant en famille"; }
+      else if (ev && ev.etat === "amoureux") { slot.type = "resto"; slot.texte = "Restaurant en amoureux"; }
+      else if (ev && ev.etat === "fete") { slot.type = "fete"; slot.texte = (ev.texte || "").trim() || "Repas de fête"; slot.plats = (ev.plats || []).filter(function (p) { return p && p.recette; }).map(function (p) { return { cat: p.cat, recette: p.recette }; }); if (ev.listeAPart) slot.listeAPart = true; }
       // Q2 : un midi ajouté n'est jamais remplacé par une exclusion de jour entier.
       return slot;
     });
@@ -1633,9 +1719,13 @@ var Moteur = (function () {
 
   function courses(recettes, menu) {
     var byId = {}, ordre = [], sansIngr = [];
+    var noms = [];
     menu.creneaux.forEach(function (s) {
-      if (s.type !== "recette") return;
-      var rec = recettes.byName[s.recette];
+      if (s.type === "recette") noms.push(s.recette);
+      else if (s.type === "fete" && !s.listeAPart) (s.plats || []).forEach(function (p) { if (p && p.recette) noms.push(p.recette); });
+    });
+    noms.forEach(function (nomRec) {
+      var rec = recettes.byName[nomRec];
       if (!rec) return;
       if (!rec.ingredients.length) { if (rec.sansIngredients) return; if (sansIngr.indexOf(rec.nom) === -1) sansIngr.push(rec.nom); return; }
       rec.ingredients.forEach(function (it) {
@@ -2196,8 +2286,15 @@ var Moteur = (function () {
       var out = [], self = this;
       Object.keys(this.menus).forEach(function (id) {
         if (id === sauf) return;
-        (self.menus[id].creneaux || []).forEach(function (c) {
+        var m = self.menus[id], reels = m.reels || {}, vus = {};
+        (m.creneaux || []).forEach(function (c) {
+          var r = reels[c.key]; vus[c.key] = true;
+          if (r) { if (r.type === "recette" && r.recette) out.push({ recette: ALIAS[r.recette] || r.recette, date: c.date, repas: c.repas, source: "reel" }); return; }
           if (c.type === "recette" && c.recette) out.push({ recette: ALIAS[c.recette] || c.recette, date: c.date, repas: c.repas, source: c.source || "auto" });
+        });
+        Object.keys(reels).forEach(function (k) {
+          var r = reels[k]; if (vus[k] || !r || r.type !== "recette" || !m.debut) return;
+          out.push({ recette: ALIAS[r.recette] || r.recette, date: M.iso(M.addDays(M.fromIso(m.debut), +k.split("-")[0])), repas: k.split("-")[1], source: "reel" });
         });
       });
       Object.keys(this.manuels).forEach(function (id) {
@@ -2259,7 +2356,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "14 oct. 16h50";
+  var VERSION_SITE = "14 oct. 22h25";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -2430,6 +2527,9 @@ var Moteur = (function () {
 
   function aujIso() { return M.iso(new Date()); }
   function jourPasse(j) { return M.iso(M.addDays(debut, j)) < aujIso(); }
+  /* Repas passé : jour passé, ou aujourd'hui à partir de 12 h (midi) / 19 h (soir). Il n'est plus modifiable. */
+  var HEURE_VERROU = { Midi: 12, Soir: 19 };
+  function repasPasse(j, repas) { return jourPasse(j) || (estAujourdhui(j) && new Date().getHours() >= (HEURE_VERROU[repas] || 24)); }
   function semainePassee() { return M.iso(M.addDays(debut, 6)) < aujIso(); }
   function renderSemainePassee() {
     var grid = h("div", { class: "daygrid" });
@@ -2447,11 +2547,11 @@ var Moteur = (function () {
   function pageTn() {
     var p = S.page;
     if (S.stage === "proposition") return p === "liste" || p === "prepa" ? p : "menu";
-    return p === "imposee" || p === "articles" || p === "prepa" ? p : "semaine";
+    return p === "imposee" || p === "articles" || p === "prepa" || p === "fete" || p === "vin" ? p : "semaine";
   }
   function allerPage(p, sens) {
     sensTn = sens || 1;
-    if ((p === "semaine" || p === "imposee" || p === "articles") && S.stage === "proposition") S.stage = "questions";
+    if ((p === "semaine" || p === "fete" || p === "imposee" || p === "vin" || p === "articles") && S.stage === "proposition") S.stage = "questions";
     S.page = p; S.tunnel = true; sauver(); renderPrep(); window.scrollTo(0, 0);
   }
   function quitterTunnel() { S.tunnel = false; sauver(true); finTunnel = false; renderPrep(); window.scrollTo(0, 0); }
@@ -2574,7 +2674,9 @@ var Moteur = (function () {
       page.append(enteteTn(0, "La semaine", "Touchez un repas pour changer : Prévu, Exclu, Invitation ou Restaurant. Les midis de semaine sont exclus par défaut." + (dejaPasses ? " Les jours passés restent tels quels." : "")));
       var liste = h("div", { class: "tj-liste" });
       for (var j = 0; j < 7; j++) liste.append(jourTunnel(j));
-      page.append(liste, basTn(null, h("button", { type: "button", class: "btn primary", text: "Continuer →", onclick: function () { allerPage("imposee"); } })));
+      page.append(liste, basTn(null, h("button", { type: "button", class: "btn primary", text: "Continuer →", onclick: function () { allerPage(clesFete().length ? "fete" : "imposee"); } })));
+    } else if (p === "fete") {
+      renderPageFete(page);
     } else if (p === "imposee") {
       page.append(enteteTn(1, "Une recette imposée ?", "Elle passe avant les règles, la saison et le délai. Facultatif."));
       var rows3 = h("div", { class: "rows", id: "imposees" });
@@ -2583,10 +2685,24 @@ var Moteur = (function () {
         var ins3 = rows3.querySelectorAll(".cherche-in"); if (ins3.length) ins3[ins3.length - 1].focus();
       } }))));
       renderImposees(rows3);
-      var b3 = h("button", { type: "button", class: "btn primary", onclick: function () { allerPage("articles"); } });
+      var b3 = h("button", { type: "button", class: "btn primary", onclick: function () { allerPage(clesFete().length ? "vin" : "articles"); } });
       function majBouton3() { b3.textContent = rep.imposees.some(function (im) { return im.recette; }) ? "Continuer →" : "Aucune, continuer →"; }
       rows3.addEventListener("change", majBouton3); majBouton3();
-      page.append(basTn(function () { allerPage("semaine", -1); }, b3));
+      page.append(basTn(function () { allerPage(clesFete().length ? "fete" : "semaine", -1); }, b3));
+    } else if (p === "vin") {
+      // Étape intermédiaire quand la semaine a un repas de fête : le rappel du vin (liste à part ou non).
+      var fetes = clesFete().map(function (k) { return S.reponses.evenements[k].texte || "Repas de fête"; });
+      var dejaVin = S.ajouts.some(function (a) { return /\bvins?\b/i.test(a.produit || ""); });
+      var noteVin = h("p", { class: "status ok-msg", role: "status", text: dejaVin ? "Vin ajouté à la liste de courses ✓" : "" });
+      page.append(enteteTn(2, "Et le vin ?", null),
+        h("section", { class: "card vin-rappel" },
+          h("div", { class: "vin-ico", "aria-hidden": "true", text: "🍷" }),
+          h("p", { class: "vin-texte", text: "N'oubliez pas de prendre du vin pour votre repas" + (fetes.length > 1 ? "s" : "") + " de fête !" }),
+          h("p", { class: "status", text: fetes.map(function (t) { return emojiFete(t) + " " + t; }).join(" · ") }),
+          dejaVin ? null : h("button", { type: "button", class: "btn", text: "+ Ajouter du vin à la liste", onclick: function (e) {
+            S.ajouts.push({ produit: "Vin", quantite: "", categorie: "AV" }); sauver(); e.target.remove(); noteVin.textContent = "Vin ajouté à la liste de courses ✓";
+          } }), noteVin),
+        basTn(function () { allerPage("imposee", -1); }, h("button", { type: "button", class: "btn primary", text: "C'est noté, continuer →", onclick: function () { allerPage("articles"); } })));
     } else if (p === "articles") {
       page.append(enteteTn(2, "Des articles en plus ?", "Ils s'ajoutent à la liste de courses, en plus des ingrédients des recettes. Facultatif."));
       var rows4 = h("div", { class: "rows", id: "ajouts" });
@@ -2596,7 +2712,7 @@ var Moteur = (function () {
       } }))));
       renderAjouts(rows4, false);
       var go = h("button", { type: "button", class: "btn primary", text: Store.ready ? "Préparer mon menu →" : "Chargement…", disabled: !Store.ready, onclick: function () { S.ajouts = S.ajouts.filter(function (a) { return a.produit && a.produit.trim(); }); lancerPrepa(); } });
-      page.append(basTn(function () { allerPage("imposee", -1); }, go, S.menu ? h("p", { class: "status", text: "Un nouveau menu sera tiré au sort avec ces réponses." }) : null));
+      page.append(basTn(function () { allerPage(clesFete().length ? "vin" : "imposee", -1); }, go, S.menu ? h("p", { class: "status", text: "Un nouveau menu sera tiré au sort avec ces réponses." }) : null));
     } else if (p === "prepa") {
       page.classList.add("tn-prepa"); armerPrepa();
       page.append(enteteTn(-1, null, null), prepaVisuel());
@@ -2609,6 +2725,7 @@ var Moteur = (function () {
       page.append(renderMenuGrille(true));
       page.append(h("div", { class: "bar actions-rares" }, h("button", { type: "button", class: "btn", text: "↻ Tout retirer au sort", onclick: function () { generer(); } }),
         Store.menus[M.iso(debut)] ? boutonAnnulerModifs("btn") : null));
+      page.append(alerteSansIngredients(S.menu.creneaux) || "");
       var nbL = listeCourses().lignes.length;
       page.append(basTn(enCoursSem ? null : function () { allerPage("articles", -1); }, h("button", { type: "button", class: "btn primary", text: "Voir la liste de courses (" + nbL + ") →", onclick: function () { allerPage("liste"); } })));
     } else if (p === "liste") {
@@ -2617,7 +2734,15 @@ var Moteur = (function () {
       if (dejaV && dejaV.courses) page.append(h("div", { class: "bar annul-modifs" }, h("p", { class: "status", text: coursesFaites(dejaV, debut)
         ? "Courses déjà faites : après validation, l'onglet Courses n'affichera que le complément à acheter."
         : "Courses prévues " + libelleCourses(debut) + " : la liste sera simplement remplacée." }), boutonAnnulerModifs("btn")));
+      if (S.menu.creneaux.some(function (c) { return c.type === "fete"; }) && !S.ajouts.some(function (a) { return /\bvins?\b/i.test(a.produit || ""); }))
+        page.append(h("p", { class: "vin-bandeau", text: "🍷 N'oubliez pas de prendre du vin pour votre repas de fête !" }));
       page.append(renderCourses(true));
+      var sansI = platsSansIngredients(S.menu.creneaux);
+      if (sansI.length) {
+        var cleSI = sansI.join("|"), cbSI = h("input", { type: "checkbox", checked: S.sansIngrOk === cleSI });
+        cbSI.addEventListener("change", function () { S.sansIngrOk = cbSI.checked ? cleSI : ""; sauver(); });
+        page.append(h("label", { class: "check sans-ingr-q" }, cbSI, h("span", { text: "Avez-vous ajouté les articles des plats sans recettes suivants : " + sansI.join(" · ") + " ?" })));
+      }
       var vnote = h("p", { class: "status", role: "status" });
       var vbtn = h("button", { type: "button", class: "btn primary", text: "Oui, valider le menu et la liste", onclick: function () { valider(vbtn, vnote); } });
       page.append(basTn(function () { allerPage("menu", -1); }, vbtn, h("div", null, h("p", { class: "tn-question", text: QUESTION_VALIDATION }), vnote)));
@@ -2632,7 +2757,172 @@ var Moteur = (function () {
   }
 
   /* Un jour = une ligne ; chaque repas est une pastille qu'on touche pour changer d'état. */
-  var CYCLE_TN = ["", "exclu", "invitation", "resto"], LIB_TN = { "": "Prévu", exclu: "Exclu", invitation: "Invitation", resto: "Restaurant" };
+  var CYCLE_TN = ["", "exclu", "invitation", "resto", "amoureux", "fete"], LIB_TN = { "": "Prévu", exclu: "Exclu", invitation: "Invitation", resto: "Resto en famille", amoureux: "Resto en amoureux 💕", fete: "Fête 🎉" };
+  /* ---------- Repas de fête ---------- */
+  /* Catégories des fiches recettes : elles servent aussi aux recettes (facultatif) et aux rubriques des repas de fête. */
+  var CATS_RECETTE = [["aperitif", "Apéritif / Snack"], ["cocktail", "Cocktail"], ["entree", "Entrée"], ["plat", "Plat"], ["dessert", "Dessert"]];
+  var LIB_CAT = {}; CATS_RECETTE.forEach(function (c) { LIB_CAT[c[0]] = c[1]; });
+  var CATS_FETE = CATS_RECETTE.map(function (c) { return c[1]; });
+  /* Ancienne rubrique « Apéritif » → « Apéritif / Snack » ; les autres anciennes (Fromage, Boissons) restent affichées telles quelles. */
+  function rubriqueFete(c) { return c === "Apéritif" ? "Apéritif / Snack" : c; }
+  function cleRubrique(lab) { for (var i = 0; i < CATS_RECETTE.length; i++) if (CATS_RECETTE[i][1] === lab) return CATS_RECETTE[i][0]; return ""; }
+  function rubriquesDe(plats) {
+    var l = CATS_FETE.slice();
+    (plats || []).forEach(function (p) { var c = rubriqueFete(p.cat); if (c && l.indexOf(c) === -1) l.push(c); });
+    return l;
+  }
+  /* Recettes proposées dans une rubrique : seulement celles de sa catégorie ; texte libre possible. */
+  function videRubrique(lab) { return "Aucune recette classée « " + lab + " » : tapez le nom (texte libre), ou classez vos recettes dans Mes recettes."; }
+  function itemsRubrique(lab) {
+    var cle = cleRubrique(lab), avec = [], sans = [];
+    NOMS.forEach(function (n) {
+      var r = R.byName[n], c = r && r.cat;
+      if (cle && c === cle) avec.push({ v: n, label: n, groupe: lab });
+      else if (!cle) sans.push({ v: n, label: n });
+    });
+    return avec.concat(sans);
+  }
+  /* Symbole du repas de fête selon l'occasion (🎉 par défaut). */
+  var EMOJIS_FETE = [[/anniv.*mariage|mariage|noces/, "💍"], [/anniv/, "🎂"], [/halloween/, "🎃"], [/reveillon de noel|noel/, "🎄"], [/saint-sylvestre|sylvestre|nouvel an|jour de l an|reveillon/, "🥂"],
+    [/epiphanie|galette|rois/, "👑"], [/chandeleur|crepe/, "🥞"], [/mardi gras|carnaval/, "🎭"], [/valentin|amoureux/, "💝"], [/grands?-meres|mamie/, "👵"], [/grands?-peres|papy/, "👴"],
+    [/fete des meres|maman/, "💐"], [/fete des peres|papa/, "👔"], [/paques/, "🐣"], [/poisson d avril/, "🐟"], [/musique/, "🎵"], [/nationale|14 juillet/, "🇫🇷"], [/beaujolais|vin/, "🍷"],
+    [/bapteme|communion/, "🕊️"], [/cremaillere/, "🏡"], [/amis/, "🥂"], [/famille/, "👨‍👩‍👧‍👦"], [/barbecue|bbq/, "🔥"], [/raclette|fondue/, "🧀"]];
+  function emojiFete(t) { var n = M.norm(t || ""); for (var i = 0; i < EMOJIS_FETE.length; i++) if (EMOJIS_FETE[i][0].test(n)) return EMOJIS_FETE[i][1]; return "🎉"; }
+  function nomFete(e) { return e.nom.replace(/^Anniv\. de mariage$/, "Anniversaire de mariage").replace(/^Anniv\. /, "Anniversaire de "); }
+  /* Liste déroulante (avec saisie libre) : événements de la famille et du calendrier, les plus proches d'abord. */
+  function listeFetes() {
+    var dl = document.getElementById("dl-fetes");
+    if (dl) return document.createTextNode("");
+    dl = h("datalist", { id: "dl-fetes" });
+    var vus = {}, auj = M.fromIso(M.iso(debut));
+    evenementsProches(auj, 366).filter(function (x) { return x.e.type === "anniv" || x.e.type === "fete"; }).sort(function (a, b) { return a.n - b.n; })
+      .forEach(function (x) { var n = nomFete(x.e); if (vus[n]) return; vus[n] = 1; dl.append(h("option", { value: n, label: M.fr(x.e.date).slice(0, 5) })); });
+    ["Repas de famille", "Repas entre amis", "Baptême", "Communion", "Crémaillère"].forEach(function (n) { if (!vus[n]) dl.append(h("option", { value: n })); });
+    document.body.append(dl);
+    return document.createTextNode("");
+  }
+  /* Choix de l'occasion : champ texte + liste déroulante filtrée (anniversaires, fêtes, occasions courantes). */
+  function optionsFetes() {
+    var vus = {}, out = [], auj = M.fromIso(M.iso(debut));
+    evenementsProches(auj, 366).filter(function (x) { return x.e.type === "anniv" || x.e.type === "fete"; }).sort(function (a, b) { return a.n - b.n; })
+      .forEach(function (x) { var n = nomFete(x.e); if (vus[n]) return; vus[n] = 1; out.push({ v: n, sub: M.fr(x.e.date).slice(0, 5) }); });
+    ["Repas de famille", "Repas entre amis", "Baptême", "Communion", "Crémaillère"].forEach(function (n) { if (!vus[n]) out.push({ v: n, sub: "" }); });
+    return out;
+  }
+  var comboFeteAOuvrir = null;
+  function comboFete(valeur, onChange, cls, cle) {
+    var wrap = h("div", { class: "cherche combo-fete" + (cls ? " " + cls : "") });
+    var inp = h("input", { type: "text", class: "cherche-in fete-nom", value: valeur || "", placeholder: "Quelle fête ? Choisissez ou tapez", autocomplete: "off", "aria-label": "Occasion du repas de fête", role: "combobox", "aria-expanded": "false" });
+    var liste = h("ul", { class: "cherche-liste", role: "listbox", hidden: true });
+    function dessiner() {
+      clear(liste);
+      var q = tout ? "" : M.norm(inp.value), tous = optionsFetes(), l = tous.filter(function (o) { return !q || M.norm(o.v).indexOf(q) !== -1; });
+      if (q && !tous.some(function (o) { return M.norm(o.v) === q; })) l.unshift({ v: inp.value.trim(), sub: "texte libre" });
+      l.slice(0, 40).forEach(function (o) {
+        liste.append(h("li", { role: "option", class: "cherche-opt" + (M.norm(o.v) === M.norm(inp.value) ? " choisi" : ""), onmousedown: function (e) { e.preventDefault(); }, onclick: function () { inp.value = o.v; fermer(); onChange(o.v); } },
+          h("span", { text: o.v }), o.sub ? h("small", { text: o.sub }) : null));
+      });
+    }
+    // Toucher le champ montre toute la liste (la fête choisie est surlignée) ; taper filtre.
+    var tout = true;
+    function ouvrir() { dessiner(); liste.hidden = false; inp.setAttribute("aria-expanded", "true"); wrap.classList.add("ouvert");
+      var c = liste.querySelector(".choisi"); if (c && c.scrollIntoView) c.scrollIntoView({ block: "nearest" }); }
+    function fermer() { liste.hidden = true; inp.setAttribute("aria-expanded", "false"); wrap.classList.remove("ouvert"); }
+    inp.addEventListener("focus", function () { tout = true; ouvrir(); });
+    inp.addEventListener("click", function () { if (liste.hidden) { tout = true; ouvrir(); } });
+    inp.addEventListener("input", function () { tout = false; ouvrir(); onChange(inp.value); });
+    inp.addEventListener("blur", function () { setTimeout(fermer, 150); });
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); fermer(); inp.blur(); } });
+    wrap.append(inp, liste);
+    if (cle && comboFeteAOuvrir === cle) { comboFeteAOuvrir = null; setTimeout(function () { inp.focus(); }, 60); }
+    return wrap;
+  }
+  /* Occasion proposée d'office : un anniversaire ou une fête tombant ce jour-là. */
+  function feteProposee(j) {
+    var d = M.addDays(debut, j), l = evenementsProches(d, 0).filter(function (x) { return x.n === 0 && (x.e.type === "anniv" || x.e.type === "fete"); });
+    return l.length ? nomFete(l[0].e) : "";
+  }
+  function clesFete() {
+    var rep = S.reponses;
+    return Object.keys(rep.evenements || {}).filter(function (k) { var e = rep.evenements[k]; return e && e.etat === "fete" && !repasPasse(+k.split("-")[0], k.split("-")[1]); })
+      .sort(function (a, b) { var ja = +a.split("-")[0], jb = +b.split("-")[0]; return ja - jb || (a.split("-")[1] === "Midi" ? -1 : 1); });
+  }
+  function renderPageFete(page) {
+    var rep = S.reponses;
+    page.append(enteteTn(0, "Repas de fête", "Composez le menu de chaque repas de fête : apéritif, cocktail, entrée, plat, dessert. Plusieurs recettes par rubrique si vous voulez, ou un plat tapé à la main s'il n'est pas encore dans vos recettes."));
+    clesFete().forEach(function (key) {
+      var ev = rep.evenements[key], j = +key.split("-")[0], repas = key.split("-")[1];
+      if (!ev.plats) ev.plats = [];
+      var carte = h("section", { class: "card fete-carte" });
+      var ico = h("span", { class: "fete-ico", text: emojiFete(ev.texte) });
+      var titre = comboFete(ev.texte, function (v) { ev.texte = v; ico.textContent = emojiFete(v); sauver(); });
+      carte.append(h("div", { class: "fete-tete" }, ico, h("div", null, titre, h("small", { text: nomJour(j) + " " + M.fr(M.addDays(debut, j)).slice(0, 5) + " · " + repas.toLowerCase() }))));
+      var corps = h("div", { class: "fete-cats" });
+      function dessiner() {
+        clear(corps);
+        rubriquesDe(ev.plats).forEach(function (cat) {
+          var ligne = h("div", { class: "fete-cat" }, h("b", { text: cat }));
+          var puces = h("div", { class: "fete-puces" });
+          ev.plats.forEach(function (p, i) {
+            if (rubriqueFete(p.cat) !== cat) return;
+            puces.append(h("span", { class: "fete-puce" + (R.byName[p.recette] ? "" : " libre") }, p.recette, h("button", { type: "button", class: "icon", "aria-label": "Retirer " + p.recette, text: "✕", onclick: function () { ev.plats.splice(i, 1); sauver(); dessiner(); } })));
+          });
+          if (CATS_FETE.indexOf(cat) === -1) { ligne.append(puces); corps.append(ligne); return; }
+          var ajout = chercheur({ label: cat + " : ajouter une recette", placeholder: "+ " + cat.toLowerCase() + " : recette ou texte libre…", libre: true, vide: videRubrique(cat), items: function () { return itemsRubrique(cat); }, onPick: function (x) {
+            var v = x && x.v; if (!v) return; ev.plats.push({ cat: cat, recette: v }); sauver(); setTimeout(dessiner, 0);
+          } });
+          ligne.append(puces, ajout);
+          corps.append(ligne);
+        });
+      }
+      dessiner();
+      carte.append(corps, caseListeAPart(!!ev.listeAPart, function (v) { ev.listeAPart = v; sauver(); }));
+      page.append(carte);
+    });
+    page.append(basTn(function () { allerPage("semaine", -1); }, h("button", { type: "button", class: "btn primary", text: "Continuer →", onclick: function () { allerPage("imposee"); } })));
+  }
+  /* Liste de courses à part pour un repas de fête (décoché : tout va dans la liste de la semaine). */
+  function caseListeAPart(val, onChange) {
+    var cb = h("input", { type: "checkbox", checked: val });
+    cb.addEventListener("change", function () { onChange(cb.checked); });
+    return h("label", { class: "check fete-apart" }, cb, h("span", null, "🛒 Faire une liste de courses à part pour ce repas", h("small", { text: "Sinon, ses ingrédients vont dans la liste de la semaine." })));
+  }
+  /* Plats d'un repas de fête dans la grille : icône de fiche devant chaque plat qui en a une ;
+     en modification, chaque plat se retire (✕) et on en ajoute un par rubrique. */
+  function listeFeteGrille(slot, editable) {
+    var lp = h("ul", { class: "fete-liste" + (editable ? " edit" : "") });
+    function maj(plats) {
+      slot.plats = plats;
+      var ev = S.reponses && S.reponses.evenements && S.reponses.evenements[slot.key];
+      if (ev) ev.plats = clone(plats);
+      sauver(); renderPrep();
+    }
+    rubriquesDe(slot.plats).forEach(function (cat) {
+      var items = (slot.plats || []).map(function (p, i) { return { p: p, i: i }; }).filter(function (x) { return rubriqueFete(x.p.cat) === cat; });
+      if (!items.length) return;
+      var li = h("li", null, h("small", { text: cat }));
+      items.forEach(function (x) {
+        var nom = x.p.recette, fic = boutonFicheMenu(nom);
+        var lab = editable || !R.byName[nom] ? h("span", { class: "fp-nom", text: nom }) : h("button", { type: "button", class: "fp-nom fp-lien", text: nom, onclick: function () { ouvrirPlat(nom); } });
+        var ligne = h("span", { class: "fete-plat" }, lab, fic || "");
+        if (editable) ligne.append(h("button", { type: "button", class: "icon fp-x", "aria-label": "Retirer " + nom, text: "✕", onclick: function () { var pl = clone(slot.plats || []); pl.splice(x.i, 1); maj(pl); } }));
+        li.append(ligne);
+      });
+      lp.append(li);
+    });
+    if (!lp.children.length) lp.append(h("li", { class: "vide", text: "Menu de fête à composer" }));
+    if (editable) {
+      var sel = options(h("select", { class: "fp-cat", "aria-label": "Rubrique" }), CATS_FETE.map(function (c) { return [c, c]; }), "Plat");
+      var ch = chercheur({ label: "Ajouter un plat au repas de fête", placeholder: "+ Ajouter : recette ou texte libre…", libre: true, vide: function () { return videRubrique(sel.value); }, items: function () { return itemsRubrique(sel.value); }, onPick: function (x) {
+        if (!x || !x.v) return; var pl = clone(slot.plats || []); pl.push({ cat: sel.value, recette: x.v }); setTimeout(function () { maj(pl); }, 0);
+      } });
+      lp.append(h("li", { class: "fp-ajout" }, sel, ch));
+      lp.append(h("li", { class: "fp-apart" }, caseListeAPart(!!slot.listeAPart, function (v) {
+        slot.listeAPart = v; var ev = S.reponses && S.reponses.evenements && S.reponses.evenements[slot.key]; if (ev) ev.listeAPart = v; sauver(); renderPrep();
+      })));
+    } else if (slot.listeAPart) lp.append(h("li", { class: "fp-apart-info", text: "🛒 Liste de courses à part" }));
+    return lp;
+  }
   function jourTunnel(j) {
     if (jourPasse(j)) { var b = dayBox(j); b.classList.add("tj-passe"); return b; }
     var d = M.addDays(debut, j), rep = S.reponses;
@@ -2641,12 +2931,17 @@ var Moteur = (function () {
     slotKeysDuJour(j).forEach(function (key) {
       var repas = key.split("-")[1], etat = etatCreneau(key), ev = rep.evenements[key];
       var cell = h("div", { class: "tj-cell" });
+      if (repasPasse(j, repas)) { cell.append(h("div", { class: "tj-slot tj-fige", "data-etat": etat || "prevu", title: "Repas passé : il n'est plus modifiable" }, h("small", { text: repas + " 🔒" }), h("b", { text: LIB_TN[etat || ""] }))); row.append(cell); return; }
       cell.append(h("button", { type: "button", class: "tj-slot", "data-etat": etat || "prevu", "aria-label": nomJour(j) + " " + repas.toLowerCase() + " : " + LIB_TN[etat || ""] + ". Toucher pour changer.", onclick: function () {
-        var cycle = midiSemaine(key) ? ["exclu", "", "invitation", "resto"] : CYCLE_TN;
+        var cycle = midiSemaine(key) ? ["exclu", "", "invitation", "resto", "amoureux", "fete"] : CYCLE_TN;
         var suivant = cycle[(cycle.indexOf(etat || "") + 1) % cycle.length];
         changeCreneau(key, suivant, ""); sauver();
         row.replaceWith(jourTunnel(j));
       } }, h("small", { text: repas }), h("b", { text: LIB_TN[etat || ""] })));
+      if (etat === "fete") {
+        // Choix de l'occasion : événements de la famille et du calendrier, ou texte libre.
+        cell.append(comboFete(ev && ev.texte, function (v) { if (rep.evenements[key]) { rep.evenements[key].texte = v; sauver(); } }, "tj-txt"));
+      }
       if (etat === "invitation") {
         var t = h("input", { type: "text", class: "tj-txt", placeholder: "Chez qui ?", value: ev && ev.texte ? ev.texte : "", "aria-label": "Invitation : chez qui ?" });
         t.addEventListener("input", function () { if (rep.evenements[key]) { rep.evenements[key].texte = t.value; sauver(); } });
@@ -2675,10 +2970,13 @@ var Moteur = (function () {
   var finDepuis = 0;
   function renderFinTunnel() {
     // L'écran peut être redessiné (mémoire partagée qui confirme) : la coche ne s'anime qu'une fois.
-    var deja = Date.now() - finDepuis < 8000; if (!deja) finDepuis = Date.now();
-    panelPrep.append(h("div", { class: "tn-page tn-fin" + (deja ? " deja" : ""), onclick: finirTunnel },
-      h("div", { class: "fin-coche" }, icone("ok", "ico")),
-      h("h1", { class: "tn-titre fin-titre", text: "Menu validé" })));
+    // Redessiné en cours d'animation : on la reprend exactement où elle en était (délai négatif), sans la rejouer.
+    var ecoule = Date.now() - finDepuis, deja = ecoule < 8000; if (!deja) { finDepuis = Date.now(); ecoule = 0; }
+    var reprise = function (base) { return deja ? { style: "animation-delay:" + (base - ecoule) + "ms" } : {}; };
+    var page = h("div", Object.assign({ class: "tn-page tn-fin" + (deja && ecoule > 1200 ? " deja" : ""), onclick: finirTunnel }, reprise(0)),
+      h("div", Object.assign({ class: "fin-coche" }, reprise(0)), icone("ok", "ico")),
+      h("h1", Object.assign({ class: "tn-titre fin-titre", text: "Menu validé" }, reprise(150))));
+    panelPrep.append(page);
   }
   function finirTunnel() {
     if (!finTunnel) return;
@@ -2708,7 +3006,7 @@ var Moteur = (function () {
     return h("div", { class: "q-head" }, h("span", { class: "q-num", text: String(n).padStart(2, "0") }), h("h2", { text: titre }), aide ? h("p", { text: aide }) : null);
   }
 
-  var EVT_OPTIONS = [["", "Prévu"], ["exclu", "Exclu"], ["invitation", "Invitation"], ["resto", "Restaurant en famille"]];
+  var EVT_OPTIONS = [["", "Prévu"], ["exclu", "Exclu"], ["invitation", "Invitation"], ["resto", "Restaurant en famille"], ["amoureux", "Restaurant en amoureux"], ["fete", "Repas de fête"]];
 
   function renderQuestions() {
     var rep = S.reponses;
@@ -2775,13 +3073,15 @@ var Moteur = (function () {
   }
   function allerEtape(i) { S.etape = i; sauver(); renderPrep(); window.scrollTo(0, 0); }
   function resumeJours() {
-    var rep = S.reponses, parts = [], n = { exclu: 0, invitation: 0, resto: 0 };
+    var rep = S.reponses, parts = [], n = { exclu: 0, invitation: 0, resto: 0, amoureux: 0, fete: 0 };
     Object.keys(rep.evenements).forEach(function (k) { var ev = rep.evenements[k]; if (ev && n[ev.etat] != null) n[ev.etat]++; });
     var midis = rep.midis.length;
     if (midis) parts.push(midis + " midi" + (midis > 1 ? "s" : "") + " ajouté" + (midis > 1 ? "s" : ""));
     if (n.exclu) parts.push(n.exclu + " repas exclu" + (n.exclu > 1 ? "s" : ""));
     if (n.invitation) parts.push(n.invitation + " invitation" + (n.invitation > 1 ? "s" : ""));
     if (n.resto) parts.push(n.resto + " restaurant" + (n.resto > 1 ? "s" : ""));
+    if (n.amoureux) parts.push(n.amoureux + " resto en amoureux");
+    if (n.fete) parts.push(n.fete + " repas de fête");
     return parts.length ? parts.join(" · ") : "Semaine habituelle";
   }
 
@@ -2803,6 +3103,7 @@ var Moteur = (function () {
       if (i === -1) rep.midis.push(j);
     }
     if (!val) delete rep.evenements[key];
+    else if (val === "fete") rep.evenements[key] = { etat: "fete", texte: texte || feteProposee(j), plats: [] };
     else rep.evenements[key] = { etat: val, texte: val === "invitation" ? (texte || "") : "" };
   }
 
@@ -2876,6 +3177,7 @@ var Moteur = (function () {
       enRecherche = !!q;
       if (!q) return tous;
       var debut = [], mot = [], dedans = [];
+      if (opts.libre && !tous.some(function (x) { return M.norm(x.label) === q; })) debut.push({ v: inp.value.trim(), label: inp.value.trim(), sub: "texte libre" });
       tous.forEach(function (x) {
         if (x.haut) return;
         var n = M.norm(x.label + " " + (x.cherche || ""));
@@ -2888,7 +3190,7 @@ var Moteur = (function () {
     function dessiner() {
       clear(liste); vus = filtrer(); if (actif >= vus.length) actif = 0;
       var grp = null, q = enRecherche;
-      if (!vus.length) liste.append(h("li", { class: "cherche-vide", text: opts.vide || "Aucun résultat." }));
+      if (!vus.length) liste.append(h("li", { class: "cherche-vide", text: (typeof opts.vide === "function" ? opts.vide() : opts.vide) || "Aucun résultat." }));
       vus.forEach(function (x, i) {
         if (!q && x.groupe && x.groupe !== grp) { grp = x.groupe; liste.append(h("li", { class: "cherche-grp", role: "presentation", text: x.groupe })); }
         var li = h("li", { role: "option", class: "cherche-opt" + (i === actif ? " actif" : "") + (x.v === choisi ? " choisi" : ""), "aria-selected": String(x.v === choisi) },
@@ -3064,7 +3366,7 @@ var Moteur = (function () {
       var figeJour = jourPasse(j) || (prev && estAujourdhui(j));
       ["Midi", "Soir"].forEach(function (r) {
         var key = j + "-" + r, ps = prev ? prev.creneaux.filter(function (c) { return c.key === key; })[0] : null;
-        if (!figeJour && !(ps && ps.source === "choisie")) return;
+        if (!figeJour && !repasPasse(j, r) && !(ps && ps.source === "choisie")) return;
         var midiSem = r === "Midi" && j >= 2;
         if (ps && ps.type === "recette") {
           imposees.unshift({ recette: ps.recette, jour: j, repas: r }); gardes[key] = ps; delete evts[key];
@@ -3100,6 +3402,38 @@ var Moteur = (function () {
     return { lignes: lignes, retirees: retirees, sansIngredients: c.sansIngredients };
   }
 
+  /* Plats du menu dont la recette n'a pas d'ingrédients (ou plats tapés à la main) : rien dans la liste de courses pour eux. */
+  function platsSansIngredients(creneaux) {
+    var out = [];
+    function voir(nom) {
+      if (!nom) return; var r = R.byName[nom];
+      if (r && (r.ingredients.length || r.sansIngredients)) return;
+      if (out.indexOf(nom) === -1) out.push(nom);
+    }
+    (creneaux || []).forEach(function (c) {
+      var jc = c.jour != null ? c.jour : +String(c.key || "0").split("-")[0];
+      if (repasPasse(jc, c.repas || String(c.key || "").split("-")[1])) return;
+      if (c.type === "recette") voir(c.recette);
+      else if (c.type === "fete") (c.plats || []).forEach(function (p) { voir(p && p.recette); });
+    });
+    return out;
+  }
+  var ICO_ALERTE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 1.5 21h21z" fill="#F5C518" stroke="#B88A00" stroke-width="1.2" stroke-linejoin="round"/><path d="M12 9v6" stroke="#1a1a1a" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="18" r="1.3" fill="#1a1a1a"/></svg>';
+  function alerteSansIngredients(creneaux) {
+    var l = platsSansIngredients(creneaux);
+    if (!l.length) return null;
+    var ico = h("span", { class: "alerte-ico" }); ico.innerHTML = ICO_ALERTE;
+    return h("div", { class: "alerte-courses", role: "note" }, ico, h("p", null, h("b", { text: "Pensez à prévoir les courses pour : " }), l.join(" · "),
+      h("small", { text: "Ces plats n'ont pas d'ingrédients enregistrés : leurs articles ne sont pas dans la liste de courses." })));
+  }
+  /* Listes de courses à part des repas de fête (case cochée). */
+  function listesFetes(menu) {
+    return (menu.creneaux || []).filter(function (c) { return c.type === "fete" && c.listeAPart; }).map(function (c) {
+      var r = M.courses(R, { creneaux: [{ type: "fete", plats: c.plats || [] }] });
+      return { key: c.key, texte: c.texte || "Repas de fête", date: c.date, repas: c.repas,
+        courses: r.lignes.map(function (l) { return { produit: majuscule(l.produit), quantite: l.quantite, categorie: l.categorie, source: "fete" }; }) };
+    });
+  }
   function renderMenuGrille(editable) {
     var hist = Store.historique(M.iso(debut));
     var wrap = h("div", { class: "menu" });
@@ -3119,7 +3453,7 @@ var Moteur = (function () {
 
   function estAujourdhui(j) { return M.iso(M.addDays(debut, j)) === aujIso(); }
   function semaineEnCours() { var t = aujIso(); return M.iso(debut) <= t && t <= M.iso(M.addDays(debut, 6)); }
-  var CHOIX_EVT = [["__exclu", "— (pas de repas)"], ["__invitation", "Invitation"], ["__resto", "Restaurant en famille"]];
+  var CHOIX_EVT = [["__exclu", "— (pas de repas)"], ["__invitation", "Invitation"], ["__resto", "Restaurant en famille"], ["__amoureux", "Restaurant en amoureux"], ["__fete", "Repas de fête 🎉"]];
   /* Crée le créneau s'il n'existe pas encore (midi de semaine non prévu). */
   function creneauDe(j, repas) {
     var key = j + "-" + repas, c = S.menu.creneaux.filter(function (x) { return x.key === key; })[0];
@@ -3165,7 +3499,7 @@ var Moteur = (function () {
     return null;
   }
   function lienFiche(f) { return PAGE_FICHES + "#fiche=" + encodeURIComponent(f.id); }
-  function lienNouvelleFiche(r) { return PAGE_FICHES + "#nouvelle=" + encodeURIComponent(r.nom) + (r._id ? "&recette=" + encodeURIComponent(r._id) : ""); }
+  function lienNouvelleFiche(r) { return PAGE_FICHES + "#nouvelle=" + encodeURIComponent(r.nom) + (r._id ? "&recette=" + encodeURIComponent(r._id) : "") + (r.cat && LIB_CAT[r.cat] ? "&cat=" + r.cat : ""); }
   var ICONE_LIVRE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>';
   var ICONE_FICHE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4M8 12h8M8 16h6"/></svg>';
   function boutonFicheMenu(nom) {
@@ -3177,7 +3511,69 @@ var Moteur = (function () {
     return a;
   }
 
+  var CHOIX_REEL = [["__restes", "Des restes"], ["__resto", "Restaurant"], ["__invitation", "Invitation"], ["__saute", "Repas sauté"]];
+  function libReel(r) { return r.type === "recette" ? r.recette : r.texte || "Autre"; }
+  /* Plus de 2 semaines : on ne réécrit plus l'histoire. */
+  function semaineTropVieille() { return M.iso(M.addDays(debut, 20)) < aujIso(); }
+  function libSlot(c) {
+    if (!c || c.type === "exclu" || c.type === "vide") return "pas de menu";
+    if (c.type === "recette") return c.recette;
+    return (c.type === "fete" ? emojiFete(c.texte) + " " : "") + (c.texte || "");
+  }
+  /* Un seul bouton sous le menu validé : choisir le repas passé, puis ce qu'on a vraiment mangé. */
+  function zoneChangementPlan() {
+    var idSem = M.iso(debut), docSem = Store.menus[idSem];
+    if (!docSem || semaineTropVieille()) return null;
+    var passes = [];
+    for (var j = 0; j < 7; j++) ["Midi", "Soir"].forEach(function (r) {
+      if (!repasPasse(j, r)) return;
+      var c = (docSem.creneaux || []).filter(function (x) { return x.key === j + "-" + r; })[0], reel = docSem.reels && docSem.reels[j + "-" + r];
+      if (!c && !reel && r === "Midi") return; // midi sans menu : rarement utile, on allège la liste
+      passes.push({ j: j, r: r, c: c, reel: reel });
+    });
+    if (!passes.length) return null;
+    var zone = h("div", { class: "chg-zone" });
+    function bouton() {
+      clear(zone);
+      zone.append(h("button", { type: "button", class: "btn", text: "⇄ Un repas a changé ?", onclick: etape1 }));
+    }
+    function enregistrer(k, val) {
+      var patch = { reels: {} }; patch.reels[k] = val;
+      if (!docSem.reels) docSem.reels = {};
+      if (val) docSem.reels[k] = val; else delete docSem.reels[k];
+      fileEcriture = fileEcriture.then(function () { return Store.updateMenu(idSem, patch); }).catch(function () {});
+      renderPrep(); toast(val ? "Changement de plan noté : " + libReel(val) + "." : "Repas remis comme prévu.");
+    }
+    function etape1() {
+      clear(zone);
+      var sel = chercheur({ label: "Quel repas a changé ?", placeholder: "Quel repas a changé ?", items: function () {
+        return passes.slice().reverse().map(function (x) {
+          return { v: x.j + "-" + x.r, label: nomJour(x.j) + " " + x.r.toLowerCase() + " · " + libSlot(x.c), sub: x.reel ? "→ " + libReel(x.reel) : "" };
+        });
+      }, onPick: function (x) { if (x && x.v) etape2(x.v); } });
+      zone.append(h("p", { class: "lbl", text: "1. Quel repas a changé ?" }), h("div", { class: "choix-ligne" }, sel, h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: bouton })));
+      setTimeout(function () { var i = sel.querySelector("input"); if (i) i.focus(); }, 30);
+    }
+    function etape2(k) {
+      var x = passes.filter(function (p) { return p.j + "-" + p.r === k; })[0];
+      clear(zone);
+      var sel = chercheur({ label: "Qu'avez-vous mangé ?", placeholder: "Recette, restes, restaurant…", items: function () {
+        var o = x.reel ? [{ v: "__prevu", label: "↺ Comme prévu (" + libSlot(x.c) + ")", groupe: "Options", haut: true }] : [];
+        return o.concat(CHOIX_REEL.map(function (c) { return { v: c[0], label: c[1], groupe: "Sans recette", haut: true }; }),
+          itemsRecettes().map(function (y) { y.groupe = "Recettes"; return y; }));
+      }, onPick: function (y) {
+        if (!y || !y.v) return;
+        enregistrer(k, y.v === "__prevu" ? null : y.v.indexOf("__") === 0 ? { type: y.v.slice(2), texte: y.label } : { type: "recette", recette: y.v });
+      } });
+      zone.append(h("p", { class: "lbl", text: "2. " + nomJour(x.j) + " " + x.r.toLowerCase() + " (prévu : " + libSlot(x.c) + ") — qu'avez-vous mangé ?" }),
+        h("div", { class: "choix-ligne" }, sel, h("button", { type: "button", class: "icon", "aria-label": "Retour", text: "✕", onclick: etape1 })));
+      setTimeout(function () { var i = sel.querySelector("input"); if (i) i.focus(); }, 30);
+    }
+    bouton();
+    return zone;
+  }
   function cellule(slot, repas, editable, hist, j) {
+    var verrou = editable && repasPasse(j, repas); if (verrou) editable = false;
     var cell = h("div", { class: "mcell" }, h("span", { class: "lab", text: repas }));
     var nameEl, tags = h("div", { class: "tags" });
     if (slot && slot.type === "recette") {
@@ -3187,6 +3583,18 @@ var Moteur = (function () {
       if (slot.source === "imposee") tags.append(h("span", { class: "tag", text: "imposée" }));
     } else if (slot && (slot.type === "invitation" || slot.type === "resto")) {
       nameEl = h("span", { class: "mname evt", text: slot.texte });
+    } else if (slot && slot.type === "fete") {
+      if (editable) {
+        // L'occasion se renomme ici aussi (liste des fêtes + saisie libre).
+        var icoF = h("span", { class: "fete-sym", text: emojiFete(slot.texte) });
+        var inpF = comboFete(slot.texte === "Repas de fête" ? "" : slot.texte, function (v) {
+          slot.texte = (v || "").trim() || "Repas de fête"; icoF.textContent = emojiFete(slot.texte);
+          var evF = S.reponses.evenements[slot.key]; if (evF) evF.texte = slot.texte;
+          sauver();
+        }, "grille", slot.key);
+        nameEl = h("span", { class: "mname fete" }, icoF, inpF);
+      } else nameEl = h("span", { class: "mname fete" }, h("span", { class: "fete-sym", text: emojiFete(slot.texte) }), h("span", { class: "fete-titre-or", text: slot.texte }));
+      tags.append(listeFeteGrille(slot, editable));
     } else {
       nameEl = h("span", { class: "mname sans" }, sansMenu());
     }
@@ -3195,6 +3603,7 @@ var Moteur = (function () {
     var tools = h("div", { class: "mtools" });
     var libelle = nomJour(j) + " " + repas.toLowerCase();
     // Jours passés : rien. Aujourd'hui : crayon seulement. Jours à venir : ↻ et crayon.
+    if (verrou && estAujourdhui(j)) tools.append(h("span", { class: "repas-verrou", title: "Repas passé : il n'est plus modifiable", "aria-label": "Repas passé, non modifiable", text: "🔒" }));
     if (editable && !jourPasse(j)) {
       var aleatoire = !estAujourdhui(j) && (!slot || ((slot.type === "recette" || slot.type === "vide" || slot.type === "exclu")
         && slot.source !== "imposee" && slot.source !== "alternance" && slot.source !== "choisie"));
@@ -3220,7 +3629,16 @@ var Moteur = (function () {
             S.menu.creneaux.sort(function (a, b) { return a.jour - b.jour || (a.repas === "Midi" ? -1 : 1); });
           }
           cible.notes = [];
-          if (v === "__exclu") { cible.type = "exclu"; cible.recette = null; cible.texte = ""; cible.source = "choisie"; }
+          var evK = S.reponses.evenements[cible.key];
+          if (evK && evK.etat === "fete" && v !== "__fete") delete S.reponses.evenements[cible.key];
+          if (v === "__fete") {
+            var txtF = feteProposee(j) || "Repas de fête";
+            cible.type = "fete"; cible.recette = null; cible.texte = txtF; cible.plats = []; cible.source = "choisie";
+            S.reponses.evenements[cible.key] = { etat: "fete", texte: txtF, plats: [] };
+            if (!feteProposee(j)) comboFeteAOuvrir = cible.key;
+          }
+          else if (v === "__amoureux") { cible.type = "resto"; cible.recette = null; cible.texte = "Restaurant en amoureux"; cible.source = "choisie"; }
+          else if (v === "__exclu") { cible.type = "exclu"; cible.recette = null; cible.texte = ""; cible.source = "choisie"; }
           else if (v === "__invitation") { cible.type = "invitation"; cible.recette = null; cible.texte = "Invitation"; cible.source = "choisie"; }
           else if (v === "__resto") { cible.type = "resto"; cible.recette = null; cible.texte = "Restaurant en famille"; cible.source = "choisie"; }
           else { cible.type = "recette"; cible.recette = v; cible.texte = ""; cible.source = "choisie"; }
@@ -3228,6 +3646,12 @@ var Moteur = (function () {
         }
         clear(cell); cell.append(h("span", { class: "lab", text: repas }), h("div", { class: "choix-ligne" }, sel, annuler)); sel.querySelector("input").focus();
       } }));
+    }
+    // Repas passé : « Changement de plan ? » pour noter ce qu'on a vraiment mangé (compte dans l'historique).
+    var idSem = M.iso(debut), docSem = Store.menus[idSem], reel = docSem && docSem.reels && docSem.reels[j + "-" + repas];
+    if (reel) {
+      nameEl.classList.add("prevu-barre");
+      tags.insertBefore(h("span", { class: "reel" }, "→ ", h("b", { text: libReel(reel) })), tags.firstChild);
     }
     cell.append(h("div", { class: "mline" }, nameEl, tools));
     if (tags.childNodes.length) cell.append(tags);
@@ -3262,6 +3686,10 @@ var Moteur = (function () {
     });
     if (!liste.lignes.length) aisles.append(h("p", { class: "empty", text: "Aucun produit : les recettes du menu n'ont pas d'ingrédients renseignés dans la base." }));
     box.append(aisles);
+    if (S.menu) listesFetes(S.menu).forEach(function (lf) {
+      box.append(h("div", { class: "fete-apart-apercu" }, h("b", { text: emojiFete(lf.texte) + " Liste à part : " + lf.texte }),
+        h("p", { class: "status", text: lf.courses.length ? lf.courses.map(function (l) { return l.produit + (l.quantite ? " (" + l.quantite + ")" : ""); }).join(", ") : "Aucun ingrédient enregistré pour ces plats." })));
+    });
 
     if (editable && liste.retirees.length) {
       var rm = h("div", { class: "removed" }, "Retirés :");
@@ -3332,22 +3760,27 @@ var Moteur = (function () {
     var doc = {
       debut: S.menu.debut, fin: S.menu.fin, valideLe: new Date().toISOString(),
       creneaux: S.menu.creneaux.map(function (c) {
-        return { key: c.key, jour: c.jour, repas: c.repas, date: c.date, type: c.type, recette: c.recette || null, texte: c.texte || "", source: c.source || null, notes: c.notes || [] };
+        var o = { key: c.key, jour: c.jour, repas: c.repas, date: c.date, type: c.type, recette: c.recette || null, texte: c.texte || "", source: c.source || null, notes: c.notes || [], plats: c.plats || null };
+        if (c.type === "fete" && c.listeAPart) o.listeAPart = true;
+        return o;
       }),
       courses: liste.lignes.map(function (l) { return { produit: l.produit, quantite: l.quantite, categorie: l.categorie, source: l.source }; }),
       reponses: S.reponses, ajouts: S.ajouts, retires: S.retires
     };
+    var lf = listesFetes(S.menu); if (lf.length) doc.coursesFetes = lf;
+    var si = platsSansIngredients(S.menu.creneaux); if (si.length) doc.sansRecettes = { plats: si, ajoutes: S.sansIngrOk === si.join("|") };
     // Menu déjà validé puis modifié : on garde la liste de référence (celle déjà achetée)
     // pour calculer le complément, et les coches des produits toujours présents.
     var prev = Store.menus[id];
     if (prev) {
       var ar = ajoutsRapides(prev); if (Object.keys(ar).length) doc.ajoutsRapides = ar;
       if (prev.coursesFaites != null) doc.coursesFaites = prev.coursesFaites;
+      if (prev.reels) doc.reels = prev.reels;
     }
     if (prev && prev.courses && !coursesFaites(prev, debut)) {
       // Courses pas encore faites : la liste est simplement refaite (on garde les coches des produits toujours là).
       var anc = cochesParProduit(prev), idxN = indexerLignes(doc.courses).m, cN = {};
-      Object.keys(anc).forEach(function (k) { if (anc[k] && (idxN[k] || k.indexOf("aj-") === 0)) cN[k] = true; });
+      Object.keys(anc).forEach(function (k) { if (anc[k] && (idxN[k] || k.indexOf("aj-") === 0 || k.indexOf("fete:") === 0)) cN[k] = true; });
       doc.coches = cN;
     } else if (prev && prev.courses) {
       doc.coursesReference = prev.coursesReference || prev.courses;
@@ -3356,7 +3789,7 @@ var Moteur = (function () {
       var plusNouv = {}; comp.plus.forEach(function (l) { plusNouv[l.k] = true; });
       Object.keys(anciennes).forEach(function (k) {
         if (!anciennes[k]) return;
-        if (k.indexOf("plus:") === 0 ? plusNouv[k.slice(5)] : (nouvIdx[k] || k.indexOf("aj-") === 0)) c[k] = true;
+        if (k.indexOf("plus:") === 0 ? plusNouv[k.slice(5)] : (nouvIdx[k] || k.indexOf("aj-") === 0 || k.indexOf("fete:") === 0)) c[k] = true;
       });
       doc.coches = c;
       if (!comp.plus.length && !comp.moins.length) delete doc.coursesReference;
@@ -3409,6 +3842,8 @@ var Moteur = (function () {
     }
     panelPrep.append(renderMenuGrille(false));
     if (modif) panelPrep.append(h("div", { class: "bar actions-rares" }, modif));
+    var chg = zoneChangementPlan(); if (chg) panelPrep.append(chg);
+    panelPrep.append(alerteSansIngredients(S.menu.creneaux) || "");
   }
 
   /* Petit lien vers la semaine suivante, sur la ligne « Menu validé » (semaine en cours seulement). */
@@ -3427,7 +3862,7 @@ var Moteur = (function () {
       var c = menu.creneaux.filter(function (x) { return x.key === j + "-" + r; })[0];
       if (!c) return null;
       if (c.type === "recette") return { t: c.recette, evt: false };
-      if (c.type === "invitation" || c.type === "resto") return { t: c.texte, evt: true };
+      if (c.type === "invitation" || c.type === "resto" || c.type === "fete") return { t: c.type === "fete" ? emojiFete(c.texte) + " " + c.texte : c.texte, evt: true };
       return null;
     }
     for (var j = jAuj; j < 7; j++) ["Midi", "Soir"].forEach(function (r) { if (j === jAuj && r === "Midi" && apresMidi) return; var x = repas(j, r); if (x) suite.push({ j: j, r: r, x: x }); });
@@ -3456,7 +3891,7 @@ var Moteur = (function () {
       var c = menu.creneaux.filter(function (x) { return x.key === j + "-" + r; })[0];
       if (!c) return null;
       if (c.type === "recette") return { t: c.recette, evt: false };
-      if (c.type === "invitation" || c.type === "resto") return { t: c.texte, evt: true };
+      if (c.type === "invitation" || c.type === "resto" || c.type === "fete") return { t: c.type === "fete" ? emojiFete(c.texte) + " " + c.texte : c.texte, evt: true };
       return null;
     }
     // Repas à venir dans l'ordre : midi (avant 14 h) puis soir, puis les jours suivants.
@@ -3492,14 +3927,29 @@ var Moteur = (function () {
 
 
   /* ---------- Fenêtre « plat » : fiche (ou recette) par-dessus la page, ✕ pour revenir ---------- */
+  /* Fiche en image (PNG) : feuille de partage sur téléphone (« Enregistrer l'image »), sinon téléchargement. */
+  function telechargerFiche(f, btn) {
+    if (!BUS.rendu) return;
+    var nomF = "Fiche_" + String(f.title || "recette").replace(/[^\wÀ-ÿ-]+/g, "_") + ".png";
+    btn.disabled = true;
+    BUS.rendu(f.id).then(function (url) { return fetch(url).then(function (r) { return r.blob(); }); }).then(function (blob) {
+      btn.disabled = false;
+      var fichier = typeof File === "function" ? new File([blob], nomF, { type: blob.type || "image/png" }) : null;
+      if (fichier && surMobile() && navigator.canShare && navigator.canShare({ files: [fichier] })) { navigator.share({ files: [fichier] }).then(function () {}, function () {}); return; }
+      var u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = nomF; document.body.append(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+    }, function () { btn.disabled = false; });
+  }
+  var retourFiche = null;
   function ouvrirPlat(nom) {
     var r = TOUTES.filter(function (x) { return !x.effacee && M.norm(x.nom) === M.norm(nom); })[0];
     var f = r && fichesDispo() ? ficheDe(r) : (fichesDispo() ? ficheDe(nom) : null);
     var y = window.scrollY, ancienFocus = document.activeElement;
     var corps = h("div", { class: "plat-corps" });
     var fermer = h("button", { type: "button", class: "plat-x", "aria-label": "Fermer", text: "✕" });
+    var dlFiche = f ? h("button", { type: "button", class: "plat-dl", "aria-label": "Télécharger la fiche", title: "Télécharger la fiche", text: "⤓", onclick: function () { telechargerFiche(f, dlFiche); } }) : null;
     var tete = h("div", { class: "plat-tete" }, h("span", { class: "plat-poignee", "aria-hidden": "true" }),
-      h("div", { class: "plat-titres" }, h("span", { class: "lbl", text: f ? "Fiche recette" : "Recette" }), h("h2", { text: (f && f.title) || (r && r.nom) || nom })), fermer);
+      h("div", { class: "plat-titres" }, h("span", { class: "lbl", text: f ? "Fiche recette" : "Recette" }), h("h2", { text: (f && f.title) || (r && r.nom) || nom })), dlFiche, fermer);
     var feuille = h("div", { class: "plat-feuille", role: "dialog", "aria-modal": "true", "aria-label": (f && f.title) || nom }, tete, corps);
     var fond = h("div", { class: "plat-fond" }, feuille);
     function clore() {
@@ -3523,7 +3973,7 @@ var Moteur = (function () {
       img.addEventListener("click", function () { zone.classList.toggle("zoome"); });
       corps.append(zone, h("p", { class: "status plat-aide", text: "Touchez la fiche pour zoomer." }));
       if (BUS.rendu) BUS.rendu(f.id).then(function (url) { img.src = url; }, function () {});
-      corps.append(h("div", { class: "bar plat-actions" }, h("button", { type: "button", class: "btn ghost", text: "Ouvrir dans Mes fiches →", onclick: function () { aller(function () { ouvrirFichesIntegre(lienFiche(f)); }); } })));
+      corps.append(h("div", { class: "bar plat-actions" }, h("button", { type: "button", class: "btn ghost", text: "Ouvrir dans Mes fiches →", onclick: function () { var depuis = { onglet: ongletActif, y: y }; aller(function () { retourFiche = depuis; ouvrirFichesIntegre(lienFiche(f)); versFiches({ retourApp: true }); }); } })));
     } else if (r) {
       var lignes = r.ingredients.map(ingredientVersLigne).filter(Boolean);
       corps.append(h("p", { class: "status", text: [r.saison, r.delai ? "revient au plus tôt après " + r.delai + " sem." : ""].filter(Boolean).join(" · ") }));
@@ -3754,7 +4204,13 @@ var Moteur = (function () {
     var t = toile(), x = t.x;
     var accentTxt = couleurTexte(COULEURS_MOIS[moisMajoritaire(data.debut)]);
     entete(x, "Menu", data, accentTxt);
-    var left = 80, right = W - 80, top = 336, bottom = H - 80, rowH = (bottom - top) / 7, col0 = 270, colW = (right - left - col0) / 2;
+    var sansI = platsSansIngredients(data.creneaux), hAl = 0;
+    if (sansI.length) {
+      x.font = "500 26px " + F_SANS;
+      var lAl = wrap(x, "Pensez à prévoir les courses pour : " + sansI.join(" · "), W - 160 - 90);
+      hAl = 40 + lAl.length * 34 + 20;
+    }
+    var left = 80, right = W - 80, top = 336, bottom = H - 80 - hAl, rowH = (bottom - top) / 7, col0 = 270, colW = (right - left - col0) / 2;
     for (var j = 0; j < 7; j++) {
       var y = top + j * rowH, d = M.addDays(M.fromIso(data.debut), j);
       // Le numéro du jour prend la couleur de son propre mois.
@@ -3766,6 +4222,7 @@ var Moteur = (function () {
         var txt = "—", style = "off";
         if (s && s.type === "recette") { txt = s.recette; style = "rec"; }
         else if (s && (s.type === "invitation" || s.type === "resto")) { txt = s.texte; style = "evt"; }
+        else if (s && s.type === "fete") { txt = s.texte + ((s.plats || []).length ? " : " + s.plats.map(function (p) { return p.recette; }).join(", ") : ""); style = "evt"; }
         var cx = left + col0 + k * colW;
         x.fillStyle = C_GREY; x.font = "600 17px " + F_SANS; espace(x, repas.toUpperCase(), cx, y + 46, 3);
         var size = 36, lines;
@@ -3778,6 +4235,17 @@ var Moteur = (function () {
         lines.forEach(function (ln, i) { x.fillText(ln, cx, y + 98 + i * size * 1.2); });
       });
       if (j < 6) { x.fillStyle = C_HAIR; x.fillRect(left, y + rowH - 1, right - left, 2); }
+    }
+    if (hAl) {
+      var yA = H - 80 - hAl + 16, hA = hAl - 16;
+      x.fillStyle = "#FFF8DC"; x.strokeStyle = "#E0B400"; x.lineWidth = 3;
+      x.beginPath(); if (x.roundRect) x.roundRect(left, yA, right - left, hA, 16); else x.rect(left, yA, right - left, hA); x.fill(); x.stroke();
+      var tx = left + 26, ty = yA + hA / 2 - 22; // triangle jaune avec « ! »
+      x.fillStyle = "#F5C518"; x.strokeStyle = "#B88A00"; x.lineWidth = 2;
+      x.beginPath(); x.moveTo(tx + 24, ty); x.lineTo(tx + 48, ty + 42); x.lineTo(tx, ty + 42); x.closePath(); x.fill(); x.stroke();
+      x.fillStyle = "#1a1a1a"; x.fillRect(tx + 22, ty + 13, 4, 16); x.beginPath(); x.arc(tx + 24, ty + 35, 2.6, 0, 7); x.fill();
+      x.fillStyle = C_INK; x.font = "500 26px " + F_SANS;
+      lAl.forEach(function (ln, i) { x.fillText(ln, left + 90, yA + 44 + i * 34); });
     }
     return t.c;
   }
@@ -4701,6 +5169,7 @@ var Moteur = (function () {
   var TYPES_REGLE = [["aucune", "Aucune"], ["poisson", "Poisson"], ["uniquement", "Uniquement…"], ["preference", "De préférence…"], ["imposee", "Seulement si imposée"]];
   var JOURS_MIN = ["samedi", "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi"];
 
+  function sansCategorie(r) { return !(r.cat && LIB_CAT[r.cat]); }
   function aCompleter(r) { return (!r.ingredients.length && !r.sansIngredients) || r._regle.incomplete || (r._regle.type === "imposee" && /^uniquement\s*$/.test(M.norm(r.regle))); }
   function statutRecette(r) {
     var hist = Store.historique(M.iso(debut)).filter(function (e) { return e.date < M.iso(debut); });
@@ -4720,6 +5189,7 @@ var Moteur = (function () {
     var groupes = {
       toutes: function (r) { return !r.effacee; },
       completer: function (r) { return !r.effacee && !r.supprimee && aCompleter(r); },
+      sanscat: function (r) { return !r.effacee && !r.supprimee && sansCategorie(r); },
       modifiees: function (r) { return !r.effacee && (r._modifiee || r._nouvelle); },
       retirees: function (r) { return !r.effacee && r.supprimee; },
       fiches: function (r) { return !r.effacee && fichesDispo() && !!ficheDe(r); },
@@ -4728,7 +5198,7 @@ var Moteur = (function () {
       afaire: function (r) { return !r.effacee && fichesDispo() && !!r.ficheAFaire && !ficheDe(r); }
     };
     if (filtreRec === "afaire") filtreRec = "toutes";
-    var libs = [["toutes", "Toutes"], ["saison", "De saison"], ["jamais", "Jamais faites"], ["fiches", "Avec fiche"], ["completer", "À compléter"], ["retirees", "Retirées"]];
+    var libs = [["toutes", "Toutes"], ["saison", "De saison"], ["jamais", "Jamais faites"], ["fiches", "Avec fiche"], ["completer", "À compléter"], ["sanscat", "Sans catégorie"], ["retirees", "Retirées"]];
     var seg = h("div", { class: "chips", role: "tablist", "aria-label": "Filtrer les recettes" });
     libs.forEach(function (l) {
       var n = TOUTES.filter(groupes[l[0]]).length;
@@ -4755,6 +5225,7 @@ var Moteur = (function () {
         if (triRec === "az" && !f) { var l0 = M.norm(r.nom).charAt(0).toUpperCase(); if (l0 !== lettre) { lettre = l0; liste.append(h("div", { class: "rec-lettre", text: l0 })); } }
         var badges = [];
         if (!r.supprimee && aCompleter(r)) badges.push(h("span", { class: "pill warn", text: "à compléter" }));
+        if (!r.supprimee && sansCategorie(r)) badges.push(h("span", { class: "pill cat-manque", text: "catégorie ?" }));
         var tagFiche = null;
         if (fichesDispo()) {
           if (ficheDe(r)) tagFiche = h("span", { class: "pill fiche-tag" });
@@ -5350,8 +5821,8 @@ var Moteur = (function () {
 
   function ouvrirFiche(id, garderScroll) {
     var r = id ? TOUTES.filter(function (x) { return x._id === id; })[0] : null;
-    var rec = r ? { nom: r.nom, saison: r.saison, delai: r.delai, regle: r.regle, familles: r.familles || null, ingredients: clone(r.ingredients), anciensNoms: (r.anciensNoms || []).slice(), supprimee: !!r.supprimee, sansIngredients: !!r.sansIngredients, ficheAFaire: !!r.ficheAFaire }
-      : { nom: "", saison: "Toute l’année", delai: 2, regle: "Aucune", familles: null, ingredients: [], anciensNoms: [], supprimee: false };
+    var rec = r ? { cat: r.cat || "", nom: r.nom, saison: r.saison, delai: r.delai, regle: r.regle, familles: r.familles || null, ingredients: clone(r.ingredients), anciensNoms: (r.anciensNoms || []).slice(), supprimee: !!r.supprimee, sansIngredients: !!r.sansIngredients, ficheAFaire: !!r.ficheAFaire }
+      : { cat: "", nom: "", saison: "Toute l’année", delai: 2, regle: "Aucune", familles: null, ingredients: [], anciensNoms: [], supprimee: false };
     var rv = regleVersEditeur(rec.regle), sn = M.norm(rec.saison), saisons = {};
     SAISONS.forEach(function (s) { saisons[s[0]] = id ? (sn.indexOf("toute") !== -1 || sn.indexOf(s[0]) !== -1) : false; });
     fiche = {
@@ -5385,6 +5856,7 @@ var Moteur = (function () {
     if (f.rec.sansIngredients) ings = [];
     var out = { nom: f.rec.nom.trim(), saison: saisonTexte(f), delai: Math.max(0, Math.min(52, +f.rec.delai || 0)), regle: regleTexte(f), ingredients: ings };
     if (f.rec.sansIngredients) out.sansIngredients = true;
+    if (f.rec.cat && LIB_CAT[f.rec.cat]) out.cat = f.rec.cat;
     if (f.rec.ficheAFaire) out.ficheAFaire = true;
     if (f.rec.familles) out.familles = f.rec.familles.slice();
     return out;
@@ -5438,9 +5910,11 @@ var Moteur = (function () {
         h("h2", { text: src.nom }),
         h("div", { class: "tags" },
           src.supprimee ? h("span", { class: "pill wait", text: "retirée des tirages" }) : null,
-          !src.supprimee && aCompleter(src) ? h("span", { class: "pill warn", text: "à compléter" }) : null)),
+          !src.supprimee && aCompleter(src) ? h("span", { class: "pill warn", text: "à compléter" }) : null,
+          !src.supprimee && sansCategorie(src) ? h("span", { class: "pill cat-manque", text: "catégorie manquante" }) : null)),
       f.msg ? h("p", { class: "status ok-msg", role: "status", text: f.msg }) : null,
       h("section", { class: "card fiche-lecture" },
+        src.cat && LIB_CAT[src.cat] ? ligne("Catégorie", LIB_CAT[src.cat]) : null,
         ligne("Saison", src.saison), ligne("Délai minimum", src.delai + " semaine" + (src.delai > 1 ? "s" : "")), ligne("Règle", src.regle || "Aucune"),
         h("span", { class: "lbl", text: "Ingrédients" }), ings),
       blocFicheRecette(src),
@@ -5509,6 +5983,7 @@ var Moteur = (function () {
     if (!rec.nom) e.push("un nom");
     else if (TOUTES.some(function (x) { return x._id !== f.id && !x.effacee && M.norm(x.nom) === M.norm(rec.nom); })) e.push("un nom qui n'existe pas déjà");
     if (!SAISONS.some(function (s) { return f.saisons[s[0]]; })) e.push("au moins une saison");
+    if (!f.id && !(rec.cat && LIB_CAT[rec.cat])) e.push("une catégorie");
     if (!f.typeRegle) e.push("une règle");
     else if (f.typeRegle === "uniquement" && !Object.keys(f.grille).some(function (k) { return f.grille[k]; })) e.push("au moins un créneau pour « Uniquement »");
     return e;
@@ -5539,6 +6014,16 @@ var Moteur = (function () {
     var c1 = h("section", { class: "card" }, h("label", { class: "lbl", for: "fiche-nom", text: "Nom" }), nom,
       bloque ? h("p", { class: "status", text: "Nom fixe : il sert à l'alternance Gnocchis / Pâtes farcies du vendredi soir." }) : null,
       f.id && f.nomInitial && rec.nom.trim() && rec.nom.trim() !== f.nomInitial ? h("p", { class: "status", text: "Renommée : l'historique de « " + f.nomInitial + " » reste compté pour le délai." }) : null);
+
+    // Catégorie (facultative) : la même que sur les fiches recettes
+    var chipsC = h("div", { class: "chips" });
+    CATS_RECETTE.forEach(function (c) {
+      chipsC.append(h("button", { type: "button", class: "chip", "aria-pressed": String(rec.cat === c[0]), onclick: function () { rec.cat = rec.cat === c[0] && f.id ? "" : c[0]; sale(); rerender(); } }, c[1]));
+    });
+    var sansCat = !(rec.cat && LIB_CAT[rec.cat]);
+    var cCat = h("section", { class: "card" + (f.id && sansCat ? " cat-manque" : "") }, h("span", { class: "lbl", text: f.id ? "Catégorie" : "Catégorie *" }), chipsC,
+      f.id && sansCat ? h("p", { class: "status warn", text: "Catégorie manquante : choisissez-la pour que la recette soit proposée dans les repas de fête." }) : null,
+      h("p", { class: "status", text: "La même que sur les fiches : elle sera déjà cochée en créant la fiche, et range la recette dans sa rubrique des repas de fête." }));
 
     // Saison (obligatoire)
     var toutes = SAISONS.every(function (s) { return f.saisons[s[0]]; });
@@ -5698,7 +6183,7 @@ var Moteur = (function () {
     }
     function majBoutonSave() { if (!f.id) save.textContent = f.veutFiche && f.ficheMaintenant ? "Créer la recette et sa fiche →" : "Créer la recette"; }
     majBoutonSave();
-    ajoute(panelRec, navFiche(f), titre, c1, c2, c3, c4, c6, c7, apercu, h("div", { class: "bar fiche-actions" }, save, note), rares.childNodes.length ? rares : null);
+    ajoute(panelRec, navFiche(f), titre, c1, cCat, c2, c3, c4, c6, c7, apercu, h("div", { class: "bar fiche-actions" }, save, note), rares.childNodes.length ? rares : null);
   }
 
   function docRecette(f, r) {
@@ -5711,7 +6196,7 @@ var Moteur = (function () {
     return doc;
   }
   function memeQueBase(doc, base) {
-    function canon(x) { return JSON.stringify({ nom: x.nom, saison: x.saison, delai: +x.delai, regle: x.regle, ingredients: x.ingredients, familles: x.familles || null, supprimee: !!x.supprimee, anciens: (x.anciensNoms || []).length }); }
+    function canon(x) { return JSON.stringify({ cat: x.cat || "", nom: x.nom, saison: x.saison, delai: +x.delai, regle: x.regle, ingredients: x.ingredients, familles: x.familles || null, supprimee: !!x.supprimee, anciens: (x.anciensNoms || []).length }); }
     return canon(doc) === canon(base);
   }
   function enregistrerFiche(btn, note) {
@@ -6037,8 +6522,37 @@ var Moteur = (function () {
       panelCourses.append(sec);
     });
     if (masquerCoches && faits === total && total) panelCourses.append(h("p", { class: "empty", text: "Tout est dans le caddie." }));
+    (doc.coursesFetes || []).forEach(function (lf) { panelCourses.append(blocListeFete(id, lf)); });
+    if (doc.sansRecettes && doc.sansRecettes.plats && doc.sansRecettes.plats.length) {
+      var okSR = !!doc.sansRecettes.ajoutes, icoSR = h("span", { class: "alerte-ico" });
+      if (okSR) icoSR.textContent = "✓"; else icoSR.innerHTML = ICO_ALERTE;
+      panelCourses.append(h("p", { class: "sans-recettes " + (okSR ? "ok" : "ko") }, icoSR,
+        h("span", { text: okSR ? "Articles des plats sans recettes ajoutés" : "Articles des plats sans recettes non ajoutés (" + doc.sansRecettes.plats.join(" · ") + ")" })));
+    }
     dlBtn.className = "btn dlbtn";
     panelCourses.append(h("div", { class: "bar dl-bas" }, dlBtn, dlNote));
+  }
+  /* Liste à part d'un repas de fête : ses propres coches, hors du compteur de la semaine. */
+  function blocListeFete(id, lf) {
+    var idx = indexerLignes(lf.courses), pref = "fete:" + lf.key + ":";
+    var lignes = idx.ordre.map(function (k) { var l = idx.m[k]; return { k: pref + k, produit: majuscule(l.produit), quantite: l.quantite, categorie: l.categorie }; });
+    var faits = lignes.filter(function (l) { return coches[l.k]; }).length;
+    var d = lf.date ? M.fromIso(lf.date) : null;
+    var sec = h("details", { class: "liste-fete", open: faits < lignes.length },
+      h("summary", null, h("span", { text: emojiFete(lf.texte) + " Liste à part : " + lf.texte }),
+        h("small", { text: (d ? nomJour((d.getDay() + 1) % 7) + " " + M.fr(d).slice(0, 5) + " · " : "") + (lignes.length ? faits + " / " + lignes.length + " dans le caddie" : "aucun ingrédient") })));
+    if (!lignes.length) sec.append(h("p", { class: "status", text: "Les plats de ce repas n'ont pas d'ingrédients enregistrés (plats tapés à la main ou recettes sans ingrédients)." }));
+    groupeParRayon(lignes).forEach(function (grp) {
+      var bloc = h("section", { class: "shop-aisle" }, h("h3", null, h("span", { class: "cnum", text: String(M.CAT_ORDER.indexOf(grp.cat) + 1).padStart(2, "0") }), M.CAT_NAMES[grp.cat]));
+      grp.lignes.forEach(function (l) {
+        if (masquerCoches && coches[l.k]) return;
+        var cb = h("input", { type: "checkbox", id: "shop-" + l.k, checked: !!coches[l.k] });
+        bloc.append(h("label", { class: "shop-item" + (coches[l.k] ? " done" : ""), for: "shop-" + l.k }, cb, h("span", { class: "nm", text: l.produit }), h("span", { class: "qty", text: l.quantite || "" })));
+        cb.addEventListener("change", function () { coches[l.k] = cb.checked; var p = {}; p[l.k] = cb.checked; ecrireCoches(id, p); renderCoursesOnglet(); });
+      });
+      if (bloc.querySelector("label")) sec.append(bloc);
+    });
+    return sec;
   }
   function ligneJourCourses(id, doc) {
     var deb = M.fromIso ? M.fromIso(id) : debut, faites = coursesFaites(doc, deb), auto = doc.coursesFaites == null;
@@ -6459,6 +6973,16 @@ var Moteur = (function () {
     }
     versFiches(msg);
   }
+  /* Fiche rattachée à une recette sans catégorie : la recette prend celle de la fiche. */
+  function catDepuisFiche(id, cat) {
+    if (!id || !LIB_CAT[cat]) return;
+    var r = TOUTES.filter(function (x) { return x._id === id; })[0];
+    if (!r || r.cat) return;
+    var doc = Store.recettes[id] ? clone(Store.recettes[id]) : { nom: r.nom, saison: r.saison, delai: r.delai, regle: r.regle, ingredients: clone(r.ingredients || []), anciensNoms: (r.anciensNoms || []).slice(), supprimee: !!r.supprimee };
+    if (!Store.recettes[id]) { if (r.familles) doc.familles = r.familles.slice(); if (r.sansIngredients) doc.sansIngredients = true; if (r.ficheAFaire) doc.ficheAFaire = true; if (r._base) doc.base = r._base.n; }
+    doc.cat = cat;
+    Store.setRecette(id, doc).then(function () { appliquerLocal(id, doc); if (fiche && fiche.id === id && fiche.mode === "lecture") rouvrir(id, fiche.msg); }, function () {});
+  }
   /* Fiche → recette : l'éditeur de recette sert d'écran de contrôle (produit reconnu, rayon, quantité). */
   function recetteDepuisFiche(d) {
     choisirOnglet("rec");
@@ -6470,7 +6994,7 @@ var Moteur = (function () {
       if (SANS_COURSES.indexOf(M.norm(l.it.produit)) !== -1) { ignores.push(String(x.text).trim()); return; }
       lignes.push(l);
     });
-    fiche.rec.nom = d.nom || ""; fiche.lignes = lignes;
+    fiche.rec.nom = d.nom || ""; fiche.lignes = lignes; if (d.cat && LIB_CAT[d.cat]) fiche.rec.cat = d.cat;
     fiche.depuisFiche = { id: d.fiche, nom: d.nom || "", ignores: ignores, reconnus: lignes.filter(function (l) { return l.reconnu; }).length, total: lignes.length };
     fiche.veutFiche = false; fiche.ficheMaintenant = false; fiche.sale = true;
     renderRec(); window.scrollTo(0, 0);
@@ -6492,10 +7016,14 @@ var Moteur = (function () {
     }
     if (d.fiches === "onglet" && d.vers) choisirOnglet(d.vers);
     if (d.fiches === "creerRecette") recetteDepuisFiche(d);
+    if (d.fiches === "catRecette") catDepuisFiche(d.recette, d.cat);
+    // Fiche ouverte depuis un menu : la flèche « retour » ramène là où on était.
+    if (d.fiches === "retour") { var rt = retourFiche; retourFiche = null; choisirOnglet(rt ? rt.onglet : "prep"); setTimeout(function () { window.scrollTo(0, rt ? rt.y : 0); }, 60); }
   };
   // Liens vers une fiche (icône livre, « Voir la fiche », « Créer la fiche ») : on reste dans l'application.
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest("a[href]"); if (!a) return;
+    if (a.classList.contains("fiche-mini")) return; // icône de fiche d'un menu : fenêtre par-dessus le Menu (gérée par l'icône)
     var href = a.getAttribute("href") || ""; if (href.indexOf(PAGE_FICHES) !== 0) return;
     e.preventDefault(); ouvrirFichesIntegre(href);
   }, true);
@@ -9004,7 +9532,7 @@ function lireLiens(hh){
   if(!mF&&!mN) return;
   if(typeof hh!=='string'){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
   if(mF){ficheAttendue=decodeURIComponent(mF[1]);if(libState==='ready'&&library.some(function(f){return f.id===ficheAttendue;})){var x=ficheAttendue;ficheAttendue=null;openFiche(x);}return;}
-  avecPlace(function(){HOTE.classList.add('arrivee');chargementFiche('C’est parti pour « '+decodeURIComponent(mN[1])+' » !',true,1400);resetAll();state.title=decodeURIComponent(mN[1]);state.recetteId=mR?decodeURIComponent(mR[1]):'';if(window.__ingrAttendus&&window.__ingrAttendus.length){state.lists.ingr=window.__ingrAttendus.map(function(t){return {type:'item',text:String(t)};});state.ingrRepris=state.title;}window.__ingrAttendus=null;pushToDOM();saveDraft();refresh();go('cat');},'la fiche « '+decodeURIComponent(mN[1])+' »');
+  avecPlace(function(){HOTE.classList.add('arrivee');chargementFiche('C’est parti pour « '+decodeURIComponent(mN[1])+' » !',true,1400);resetAll();state.title=decodeURIComponent(mN[1]);state.recetteId=mR?decodeURIComponent(mR[1]):'';var mC=/[#&]cat=([a-z]+)/.exec(h);if(mC&&THEMES[mC[1]]&&mC[1]!=='none')state.cat=mC[1];if(window.__ingrAttendus&&window.__ingrAttendus.length){state.lists.ingr=window.__ingrAttendus.map(function(t){return {type:'item',text:String(t)};});state.ingrRepris=state.title;}window.__ingrAttendus=null;pushToDOM();saveDraft();refresh();go('cat');},'la fiche « '+decodeURIComponent(mN[1])+' »');
 }
 if(!window.INTEGRE) window.addEventListener('hashchange',function(){lireLiens();});
 
@@ -9661,23 +10189,34 @@ majLienMenus=function(f){
   ok.addEventListener('click',function(){
     if(!sel.value) return;ok.disabled=true;
     var fd={};Object.keys(f).forEach(function(k){if(k!=='id') fd[k]=f[k];});fd.recette=sel.value;
-    libDb.doc('fiches/'+f.id).set(fd).then(function(){f.recette=sel.value;majLienMenus(f);renderLibrary();});
+    var rid=sel.value;
+    libDb.doc('fiches/'+f.id).set(fd).then(function(){f.recette=rid;catVersRecette(rid,f.cat);majLienMenus(f);renderLibrary();});
   });
   rang.appendChild(sel);rang.appendChild(ok);box.appendChild(rang);
   var cree=el('button','btn ghost petit','+ Créer la recette « '+(f.title||'')+' »'+(window.INTEGRE?' avec ses ingrédients':''));cree.type='button';
   cree.addEventListener('click',function(){
     if(window.INTEGRE&&window.FICHES_BUS&&window.FICHES_BUS.app){
       // Dans l'application : l'éditeur de recette reprend les ingrédients de la fiche et sert d'écran de contrôle.
-      window.FICHES_BUS.app({fiches:'creerRecette',fiche:f.id,nom:(f.title||'').trim(),ingr:(f.lists&&f.lists.ingr)||[]});
+      window.FICHES_BUS.app({fiches:'creerRecette',fiche:f.id,nom:(f.title||'').trim(),ingr:(f.lists&&f.lists.ingr)||[],cat:f.cat||''});
       return;
     }
     cree.disabled=true;
     var id='r'+Date.now().toString(36),doc={nom:(f.title||'').trim(),saison:'Toute l’année',delai:2,regle:'Aucune',ingredients:[],anciensNoms:[],supprimee:false};
+    if(f.cat&&f.cat!=='none') doc.cat=f.cat;
     var fd={};Object.keys(f).forEach(function(k){if(k!=='id') fd[k]=f[k];});fd.recette=id;
     libDb.doc('recettes/'+id).set(doc).then(function(){return libDb.doc('fiches/'+f.id).set(fd);}).then(function(){recettesPerso[id]=doc;f.recette=id;majLienMenus(f);renderLibrary();});
   });
   box.appendChild(cree);
 };
+
+/* La recette rattachée prend la catégorie de la fiche si elle n'en a pas encore. */
+function catVersRecette(rid,cat){
+  if(!rid||rid==='-'||!cat||cat==='none') return;
+  if(window.INTEGRE&&window.FICHES_BUS&&window.FICHES_BUS.app){window.FICHES_BUS.app({fiches:'catRecette',recette:rid,cat:cat});return;}
+  var p=recettesPerso[rid];if(!p||p.cat||!libDb) return;
+  var d={};Object.keys(p).forEach(function(k){d[k]=p[k];});d.cat=cat;
+  libDb.doc('recettes/'+rid).set(d).then(function(){recettesPerso[rid]=d;});
+}
 
 /* ================= Contrôle final : parties, mise en page, orthographe ================= */
 var apresGen=null,dernierControle={corrections:[],doutes:[],manques:[],debord:[],source:''};
@@ -10099,9 +10638,12 @@ if(window.INTEGRE){
       return new Promise(function(res){c.toBlob(function(b){res(b?URL.createObjectURL(b):c.toDataURL('image/jpeg',.9));},'image/png');});
     });
   };
+  // Fiche enregistrée et rattachée à une recette : la recette prend sa catégorie si elle n'en a pas.
+  var sauverB=saveToLibrary;saveToLibrary=function(){if(state.recetteId&&state.cat) versApp({fiches:'catRecette',recette:state.recetteId,cat:state.cat});return sauverB.apply(this,arguments);};
   BUSF.fiches=function(d){
     if(!d||typeof d!=='object') return;
     if(d.lier){lierFicheRecette(d.lier.fiche,d.lier.recette);return;}
+    if(d.retourApp){window.__retourApp=true;return;}
     if(d.lien){window.__ingrAttendus=d.ingr||null;lireLiens(d.lien);setTimeout(signaler,0);return;}
     var a=d.aller;if(!a) return;
     if(!$('flow').hidden) return; // une fiche est en cours de création : on ne l'interrompt pas
@@ -10109,6 +10651,11 @@ if(window.INTEGRE){
     if(a==='creer') showHome(); else if(a==='fiches') showLibrary(); else if(a==='livres') showLivres();
     signaler();
   };
+  // Fiche ouverte depuis un menu de l'application : « ‹ » ramène au menu au lieu de Mes fiches.
+  RACINE.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('#viewer-back');if(!b||!window.__retourApp) return;
+    e.preventDefault();e.stopPropagation();window.__retourApp=false;versApp({fiches:'retour'});
+  },true);
   // Liens vers l'application Menus : on prévient l'application au lieu de changer de page.
   RACINE.addEventListener('click',function(e){
     var a=e.target.closest&&e.target.closest('a[href^="./"]');if(!a) return;
