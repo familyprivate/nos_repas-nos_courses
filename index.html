@@ -2259,7 +2259,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "14 oct. 12h10";
+  var VERSION_SITE = "14 oct. 14h25";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -3994,6 +3994,22 @@ var Moteur = (function () {
       mois = Math.floor((hh + l - 7 * m + 114) / 31), jour = ((hh + l - 7 * m + 114) % 31) + 1;
     return new Date(an, mois - 1, jour);
   }
+  /* Équinoxes et solstices exacts (algorithme de J. Meeus, précision de l'ordre de la minute), à l'heure de l'appareil.
+     k : 0 printemps, 1 été, 2 automne, 3 hiver. Renvoie le jour (à minuit). */
+  var SAISON_TERMES = [[485, 324.96, 1934.136], [203, 337.23, 32964.467], [199, 342.08, 20.186], [182, 27.85, 445267.112], [156, 73.14, 45036.886], [136, 171.52, 22518.443],
+    [77, 222.54, 65928.934], [74, 296.72, 3034.906], [70, 243.58, 9037.513], [58, 119.81, 33718.147], [52, 297.17, 150.678], [50, 21.02, 2281.226], [45, 247.54, 29929.562],
+    [44, 325.15, 31555.956], [29, 60.93, 4443.417], [18, 155.12, 67555.328], [17, 288.79, 4562.452], [16, 198.04, 62894.029], [14, 199.76, 31436.921], [12, 95.39, 14577.848],
+    [12, 287.11, 31931.756], [12, 320.81, 34777.259], [9, 227.73, 1222.114], [8, 15.45, 16859.074]];
+  function saison(an, k) {
+    var Y = (an - 2000) / 1000, c = [[2451623.80984, 365242.37404, 0.05169, -0.00411, -0.00057], [2451716.56767, 365241.62603, 0.00325, 0.00888, -0.00030],
+      [2451810.21715, 365242.01767, -0.11575, 0.00337, 0.00078], [2451900.05952, 365242.74049, -0.06223, -0.00823, 0.00032]][k];
+    var jde0 = c[0] + c[1] * Y + c[2] * Y * Y + c[3] * Y * Y * Y + c[4] * Y * Y * Y * Y, T = (jde0 - 2451545) / 36525, rad = Math.PI / 180;
+    var W = (35999.373 * T - 2.47) * rad, dl = 1 + 0.0334 * Math.cos(W) + 0.0007 * Math.cos(2 * W), S = 0;
+    SAISON_TERMES.forEach(function (t) { S += t[0] * Math.cos((t[1] + t[2] * T) * rad); });
+    var jd = jde0 + 0.00001 * S / dl - 69 / 86400; // temps terrestre → temps universel (≈ 69 s)
+    var d = new Date((jd - 2440587.5) * 86400000);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
   /* Messages liés à la date : { speciaux: fêtes et événements (prioritaires), generaux: thème du mois et du jour de la semaine }. */
   function dimancheN(an, mois, n) { var d = new Date(an, mois, 1); while (d.getDay() !== 0) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 7 * (n - 1)); return d; }
   function dernierDimanche(an, mois) { var d = new Date(an, mois + 1, 0); while (d.getDay() !== 0) d.setDate(d.getDate() - 1); return d; }
@@ -4037,10 +4053,10 @@ var Moteur = (function () {
       { nom: "Toussaint", date: D(11, 1), type: "ferie" },
       { nom: "11 novembre", date: D(11, 11), type: "ferie" },
       // Saisons et moments de l'année
-      { nom: "Printemps", date: D(3, 20), type: "saison", ico: "🌸", avant: "Le printemps arrive : place aux légumes nouveaux.", jour: "C'est le printemps ! Place aux légumes nouveaux." },
-      { nom: "Été", date: D(6, 21), type: "saison", ico: "☀️", avant: "L'été arrive : vive les salades et les repas en terrasse.", jour: "C'est l'été ! Vive les salades et les repas en terrasse." },
-      { nom: "Automne", date: D(9, 22), type: "saison", ico: "🍂", avant: "L'automne arrive : place aux plats qui réchauffent.", jour: "C'est l'automne : place aux plats qui réchauffent." },
-      { nom: "Hiver", date: D(12, 21), type: "saison", ico: "❄️", avant: "L'hiver arrive : soupes et plats mijotés en vue.", jour: "C'est l'hiver : soupes et plats mijotés au programme." },
+      { nom: "Printemps", date: saison(an, 0), type: "saison", ico: "🌸", avant: "Le printemps arrive : place aux légumes nouveaux.", jour: "C'est le printemps ! Place aux légumes nouveaux." },
+      { nom: "Été", date: saison(an, 1), type: "saison", ico: "☀️", avant: "L'été arrive : vive les salades et les repas en terrasse.", jour: "C'est l'été ! Vive les salades et les repas en terrasse." },
+      { nom: "Automne", date: saison(an, 2), type: "saison", ico: "🍂", avant: "L'automne arrive : place aux plats qui réchauffent.", jour: "C'est l'automne : place aux plats qui réchauffent." },
+      { nom: "Hiver", date: saison(an, 3), type: "saison", ico: "❄️", avant: "L'hiver arrive : soupes et plats mijotés en vue.", jour: "C'est l'hiver : soupes et plats mijotés au programme." },
       { nom: "Rentrée", date: D(9, 1), type: "vie", ico: "🎒", avant: "C'est bientôt la rentrée : on reprend le rythme des menus de la semaine.", jour: "C'est la rentrée ! Bonne reprise à tous." },
       { nom: "Vacances d'été", date: vac, type: "vie", ico: "🏖️", avant: "Les vacances d'été approchent !", jour: "C'est les vacances : on se fait plaisir, sans se compliquer la vie." }
     ].map(function (e) { if (!e.ico) e.ico = e.type === "fete" ? "⭐" : e.type === "ferie" ? "📅" : "⭐"; return e; });
