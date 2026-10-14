@@ -2259,7 +2259,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "14 oct. 16h05";
+  var VERSION_SITE = "14 oct. 16h50";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -7135,6 +7135,17 @@ h1,h2,h3,p{margin:0}
 .alerte.al-lien{background:#fde8e8;color:#a32020;border-color:#efb3b3}
 .envoi-fiche{display:inline-block;align-self:flex-start;margin-top:4px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#fff4dc;color:#8a5a00;border:1px solid #f0d79a;white-space:nowrap}
 .envoi-fiche.refus{background:#fde8e8;color:#a32020;border-color:#efb3b3}
+.titre-ligne{display:flex;align-items:center;gap:10px}.titre-ligne .titre-lien{flex:0 0 auto;margin-left:0}
+.lien-det>.lien-menus>b:first-child{display:none}.lien-det>.lien-menus.a-rattacher{background:none}
+.titre-lien{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;margin-left:8px;vertical-align:middle;border-radius:50%;border:1.5px solid currentColor;background:none;padding:5px;cursor:pointer}
+.titre-lien svg{width:100%;height:100%}.titre-lien.ok{color:#1B7A43}.titre-lien.non{color:#a32020;opacity:.8}
+.lien-det{margin:14px 0 6px;border:1.5px solid #E2E4E9;border-radius:12px;padding:0 12px}
+.lien-det>summary{cursor:pointer;padding:12px 0;font-weight:700;display:flex;align-items:center;gap:8px;list-style:none}
+.lien-det>summary::-webkit-details-marker{display:none}
+.lien-det>summary::after{content:'▾';margin-left:auto;transition:transform .2s}.lien-det[open]>summary::after{transform:rotate(180deg)}
+.lien-sum-ico{width:20px;height:20px;display:inline-flex}.lien-sum-ico svg{width:100%;height:100%}.lien-sum-ico.ok{color:#1B7A43}.lien-sum-ico.non{color:#a32020}
+.lien-det>.lien-menus{margin:0 0 12px;border:0;padding:0;background:none}
+.lien-det.en-haut{border-color:#efb3b3}
 .alerte.al-doublon{background:#e8eefc;color:#2346a0;border-color:#b3c3ef}
 .doublon-box{border-color:#b3c3ef;background:#f6f8ff;margin-top:10px}.doublon-box p{margin:6px 0}.ctl-doublon{border-color:#b3c3ef!important;background:#f6f8ff}
 .alertes.sur-image{position:absolute;top:8px;left:8px}
@@ -9898,7 +9909,7 @@ function lancerDecompte(){
     var oui=el('button','btn petit','Oui');oui.type='button';var non=el('button','btn ghost petit','Non');non.type='button';
     oui.addEventListener('click',function(){
       var id=state.editingId;arreterDecompte();resetAll();
-      if(id&&library.some(function(f){return f.id===id;})){openFiche(id);setTimeout(function(){var b=$('viewer-menus');if(b){b.scrollIntoView({block:'center',behavior:'smooth'});b.classList.add('a-mettre-en-avant');}},300);}
+      if(id&&library.some(function(f){return f.id===id;})){window.__lienEnHaut=true;openFiche(id);setTimeout(function(){var b=$('viewer-menus');if(b){b.scrollIntoView({block:'center',behavior:'smooth'});b.classList.add('a-mettre-en-avant');}},300);}
       else showLibrary();
     });
     non.addEventListener('click',function(){q.remove();});
@@ -10173,7 +10184,7 @@ majLienMenus=function(f){
     var non=el('button','btn ghost petit','Ce n’est pas un doublon');non.type='button';non.addEventListener('click',function(){ignorerDoublon(f,x.f);majLienMenus(f);renderLibrary();});
     var r=el('div','row-btns');r.appendChild(voir);r.appendChild(non);box.appendChild(p);box.appendChild(r);
   });
-  var ref=$('viewer-menus');if(ref&&ref.parentNode) ref.parentNode.insertBefore(box,ref.nextSibling);
+  var ref=$('viewer-meta');if(ref&&ref.parentNode) ref.parentNode.insertBefore(box,ref.nextSibling);
 };
 
 /* ---------- Envoi vers la mémoire partagée : fiches pas encore parties, reconnexion ---------- */
@@ -10198,6 +10209,63 @@ initLibrary=function(){
   }
   initLibrary0();
 };
+
+/* ---------- Lien fiche ↔ recette : bloc dépliable en bas de la fiche + petite icône à côté du titre ----------
+   Juste après la création (« Oui, rattacher »), le bloc s'affiche ouvert en haut ; ensuite il est replié en bas. */
+var ICO_LIEN_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>';
+function placerBlocLien(){
+  var box=$('viewer-menus');if(!box) return null;
+  var det=$('viewer-lien');
+  if(!det){
+    det=document.createElement('details');det.id='viewer-lien';det.className='lien-det';
+    var sum=document.createElement('summary');sum.id='viewer-lien-titre';det.appendChild(sum);
+    det.appendChild(box);
+  }
+  var haut=!!window.__lienEnHaut;
+  if(haut){var m=$('viewer-meta');if(m&&m.parentNode&&det.previousSibling!==m) m.parentNode.insertBefore(det,m.nextSibling);det.open=true;det.classList.add('en-haut');}
+  else{var d=$('viewer-del'),bas=$('del-confirm')||(d&&d.parentNode);if(bas&&bas.parentNode&&det.previousSibling!==bas) bas.parentNode.insertBefore(det,bas.nextSibling);det.classList.remove('en-haut');}
+  return det;
+}
+function iconeLien(f,r,det){
+  var t=$('viewer-title');if(!t) return;
+  var ic=$('viewer-lien-ico');
+  if(!ic){ic=document.createElement('button');ic.type='button';ic.id='viewer-lien-ico';var w=el('div','titre-ligne');t.parentNode.insertBefore(w,t);w.appendChild(t);w.appendChild(ic);}
+  ic.hidden=!libDb;
+  ic.className='titre-lien'+(r?' ok':' non');
+  ic.innerHTML=r?ICO_LIEN_OK:ICO_SANS_LIEN;
+  var lib=r?'Voir la recette « '+r.nom+' »':'Pas rattachée à une recette : rattacher';
+  ic.title=lib;ic.setAttribute('aria-label',lib);
+  ic.onclick=function(){
+    if(r){var a=$('viewer-menus').querySelector('a');if(a){a.click();return;}}
+    if(det){det.open=true;det.scrollIntoView({block:'center',behavior:'smooth'});}
+  };
+}
+var majLienMenusAvantBas=majLienMenus;
+majLienMenus=function(f){
+  var det=placerBlocLien();
+  majLienMenusAvantBas(f);
+  var box=$('viewer-menus');
+  if(!det||!box) return;
+  det.hidden=!libDb||box.hidden;
+  var r=libDb?recetteDeFiche(f):null;
+  var sum=$('viewer-lien-titre');
+  sum.textContent='';
+  var ico=el('span','lien-sum-ico'+(r?' ok':' non'));ico.innerHTML=r?ICO_LIEN_OK:ICO_SANS_LIEN;sum.appendChild(ico);
+  sum.appendChild(document.createTextNode(r?'Recette liée : '+r.nom:'Rattacher à une recette'));
+  iconeLien(f,r,det);
+};
+/* Fiche suivante ouverte normalement : le bloc retourne en bas, replié. */
+if(typeof openFiche==='function'){
+  var openFicheAvantBas=openFiche;
+  openFiche=function(id){
+    var haut=!!window.__lienEnHaut;window.__lienEnHaut=false;
+    var det=$('viewer-lien');if(det&&!haut) det.open=false;
+    if(haut) window.__lienEnHaut=true;
+    var r=openFicheAvantBas.apply(this,arguments);
+    window.__lienEnHaut=false;
+    return r;
+  };
+}
 
 (function(){var lib=$('library'),ref=$('livre-zone'),n=$('new-card'),d=$('draft-card');if(lib&&ref&&n&&d){ref.parentNode.insertBefore(n,ref);ref.parentNode.insertBefore(d,ref);}})();
 (function(){var b=$('btn-start');if(b){b.textContent='+ Créer une nouvelle fiche';}})();
