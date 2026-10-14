@@ -2259,7 +2259,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "14 oct. 14h25";
+  var VERSION_SITE = "14 oct. 16h05";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -7956,7 +7956,7 @@ function draw(canvas){
   c.globalAlpha=1;c.textAlign='left';
 
   /* photo */
-  var px=46,py=286,pW=520,pH=520;
+  var px=54,py=286,pW=504,pH=504;
   c.save();rr(c,px,py,pW,pH,26);c.clip();
   if(state.photo){
     drawPhotoIn(c,state.photo,px,py,pW,pH,state.photoCrop,th);
