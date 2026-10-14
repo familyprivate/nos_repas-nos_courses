@@ -507,6 +507,15 @@ body.vue-mobile .actions-rares .annul-q{grid-column:1/-1;text-align:center}
 .fete-scene.vide{aspect-ratio:auto;height:22vh}
 .sc-maman .ma-bouquet{font-size:96px}.sc-papa .pa-ruban.ma{fill:#E85D9A}
 .sc-france .fr-coq{opacity:0;transform-origin:96px 186px;transform:scale(.3)}
+/* version courte : tout arrive tout de suite, en accéléré (bougies allumées) */
+.fete-ecran.court{transition-duration:.2s}
+.fete-ecran.court.joue *{animation-delay:0s!important;animation-duration:.45s!important}
+.fete-ecran.court.joue .fete-titre{animation-delay:.15s!important}
+.fete-ecran.court.joue .fete-sous{animation-delay:.3s!important}
+.fete-ecran.court.joue .g-flamme{animation:flamme-on .3s ease-out forwards,flamme-danse .3s ease-in-out .3s infinite alternate!important}
+.fete-ecran.court.joue .g-fumee{animation:none!important}
+.fete-ecran.court.joue .tr-convoi{animation-duration:1.8s!important}
+.fete-ecran.court .fete-passer{display:none}
 @media (prefers-reduced-motion: reduce){.fete-ecran *{animation-duration:.01s!important;animation-delay:0s!important}}
 /* Fenêtre « plat » (fiche ou recette par-dessus la page) */
 html.plat-ouvert, html.plat-ouvert body { overflow: hidden; }
@@ -2250,7 +2259,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "14 oct. 11h55";
+  var VERSION_SITE = "14 oct. 12h10";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -4301,11 +4310,11 @@ var Moteur = (function () {
     }
     setTimeout(function () { requestAnimationFrame(pas); }, cfg.t || 0);
   }
-  function jouerFete(e, fin) {
+  function jouerFete(e, fin, court) {
     var an = animDe(e) || { emo: e.ico || "⭐", parts: { mode: "confettis", c: ["#E4572E", "#F3A712", "#4F8FE6", "#29BF12"], t: 1000 } }, fini = false;
     function val(v) { return typeof v === "function" ? v(e) : v; }
     var titreTxt = (val(an.titre) || (e.jour || e.nom).split(/[.:!?]/)[0] + " !").replace(/ ([!?:])/g, "\u00A0$1"), sousTxt = val(an.sous) || "";
-    var ov = h("div", { class: "fete-ecran" + (an.svg ? " sc-" + an.svg : ""), role: "dialog", "aria-label": titreTxt });
+    var ov = h("div", { class: "fete-ecran" + (an.svg ? " sc-" + an.svg : "") + (court ? " court" : ""), role: "dialog", "aria-label": titreTxt });
     var scene = h("div", { class: "fete-scene" + (an.famille ? " avec-famille" : "") + (an.vide ? " vide" : "") });
     var dessin = an.vide ? "" : an.svg ? (typeof SCENES[an.svg] === "function" ? SCENES[an.svg](an, e) : SCENES[an.svg]) : '<div class="fete-emoji">' + an.emo + "</div>";
     // Le (ou les) portrait(s) de la personne fêtée, puis le gâteau (ou les alliances).
@@ -4316,14 +4325,14 @@ var Moteur = (function () {
     ov.append(scene, h("p", { class: "fete-titre", text: titreTxt }), sousTxt ? h("p", { class: "fete-sous", text: sousTxt }) : "", h("span", { class: "fete-passer", text: "Toucher pour passer" }));
     document.body.append(ov);
     requestAnimationFrame(function () { ov.classList.add("joue"); });
-    particules(ov, an.parts);
+    particules(ov, court ? Object.assign({}, an.parts, { t: 0 }) : an.parts);
     function terminer() {
       if (fini) return; fini = true;
       ov.classList.add("sort"); if (fin) fin();
       setTimeout(function () { ov.remove(); }, 450);
     }
     ov.addEventListener("click", terminer);
-    setTimeout(terminer, 5400);
+    setTimeout(terminer, court ? 1900 : 5400);
   }
   /* Événement du jour qui a une animation (anniversaire d'abord, puis fête, puis saison / moment de l'année), sinon null. */
   function feteDuJour(d) {
@@ -4337,8 +4346,8 @@ var Moteur = (function () {
   function ouvrirAvecFete(ouvrirApp) {
     var e = feteDuJour(new Date()), cle = e ? M.iso(new Date()) + "|" + e.nom : "";
     var reduit = false; try { reduit = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (x) {}
-    if (!e || !fetesActives() || reduit || lsGet("menus-fete-vue") === cle) { ouvrirApp(); return; }
-    lsSet("menus-fete-vue", cle);
+    if (!e || !fetesActives() || reduit) { ouvrirApp(); return; }
+    // À chaque passage par l'accueil (après 5 min d'absence), l'animation complète se rejoue.
     jouerFete(e, ouvrirApp);
   }
   /* Toutes les animations de l'année, dans l'ordre du calendrier (pour « Voir » dans les réglages). */
@@ -6283,7 +6292,7 @@ var Moteur = (function () {
       lf.forEach(function (e, i) { if (GROUPE[e.type] === g) og.append(h("option", { value: String(i), text: e.nom.replace(/^Anniv\. /, "Anniversaire ") + " · " + M.fr(e.date).slice(0, 5) })); });
     });
     var c3 = h("section", { class: "card" }, h("h2", { text: "Animation des jours de fête", style: "font-size:1.2rem" }),
-      h("p", { class: "status", text: "Un jour d'anniversaire ou de fête, une courte animation se joue en ouvrant l'application (une fois par jour sur chaque appareil, une touche la passe)." }),
+      h("p", { class: "status", text: "Un jour d'anniversaire ou de fête, l'animation se joue à chaque passage par l'écran d'accueil (à l'ouverture, ou en revenant après plus de 5 minutes). Une touche la passe." }),
       h("label", { class: "check", for: "fete-on" }, onF, " Activer"),
       h("div", { class: "pickbar" }, selF, h("button", { type: "button", class: "btn", text: "▶ Voir", onclick: function () { jouerFete(lf[+selF.value]); } })));
     panelRegl.append(carteCodeAcces(), c1, c2, c3, carteCourses(), carteMemoire(), carteRepartir());
@@ -6475,8 +6484,8 @@ var Moteur = (function () {
     e.preventDefault(); ouvrirFichesIntegre(href);
   }, true);
 
-  /* ---------- Reprise de session : revenir à l'écran laissé pendant 15 minutes ---------- */
-  var SESSION = "menus-session", DUREE_SESSION = 15 * 60000;
+  /* ---------- Reprise de session : revenir à l'écran laissé pendant 5 minutes ---------- */
+  var SESSION = "menus-session", DUREE_SESSION = 5 * 60000;
   function marquerSession(page) {
     var s = { page: page || "menus", t: Date.now(), onglet: ongletActif, debut: M.iso(debut), y: window.scrollY };
     if (fiche && fiche.id && fiche.mode === "lecture") s.recette = fiche.id;
@@ -6486,7 +6495,7 @@ var Moteur = (function () {
   var cacheA = 0;
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") { cacheA = Date.now(); marquerSession(); return; }
-    // Retour dans l'application après plus de 15 min : on repart de l'accueil, comme au lancement.
+    // Retour dans l'application après plus de 5 min : on repart de l'accueil, comme au lancement.
     if (cacheA && Date.now() - cacheA >= DUREE_SESSION) {
       cacheA = 0; accueilVu = false;
       if (verrouEtat === "ouvert") verrouEtat = null;
@@ -6655,7 +6664,7 @@ var Moteur = (function () {
   S = etatVide();
   var b = brouillonDe(M.iso(debut)); if (b) S = b;
   appliquerVue();
-  // Retour dans l'application moins de 15 min après l'avoir quittée : pas d'accueil, on reprend l'écran laissé.
+  // Retour dans l'application moins de 5 min après l'avoir quittée : pas d'accueil, on reprend l'écran laissé.
   var reprise = sessionRecente();
   // Onglet « Menus » de la page Fiches : on arrive sur le menu de la semaine, pas sur l'écran laissé.
   var ongletLien = { "#menu": "prep", "#courses": "courses", "#parametres": "regl", "#recettes": "rec" }[location.hash || ""];
