@@ -929,6 +929,8 @@ body.vue-mobile .arow { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); 
 .fete-titre-or { color: #1a1a1a; font-weight: 700; border: 1.5px solid #8c6216; border-radius: 10px; padding: 3px 10px; text-shadow: 0 1px 0 rgba(255,255,255,.35);
   background: linear-gradient(135deg, #b8862b 0%, #e2b955 25%, #f7e08d 45%, #dcae48 62%, #b8862b 82%, #e6c262 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 1px 2px rgba(120,80,10,.25); }
 .fete-sym { font-size: 1.1rem; flex: none; }
+.mname.invit { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.invit-txt { font: 400 .9rem var(--font); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--surface); width: 100%; min-width: 0; }
 .prevu-barre, .prevu-barre .fete-titre-or { text-decoration: line-through; text-decoration-thickness: 2px; opacity: .55; }
 .tags .reel { font-size: .9rem; color: var(--ink); }
 .tags .reel b { font-weight: 700; }
@@ -2422,7 +2424,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "15 oct. 16h05";
+  var VERSION_SITE = "15 oct. 16h30";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -3735,6 +3737,7 @@ var Moteur = (function () {
     btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>';
     return { bouton: btn, zone: zone };
   }
+  function libInvit(c) { return c.type === "invitation" && c.texte && c.texte !== "Invitation" && !/^invitation/i.test(c.texte) ? "Invitation chez " + c.texte : c.texte; }
   function cellule(slot, repas, editable, hist, j) {
     var verrou = editable && repasPasse(j, repas); if (verrou) editable = false;
     var cell = h("div", { class: "mcell" }, h("span", { class: "lab", text: repas }));
@@ -3744,8 +3747,18 @@ var Moteur = (function () {
         : h("button", { type: "button", class: "mname mname-lien", "aria-label": "Voir " + slot.recette, onclick: function () { ouvrirPlat(slot.recette); } }, slot.recette, boutonFicheMenu(slot.recette),
           estAujourdhui(j) && (repas === "Soir" || new Date().getHours() < 14) ? h("span", { class: "badge-jour", text: repas === "Midi" ? "CE MIDI" : "CE SOIR" }) : null);
       if (slot.source === "imposee") tags.append(h("span", { class: "tag", text: "imposée" }));
+    } else if (slot && slot.type === "invitation" && editable) {
+      // Invitation : « Chez qui ? » facultatif, comme à l'étape « La semaine ».
+      var chezQui = slot.texte && slot.texte !== "Invitation" ? slot.texte : "";
+      var inpI = h("input", { type: "text", class: "invit-txt", value: chezQui, placeholder: "Chez qui ? (facultatif)", "aria-label": "Invitation : chez qui ?" });
+      inpI.addEventListener("input", function () {
+        var v = inpI.value.trim(); slot.texte = v || "Invitation";
+        var evI = S.reponses.evenements[slot.key]; if (evI) evI.texte = v;
+        sauver();
+      });
+      nameEl = h("span", { class: "mname evt invit" }, h("span", { text: "Invitation" }), inpI);
     } else if (slot && (slot.type === "invitation" || slot.type === "resto")) {
-      nameEl = h("span", { class: "mname evt", text: slot.texte });
+      nameEl = h("span", { class: "mname evt", text: libInvit(slot) });
     } else if (slot && slot.type === "fete") {
       if (editable) {
         // L'occasion se renomme ici aussi (liste des fêtes + saisie libre).
@@ -4491,7 +4504,7 @@ var Moteur = (function () {
         var s = data.creneaux.filter(function (c) { return c.key === j + "-" + repas; })[0];
         var txt = "—", style = "off";
         if (s && s.type === "recette") { txt = s.recette; style = "rec"; }
-        else if (s && (s.type === "invitation" || s.type === "resto")) { txt = s.texte; style = "evt"; }
+        else if (s && (s.type === "invitation" || s.type === "resto")) { txt = libInvit(s); style = "evt"; }
         else if (s && s.type === "fete") { txt = s.texte + ((s.plats || []).length ? " : " + s.plats.map(function (p) { return p.recette; }).join(", ") : ""); style = "evt"; }
         var cx = left + col0 + k * colW;
         x.fillStyle = C_GREY; x.font = "600 17px " + F_SANS; espace(x, repas.toUpperCase(), cx, y + 46, 3);
