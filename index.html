@@ -762,6 +762,16 @@ body.vue-mobile.a-perso[data-sous="regl"] #storestatus { padding-right: 100px; }
 .sugg-n { flex-basis: 100%; font-size: 12px; color: var(--muted); }
 .ing-etat:empty { display: none; }
 .fiche-apercu { background: var(--sunk); border-top-color: var(--accent); padding: 16px; }
+.titre-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.titre-info .info-i { flex: none; }
+.bulle-infos { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow: auto; }
+.fiche-apercu.infos { padding: 12px 16px; }
+.fiche-apercu.infos > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px; }
+.fiche-apercu.infos > summary::-webkit-details-marker { display: none; }
+.fiche-apercu.infos > summary::after { content: "▾"; margin-left: auto; color: var(--muted); transition: transform .2s; }
+.fiche-apercu.infos[open] > summary::after { transform: rotate(180deg); }
+.fiche-apercu.infos > summary small { color: var(--muted); font-size: .8rem; }
+.fiche-apercu.infos .infos-corps { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
 .notes .err { color: var(--danger); font-weight: 600; }
 .apercu-liste { list-style: none; margin: 0; padding: 0; }
 .apercu-liste li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
@@ -2405,7 +2415,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "15 oct. 15h00";
+  var VERSION_SITE = "15 oct. 15h15";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -6149,7 +6159,7 @@ var Moteur = (function () {
     ajoute(panelRec, 
       navFiche(f),
       h("div", { class: "fiche-tete" },
-        h("h2", { text: src.nom }),
+        h("h2", { class: "titre-info" }, src.nom, boutonInfoRecette(function () { return apercuNodes(src); })),
         h("div", { class: "tags" },
           src.supprimee ? h("span", { class: "pill wait", text: "retirée des tirages" }) : null,
           !src.supprimee && aCompleter(src) ? h("span", { class: "pill warn", text: "à compléter" }) : null,
@@ -6160,10 +6170,16 @@ var Moteur = (function () {
         ligne("Saison", src.saison), ligne("Délai minimum", src.delai + " semaine" + (src.delai > 1 ? "s" : "")), ligne("Règle", src.regle || "Aucune"),
         h("span", { class: "lbl", text: "Ingrédients" }), ings),
       blocFicheRecette(src),
-      h("section", { class: "card fiche-apercu" }, h("span", { class: "lbl", text: "Aperçu" }), apercuNodes(src)),
+
       h("div", { class: "bar fiche-actions" }, h("button", { type: "button", class: "btn primary", text: "✎ Modifier la recette", onclick: function () { f.mode = "edition"; f.msg = ""; renderRec(); window.scrollTo(0, 0); } })));
   }
 
+  /* ⓘ à côté du nom d'une recette : infobulle avec le tirage possible et ce qu'elle ajoute aux courses. */
+  function boutonInfoRecette(contenu) {
+    var b = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "Infos : tirage et liste de courses" });
+    b.addEventListener("click", function (e) { e.stopPropagation(); bulle(b, [h("div", { class: "bulle-infos" }, contenu())]); });
+    return b;
+  }
   /* Fiches recettes : elles vivent dans la mémoire partagée. Appareil pas encore relié → on le dit. */
   function noteFichesHorsLigne() {
     return h("section", { class: "card fiche-liee vide" }, h("span", { class: "lbl", text: "Fiche recette" }),
@@ -6277,12 +6293,15 @@ var Moteur = (function () {
     var bloque = src && M.ALTERNANCE.indexOf(src.nom) !== -1;
     function sale() { f.sale = true; f.msg = ""; }
     function rerender() { var y = window.scrollY; renderRec(); window.scrollTo(0, y); }
-    var apercu = h("section", { class: "card fiche-apercu" });
+    var apercu = h("div", { hidden: true }); // infos : désormais dans l'infobulle ⓘ du titre
     var note = h("p", { class: "status", role: "status" });
     var save = h("button", { type: "button", class: "btn primary", text: f.id ? "Enregistrer" : "Créer la recette", onclick: function () { enregistrerFiche(save, note); } });
 
     var titre = h("div", { class: "fiche-tete" },
-      h("h2", { text: f.id ? "Modifier « " + f.nomInitial + " »" : "Nouvelle recette" }));
+      h("h2", { class: "titre-info" }, f.id ? "Modifier « " + f.nomInitial + " »" : "Nouvelle recette", boutonInfoRecette(function () {
+        var r = ficheVersRecette(f);
+        return r.nom && f.typeRegle && r.saison ? apercuNodes(r) : [h("p", { class: "status", text: "Les infos apparaissent dès que le nom, la saison et la règle sont choisis." })];
+      })));
     if (f.depuisFiche) {
       var df = f.depuisFiche, aVerif = df.total - df.reconnus;
       titre = h("div", null, titre, h("section", { class: "card depuis-fiche" },
@@ -6419,9 +6438,10 @@ var Moteur = (function () {
     function majApercu() {
       clear(apercu);
       var r = ficheVersRecette(f);
-      apercu.append(h("span", { class: "lbl", text: "Aperçu" }));
-      if (r.nom && f.typeRegle && r.saison) add(apercu, apercuNodes(r));
-      else apercu.append(h("p", { class: "status", text: "L'aperçu apparaît dès que le nom, la saison et la règle sont choisis." }));
+      apercu.append(h("summary", null, h("span", { class: "lbl", text: "Infos" }), h("small", { text: "tirage et liste de courses" })));
+      var corpsA = h("div", { class: "infos-corps" }); apercu.append(corpsA);
+      if (r.nom && f.typeRegle && r.saison) add(corpsA, apercuNodes(r));
+      else corpsA.append(h("p", { class: "status", text: "Les infos apparaissent dès que le nom, la saison et la règle sont choisis." }));
       var e = erreursFiche(f, r);
       save.disabled = e.length > 0;
       note.className = "status" + (e.length ? " warn" : "");
