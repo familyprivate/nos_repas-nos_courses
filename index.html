@@ -219,6 +219,11 @@ details summary { cursor: pointer; font-weight: 600; }
 .cnum { color: var(--accent); font-weight: 800; }
 .items { list-style: none; margin: 0; padding: 0; }
 .items li { border-bottom: 1px solid var(--line); }
+.qty-pas { display: inline-flex; align-items: center; gap: 4px; }
+.qty-pas .qty { min-width: 3.2em; text-align: center; }
+.qty-pas.modifie .qty { color: var(--accent); font-weight: 800; }
+.pas-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 700 15px/1 var(--font); cursor: pointer; padding: 0; display: inline-grid; place-items: center; }
+.pas-btn:disabled { opacity: .3; cursor: default; }
 .item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 6px 0; }
 .item .nm { overflow-wrap: anywhere; }
 .item .qty { font-weight: 700; color: var(--accent); white-space: nowrap; }
@@ -901,6 +906,34 @@ label.fete-apart small { font-weight: 500; color: var(--muted); font-size: .82re
 .prevu-barre, .prevu-barre .fete-titre-or { text-decoration: line-through; text-decoration-thickness: 2px; opacity: .55; }
 .tags .reel { font-size: .9rem; color: var(--ink); }
 .tags .reel b { font-weight: 700; }
+.ligne-actions { flex-wrap: wrap; align-items: center; gap: 8px; }
+.btn.mini-action, body.vue-mobile .btn.mini-action { font-size: 13px; padding: 8px 11px; font-weight: 600; white-space: nowrap; min-height: 0; width: auto; }
+.btn.mini-action.danger-txt { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.confirm-eff { border: 2px solid var(--danger); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.confirm-eff p { font-size: .95rem; line-height: 1.4; }
+.ligne-actions .btn-annul { white-space: nowrap; }
+.chg-ico { border: 1px solid var(--line); background: none; color: var(--muted); font: 600 12px var(--font); border-radius: 999px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+.chg-ico:hover { color: var(--accent); border-color: var(--accent); }
+.icon.corbeille, body.vue-mobile .icon.corbeille { width: 36px; height: 36px; border: 1.5px solid color-mix(in srgb, var(--danger) 45%, transparent); border-radius: 10px; color: var(--danger); background: none; display: inline-grid; place-items: center; }
+.icon.corbeille svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.statut-info { display: inline-flex; align-items: center; gap: 8px; }
+.info-i { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--muted); background: none; color: var(--muted); font: italic 700 13px Georgia, serif; line-height: 1; cursor: pointer; padding: 0; flex: none; }
+.info-i[aria-expanded="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.info-valid { background: var(--sunk); border-radius: 10px; padding: 10px 12px; font-size: .88rem; }
+.info-valid ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.info-valid small { color: var(--muted); }
+.bulle { position: absolute; z-index: 60; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; box-shadow: 0 8px 28px rgba(0,0,0,.18); font-size: .9rem; line-height: 1.4; animation: bulle-in .15s ease-out; }
+.bulle::before { content: ""; position: absolute; top: -7px; left: calc(var(--fleche, 20px) - 7px); width: 12px; height: 12px; background: var(--surface); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg); }
+@keyframes bulle-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.bulle p { margin: 0; }
+.bulle-titre { font-weight: 800; margin-bottom: 6px !important; }
+.bulle-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.bulle-liste small { color: var(--muted); }
+.bulle .fete-liste { margin: 0; }
+.info-i.sur-or { display: inline-grid; place-items: center; width: 17px; height: 17px; font-size: 11px; margin-left: 6px; border-color: #5a3d08; color: #3d2a05; vertical-align: 1px; }
+.fete-bouton { cursor: pointer; font: inherit; font-weight: 700; text-align: left; }
+.fete-chevron { display: inline-block; font-size: .8em; transition: transform .2s; }
+.fete-bouton.ouvert .fete-chevron { transform: rotate(180deg); }
 .chg-zone { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 .chg-zone > .btn { align-self: flex-start; }
 .chg-plan { border: 1px dashed var(--line); background: none; color: var(--muted); font: 600 .72rem var(--font); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
@@ -911,6 +944,10 @@ label.fete-apart small { font-weight: 500; color: var(--muted); font-size: .82re
 .vin-rappel { align-items: center; text-align: center; gap: 12px; padding: 28px 20px; }
 .vin-ico { font-size: 72px; line-height: 1; animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
 .vin-texte { font-size: 1.25rem; font-weight: 800; line-height: 1.3; }
+.vin-mention { display: flex; flex-direction: column; gap: 6px; font-size: .92rem; color: var(--ink); background: color-mix(in srgb, #7b1e3a 8%, transparent); border-radius: 10px; padding: 8px 12px; margin: 0; }
+.lien-vin { border: 0; background: none; color: #7b1e3a; font: 700 .92rem var(--font); text-decoration: underline; cursor: pointer; padding: 0; }
+.vin-ok { color: var(--ok); font-weight: 700; font-size: .92rem; }
+.vin-choix { display: flex; gap: 16px; flex-wrap: wrap; }
 .vin-bandeau { background: color-mix(in srgb, #7b1e3a 10%, transparent); border-left: 4px solid #7b1e3a; border-radius: 8px; padding: 10px 12px; font-weight: 700; }
 .alerte-courses { display: flex; gap: 12px; align-items: flex-start; background: #FFF8DC; border: 1.5px solid #E0B400; border-radius: 12px; padding: 12px 14px; color: #1a1a1a; margin-top: 8px; }
 .alerte-courses p { display: flex; flex-direction: column; gap: 4px; font-size: .95rem; line-height: 1.35; }
@@ -1727,7 +1764,7 @@ var Moteur = (function () {
     noms.forEach(function (nomRec) {
       var rec = recettes.byName[nomRec];
       if (!rec) return;
-      if (!rec.ingredients.length) { if (rec.sansIngredients) return; if (sansIngr.indexOf(rec.nom) === -1) sansIngr.push(rec.nom); return; }
+      if (!rec.ingredients.length) { if (rec.sansIngredients || norm(rec.nom) === "restaurant") return; if (sansIngr.indexOf(rec.nom) === -1) sansIngr.push(rec.nom); return; }
       rec.ingredients.forEach(function (it) {
         var id = it.id;
         if (!byId[id]) {
@@ -2356,7 +2393,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "14 oct. 22h25";
+  var VERSION_SITE = "15 oct. 14h05";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -2429,7 +2466,7 @@ var Moteur = (function () {
       stage: "valide",
       reponses: clone(v.reponses || { evenements: {}, midis: [], imposees: [] }),
       ajouts: Array.isArray(v.ajouts) ? clone(v.ajouts) : [],
-      retires: clone(v.retires || {}),
+      retires: clone(v.retires || {}), qtes: clone(v.qtes || {}),
       menu: { debut: v.debut, fin: v.fin, creneaux: clone(v.creneaux || []), avertissements: [] },
       valideLe: v.valideLe
     };
@@ -2506,9 +2543,32 @@ var Moteur = (function () {
       txt += Store.msg ? ". " + Store.msg : ". Historique conservé dans ce navigateur uniquement.";
     }
     if (M.iso(debut) !== M.iso(defautDebut)) txt += " · semaine choisie manuellement";
-    st.textContent = ""; st.append(h("span", { class: "st-txt", text: txt }));
-    if (pastille) st.prepend(pastille, " ");
+    st.textContent = "";
+    if (pastille) {
+      // Vue allégée : la pastille « À jour » et un ⓘ ; le nombre de semaines s'affiche en infobulle.
+      var iSt = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "Informations sur l'historique" });
+      iSt.addEventListener("click", function (e) { e.stopPropagation(); bulle(iSt, [h("p", { text: txt + "." })]); });
+      st.append(pastille, " ", iSt);
+    } else st.append(h("span", { class: "st-txt", text: txt }));
   }
+  /* Infobulle cliquable : s'ouvre sous le bouton, se ferme en touchant ailleurs (ou en retouchant le bouton). */
+  var bulleOuverte = null;
+  function fermerBulle() { if (bulleOuverte) { bulleOuverte.el.remove(); bulleOuverte.ancre.setAttribute("aria-expanded", "false"); bulleOuverte = null; } }
+  function bulle(ancre, contenu) {
+    if (bulleOuverte && bulleOuverte.ancre === ancre) { fermerBulle(); return; }
+    fermerBulle();
+    var el = h("div", { class: "bulle", role: "dialog" }, contenu);
+    document.body.append(el);
+    var r = ancre.getBoundingClientRect(), w = Math.min(320, window.innerWidth - 24);
+    el.style.width = "max-content"; el.style.maxWidth = w + "px";
+    var left = Math.max(12, Math.min(r.left + r.width / 2 - el.offsetWidth / 2, window.innerWidth - el.offsetWidth - 12));
+    el.style.left = (left + window.scrollX) + "px"; el.style.top = (r.bottom + window.scrollY + 8) + "px";
+    el.style.setProperty("--fleche", Math.max(14, Math.min(el.offsetWidth - 14, r.left + r.width / 2 - left)) + "px");
+    ancre.setAttribute("aria-expanded", "true");
+    bulleOuverte = { el: el, ancre: ancre };
+  }
+  document.addEventListener("click", function (e) { if (bulleOuverte && !bulleOuverte.el.contains(e.target) && !bulleOuverte.ancre.contains(e.target)) fermerBulle(); }, true);
+  window.addEventListener("resize", fermerBulle);
 
   /* ---------- Onglet Préparer ---------- */
   var panelPrep = document.getElementById("panel-prep");
@@ -2547,7 +2607,8 @@ var Moteur = (function () {
   function pageTn() {
     var p = S.page;
     if (S.stage === "proposition") return p === "liste" || p === "prepa" ? p : "menu";
-    return p === "imposee" || p === "articles" || p === "prepa" || p === "fete" || p === "vin" ? p : "semaine";
+    if (p === "vin") return "articles"; // ancienne étape « Et le vin ? » : remplacée par une mention sur « Des articles en plus ? »
+    return p === "imposee" || p === "articles" || p === "prepa" || p === "fete" ? p : "semaine";
   }
   function allerPage(p, sens) {
     sensTn = sens || 1;
@@ -2685,24 +2746,10 @@ var Moteur = (function () {
         var ins3 = rows3.querySelectorAll(".cherche-in"); if (ins3.length) ins3[ins3.length - 1].focus();
       } }))));
       renderImposees(rows3);
-      var b3 = h("button", { type: "button", class: "btn primary", onclick: function () { allerPage(clesFete().length ? "vin" : "articles"); } });
+      var b3 = h("button", { type: "button", class: "btn primary", onclick: function () { allerPage("articles"); } });
       function majBouton3() { b3.textContent = rep.imposees.some(function (im) { return im.recette; }) ? "Continuer →" : "Aucune, continuer →"; }
       rows3.addEventListener("change", majBouton3); majBouton3();
       page.append(basTn(function () { allerPage(clesFete().length ? "fete" : "semaine", -1); }, b3));
-    } else if (p === "vin") {
-      // Étape intermédiaire quand la semaine a un repas de fête : le rappel du vin (liste à part ou non).
-      var fetes = clesFete().map(function (k) { return S.reponses.evenements[k].texte || "Repas de fête"; });
-      var dejaVin = S.ajouts.some(function (a) { return /\bvins?\b/i.test(a.produit || ""); });
-      var noteVin = h("p", { class: "status ok-msg", role: "status", text: dejaVin ? "Vin ajouté à la liste de courses ✓" : "" });
-      page.append(enteteTn(2, "Et le vin ?", null),
-        h("section", { class: "card vin-rappel" },
-          h("div", { class: "vin-ico", "aria-hidden": "true", text: "🍷" }),
-          h("p", { class: "vin-texte", text: "N'oubliez pas de prendre du vin pour votre repas" + (fetes.length > 1 ? "s" : "") + " de fête !" }),
-          h("p", { class: "status", text: fetes.map(function (t) { return emojiFete(t) + " " + t; }).join(" · ") }),
-          dejaVin ? null : h("button", { type: "button", class: "btn", text: "+ Ajouter du vin à la liste", onclick: function (e) {
-            S.ajouts.push({ produit: "Vin", quantite: "", categorie: "AV" }); sauver(); e.target.remove(); noteVin.textContent = "Vin ajouté à la liste de courses ✓";
-          } }), noteVin),
-        basTn(function () { allerPage("imposee", -1); }, h("button", { type: "button", class: "btn primary", text: "C'est noté, continuer →", onclick: function () { allerPage("articles"); } })));
     } else if (p === "articles") {
       page.append(enteteTn(2, "Des articles en plus ?", "Ils s'ajoutent à la liste de courses, en plus des ingrédients des recettes. Facultatif."));
       var rows4 = h("div", { class: "rows", id: "ajouts" });
@@ -2711,8 +2758,28 @@ var Moteur = (function () {
         S.ajouts.push({ produit: "", quantite: "", categorie: "D" }); sauver(); renderAjouts(rows4, true);
       } }))));
       renderAjouts(rows4, false);
+      // Repas de fête prévu : petite mention du vin, rouge / blanc / rosé en un geste (repris des articles enregistrés).
+      if (clesFete().length) {
+        var VINS = [["Vin rouge", "Rouge"], ["Vin blanc", "Blanc"], ["Vin rosé", "Rosé"]];
+        var vinL = h("div", { class: "vin-mention" });
+        var majVin = function () {
+          clear(vinL);
+          var choix = h("span", { class: "vin-choix" });
+          VINS.forEach(function (v) {
+            var deja = S.ajouts.some(function (a) { return M.norm(a.produit) === M.norm(v[0]); });
+            if (deja) { choix.append(h("span", { class: "vin-ok", text: v[1] + " ✓" })); return; }
+            choix.append(h("button", { type: "button", class: "lien-vin", text: "+ " + v[1], onclick: function () {
+              var art = mesArticles().filter(function (a) { return M.norm(a.produit) === M.norm(v[0]); })[0];
+              S.ajouts.push({ produit: art ? art.produit : v[0], quantite: art && art.quantite ? art.quantite : "1 bouteille", categorie: art ? art.categorie : "AV" });
+              sauver(); renderAjouts(rows4, false); majVin();
+            } }));
+          });
+          vinL.append(h("span", { text: "🍷 Repas de fête prévu : pensez au vin !" }), choix);
+        };
+        majVin(); rows4.parentNode.parentNode.insertBefore(vinL, rows4.parentNode);
+      }
       var go = h("button", { type: "button", class: "btn primary", text: Store.ready ? "Préparer mon menu →" : "Chargement…", disabled: !Store.ready, onclick: function () { S.ajouts = S.ajouts.filter(function (a) { return a.produit && a.produit.trim(); }); lancerPrepa(); } });
-      page.append(basTn(function () { allerPage(clesFete().length ? "vin" : "imposee", -1); }, go, S.menu ? h("p", { class: "status", text: "Un nouveau menu sera tiré au sort avec ces réponses." }) : null));
+      page.append(basTn(function () { allerPage("imposee", -1); }, go, S.menu ? h("p", { class: "status", text: "Un nouveau menu sera tiré au sort avec ces réponses." }) : null));
     } else if (p === "prepa") {
       page.classList.add("tn-prepa"); armerPrepa();
       page.append(enteteTn(-1, null, null), prepaVisuel());
@@ -3393,6 +3460,9 @@ var Moteur = (function () {
   function listeCourses() {
     var c = M.courses(R, S.menu);
     c.lignes.forEach(function (l) { l.produit = majuscule(l.produit); });
+    // Quantités ajustées à la main (+/−) : gardées tant que le calcul des recettes ne change pas pour ce produit.
+    var qx = S.qtes || {};
+    c.lignes.forEach(function (l) { var o = qx[l.id]; if (o && o.base === l.quantite) { l.quantiteBase = l.quantite; l.quantite = o.q; } });
     var lignes = c.lignes.filter(function (l) { return !S.retires[l.id]; });
     var retirees = c.lignes.filter(function (l) { return S.retires[l.id]; });
     S.ajouts.forEach(function (a, i) {
@@ -3407,7 +3477,7 @@ var Moteur = (function () {
     var out = [];
     function voir(nom) {
       if (!nom) return; var r = R.byName[nom];
-      if (r && (r.ingredients.length || r.sansIngredients)) return;
+      if (r && (r.ingredients.length || r.sansIngredients || estRestaurant(r))) return;
       if (out.indexOf(nom) === -1) out.push(nom);
     }
     (creneaux || []).forEach(function (c) {
@@ -3533,12 +3603,14 @@ var Moteur = (function () {
     });
     if (!passes.length) return null;
     var zone = h("div", { class: "chg-zone" });
-    function bouton() {
-      clear(zone);
-      zone.append(h("button", { type: "button", class: "btn", text: "⇄ Un repas a changé ?", onclick: etape1 }));
-    }
+    var btnChg = h("button", { type: "button", class: "chg-ico", text: "⇄ Imprévu ?", title: "Un repas ne s'est pas passé comme prévu ? Notez ce que vous avez mangé.", "aria-label": "Un repas a changé ?", onclick: function () { if (zone.childNodes.length) bouton(); else etape1(); } });
+    function bouton() { clear(zone); }
     function enregistrer(k, val) {
-      var patch = { reels: {} }; patch.reels[k] = val;
+      if (!reelsAvant[idSem]) reelsAvant[idSem] = clone(docSem.reels || {});
+      var patch = { reels: {}, journal: {} }; patch.reels[k] = val;
+      var jx = passes.filter(function (p) { return p.j + "-" + p.r === k; })[0];
+      var ent = { quoi: "changement", le: new Date().toISOString(), par: NOM_APPAREIL || "", detail: (jx ? nomJour(jx.j) + " " + jx.r.toLowerCase() + " : " : "") + (val ? libReel(val) : "comme prévu") };
+      patch.journal["j" + Date.now().toString(36)] = ent; if (!docSem.journal) docSem.journal = {}; Object.assign(docSem.journal, patch.journal);
       if (!docSem.reels) docSem.reels = {};
       if (val) docSem.reels[k] = val; else delete docSem.reels[k];
       fileEcriture = fileEcriture.then(function () { return Store.updateMenu(idSem, patch); }).catch(function () {});
@@ -3569,8 +3641,57 @@ var Moteur = (function () {
         h("div", { class: "choix-ligne" }, sel, h("button", { type: "button", class: "icon", "aria-label": "Retour", text: "✕", onclick: etape1 })));
       setTimeout(function () { var i = sel.querySelector("input"); if (i) i.focus(); }, 30);
     }
+    return { bouton: btnChg, zone: zone, annuler: annulerReels(idSem, docSem) };
+  }
+  /* Changements de plan notés pendant cette visite : « ↶ Annuler mes modifications », comme pour le menu. */
+  var reelsAvant = {};
+  function annulerReels(idSem, docSem) {
+    var avant = reelsAvant[idSem];
+    if (!avant || JSON.stringify(avant) === JSON.stringify(docSem.reels || {})) return null;
+    var zone = h("span", { class: "annul-zone" });
+    function bouton() { clear(zone); zone.append(h("button", { type: "button", class: "btn danger btn-annul", text: "↶ Annuler mes modifications", onclick: demander })); }
+    function demander() {
+      clear(zone);
+      zone.append(h("span", { class: "annul-q", text: "Remettre les repas comme avant ?" }),
+        h("button", { type: "button", class: "btn danger", text: "Oui, annuler", onclick: annuler }),
+        h("button", { type: "button", class: "btn ghost", text: "Non", onclick: bouton }));
+    }
+    function annuler() {
+      var patch = { reels: {}, journal: {} }, actuels = docSem.reels || {};
+      patch.journal["j" + Date.now().toString(36)] = { quoi: "annule", le: new Date().toISOString(), par: NOM_APPAREIL || "" };
+      if (!docSem.journal) docSem.journal = {}; Object.assign(docSem.journal, patch.journal);
+      Object.keys(actuels).forEach(function (k) { if (!(k in avant)) patch.reels[k] = null; });
+      Object.keys(avant).forEach(function (k) { patch.reels[k] = avant[k]; });
+      docSem.reels = clone(avant); delete reelsAvant[idSem];
+      fileEcriture = fileEcriture.then(function () { return Store.updateMenu(idSem, patch); }).catch(function () {});
+      renderPrep(); toast("Modifications annulées : les repas sont revenus comme avant.");
+    }
     bouton();
     return zone;
+  }
+  /* Semaine à venir (pas encore commencée) : tout effacer pour relancer une génération complète. */
+  function boutonEffacerSemaine() {
+    var id = M.iso(debut);
+    if (!Store.menus[id] || id <= aujIso()) return null;
+    var zone = h("div", { class: "eff-zone" });
+    var btn = h("button", { type: "button", class: "icon corbeille", title: "Effacer la semaine", "aria-label": "Effacer la semaine", onclick: function () {
+      if (zone.childNodes.length) { clear(zone); return; }
+      zone.append(h("div", { class: "confirm-eff" },
+        h("p", null, h("b", { text: "Effacer le menu du " + M.fr(debut).slice(0, 5) + " au " + M.fr(M.addDays(debut, 6)).slice(0, 5) + " ?" }),
+          h("span", { text: " Le menu, la liste de courses et les réponses sont supprimés pour tout le monde. Vous repartez d'une semaine vierge." })),
+        h("div", { class: "bar" },
+          h("button", { type: "button", class: "btn danger", text: "Oui, effacer la semaine", onclick: function (e) {
+            e.target.disabled = true;
+            oublierBrouillon(id); lsDel(cleBrouillon());
+            Store.deleteMenu(id).then(function () {
+              delete Store.menus[id]; chargerSemaine(); renderEntete(); renderPrep(); window.scrollTo(0, 0);
+              toast("Semaine effacée : vous pouvez préparer un nouveau menu.");
+            }, function () { e.target.disabled = false; toast("Effacement impossible. Réessayez."); });
+          } }),
+          h("button", { type: "button", class: "btn ghost", text: "Annuler", onclick: function () { clear(zone); } }))));
+    } });
+    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>';
+    return { bouton: btn, zone: zone };
   }
   function cellule(slot, repas, editable, hist, j) {
     var verrou = editable && repasPasse(j, repas); if (verrou) editable = false;
@@ -3593,8 +3714,16 @@ var Moteur = (function () {
           sauver();
         }, "grille", slot.key);
         nameEl = h("span", { class: "mname fete" }, icoF, inpF);
-      } else nameEl = h("span", { class: "mname fete" }, h("span", { class: "fete-sym", text: emojiFete(slot.texte) }), h("span", { class: "fete-titre-or", text: slot.texte }));
-      tags.append(listeFeteGrille(slot, editable));
+        tags.append(listeFeteGrille(slot, editable));
+      } else {
+        // Menu validé : seulement le titre et un ⓘ ; on touche pour voir le menu du repas en infobulle.
+        var titreF = h("button", { type: "button", class: "fete-titre-or fete-bouton", "aria-label": slot.texte + " : voir le menu du repas" }, slot.texte, h("span", { class: "info-i sur-or", "aria-hidden": "true", text: "i" }));
+        titreF.addEventListener("click", function (e) {
+          e.stopPropagation();
+          bulle(titreF, [h("p", { class: "bulle-titre", text: emojiFete(slot.texte) + " " + slot.texte }), listeFeteGrille(slot, false)]);
+        });
+        nameEl = h("span", { class: "mname fete" }, h("span", { class: "fete-sym", text: emojiFete(slot.texte) }), titreF);
+      }
     } else {
       nameEl = h("span", { class: "mname sans" }, sansMenu());
     }
@@ -3667,6 +3796,42 @@ var Moteur = (function () {
     return M.CAT_ORDER.filter(function (c) { return g[c] && g[c].length; }).map(function (c) { return { cat: c, lignes: g[c] }; });
   }
 
+  /* Pas du +/− selon l'unité : 1 pièce, 50 g, 0,25 kg / L, 5 cl, 50 ml… */
+  function pasQte(u, v) {
+    var n = M.norm(u || "");
+    if (n === "g") return v >= 500 ? 100 : v >= 100 ? 50 : 10;
+    if (n === "kg" || n === "l") return 0.25;
+    if (n === "cl") return 5;
+    if (n === "ml") return v >= 500 ? 100 : 50;
+    return 1;
+  }
+  function nouvelleQte(q, sens) {
+    q = String(q || "").trim();
+    if (!q) return sens > 0 ? "1" : null;
+    var x = lireQte(q); if (!x) return null;
+    var p = pasQte(x.u, x.b), a = Math.round((x.a + sens * p) * 1000) / 1000, b = Math.round((x.b + sens * p) * 1000) / 1000;
+    if (a <= 0) return null;
+    return fmtQ(a, b, x.u);
+  }
+  function stepperQte(l) {
+    var ok = !l.quantite || lireQte(l.quantite);
+    if (!ok) return h("span", { class: "qty", text: l.quantite });
+    function changer(sens) {
+      var nq = nouvelleQte(l.quantite, sens); if (!nq) return;
+      if (l.source === "ajout") S.ajouts[l.index].quantite = nq;
+      else {
+        if (!S.qtes) S.qtes = {};
+        var base = l.quantiteBase != null ? l.quantiteBase : l.quantite;
+        if (nq === base) delete S.qtes[l.id]; else S.qtes[l.id] = { base: base, q: nq };
+      }
+      sauver(); renderPrep();
+    }
+    var modifie = l.quantiteBase != null;
+    return h("span", { class: "qty-pas" + (modifie ? " modifie" : "") },
+      h("button", { type: "button", class: "pas-btn", "aria-label": "Moins de " + l.produit, text: "−", disabled: !nouvelleQte(l.quantite, -1), onclick: function () { changer(-1); } }),
+      h("span", { class: "qty", title: modifie ? "Calculé : " + l.quantiteBase : null, text: l.quantite || "—" }),
+      h("button", { type: "button", class: "pas-btn", "aria-label": "Plus de " + l.produit, text: "+", onclick: function () { changer(1); } }));
+  }
   function renderCourses(editable) {
     var liste = listeCourses();
     var box = h("div", { class: "stack" });
@@ -3680,7 +3845,7 @@ var Moteur = (function () {
         } }) : h("span");
         ul.append(h("li", null, h("div", { class: "item" },
           h("span", { class: "nm" }, l.produit, l.source === "ajout" ? h("span", { class: "add", text: "ajouté" }) : null),
-          h("span", { class: "qty", text: l.quantite }), del)));
+          editable ? stepperQte(l) : h("span", { class: "qty", text: l.quantite }), del)));
       });
       aisles.append(h("section", { class: "aisle" }, h("h3", null, h("span", { class: "cnum", text: String(M.CAT_ORDER.indexOf(grp.cat) + 1).padStart(2, "0") }), M.CAT_NAMES[grp.cat], h("small", { text: String(grp.lignes.length) })), ul));
     });
@@ -3765,9 +3930,14 @@ var Moteur = (function () {
         return o;
       }),
       courses: liste.lignes.map(function (l) { return { produit: l.produit, quantite: l.quantite, categorie: l.categorie, source: l.source }; }),
-      reponses: S.reponses, ajouts: S.ajouts, retires: S.retires
+      reponses: S.reponses, ajouts: S.ajouts, retires: S.retires, qtes: S.qtes || {}
     };
     var lf = listesFetes(S.menu); if (lf.length) doc.coursesFetes = lf;
+    var prevJ = Store.menus[id];
+    doc.journal = prevJ ? clone(prevJ.journal || {}) : {};
+    if (prevJ && !Object.keys(doc.journal).length && prevJ.valideLe) doc.journal["j0"] = { quoi: "valide", le: prevJ.valideLe, par: prevJ.validePar || "" };
+    doc.journal["j" + Date.now().toString(36)] = { quoi: prevJ ? "modifie" : "valide", le: doc.valideLe, par: NOM_APPAREIL || "" };
+    doc.validePar = prevJ ? (prevJ.validePar || "") : (NOM_APPAREIL || "");
     var si = platsSansIngredients(S.menu.creneaux); if (si.length) doc.sansRecettes = { plats: si, ajoutes: S.sansIngrOk === si.join("|") };
     // Menu déjà validé puis modifié : on garde la liste de référence (celle déjà achetée)
     // pour calculer le complément, et les coches des produits toujours présents.
@@ -3819,8 +3989,7 @@ var Moteur = (function () {
     var mobV = vueMobile();
     var modif = semainePassee() ? null : h("button", { type: "button", class: "btn", text: "Modifier ce menu", onclick: function () { S.stage = "proposition"; S.tunnel = true; S.page = "menu"; sensTn = 1; sauver(); renderPrep(); window.scrollTo(0, 0); } });
     panelPrep.append(h("div", { class: "bar end" },
-      h("div", { class: "statut-bloc" }, h("div", { class: "statut-ligne" }, statut("ok", "Menu validé"), lienSemaineProchaine()),
-        valideLe ? h("p", { class: "status", text: "Validé le " + valideLe.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + " à " + valideLe.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + "." }) : null),
+      h("div", { class: "statut-bloc" }, h("div", { class: "statut-ligne" }, h("span", { class: "statut-info" }, statut("ok", "Menu validé"), boutonInfoValidation()), lienSemaineProchaine()), zoneInfoValidation),
       null));
 
     var note = h("p", { class: "status", role: "status" });
@@ -3841,11 +4010,37 @@ var Moteur = (function () {
       panelPrep.append(h("div", { class: "bar" }, btn, note));
     }
     panelPrep.append(renderMenuGrille(false));
-    if (modif) panelPrep.append(h("div", { class: "bar actions-rares" }, modif));
-    var chg = zoneChangementPlan(); if (chg) panelPrep.append(chg);
+    // Une seule ligne : Modifier ce menu · ⇄ Un repas a changé ? (semaine entamée) · Effacer la semaine (semaine à venir).
+    var chg = zoneChangementPlan(), eff = boutonEffacerSemaine();
+    if (modif || chg || eff) panelPrep.append(h("div", { class: "bar actions-rares ligne-actions" }, modif, chg ? chg.bouton : null, chg && chg.annuler ? chg.annuler : null, eff ? eff.bouton : null));
+    if (chg) panelPrep.append(chg.zone);
+    if (eff) panelPrep.append(eff.zone);
     panelPrep.append(alerteSansIngredients(S.menu.creneaux) || "");
   }
 
+  /* ⓘ à côté de « Menu validé » : qui a validé, quand, et les modifications ensuite. */
+  var zoneInfoValidation = null;
+  function quandTxt(iso) { var d = new Date(iso); return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) + " à " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h"); }
+  function journalSemaine(doc) {
+    var l = Object.keys(doc.journal || {}).map(function (k) { return doc.journal[k]; }).filter(function (e) { return e && e.le; });
+    if (!l.some(function (e) { return e.quoi === "valide" || e.quoi === "modifie"; }) && doc.valideLe) l.push({ quoi: "valide", le: doc.valideLe, par: doc.validePar || "" });
+    return l.sort(function (a, b) { return a.le < b.le ? -1 : 1; });
+  }
+  var LIB_JOURNAL = { valide: "Validé", modifie: "Modifié", changement: "Imprévu noté", annule: "Imprévus annulés" };
+  function boutonInfoValidation() {
+    var doc = Store.menus[M.iso(debut)];
+    zoneInfoValidation = h("div", { class: "info-valid", hidden: true });
+    if (!doc) return null;
+    var b = h("button", { type: "button", class: "info-i", "aria-label": "Détails de la validation", "aria-expanded": "false", text: "i", onclick: function (e) {
+      e.stopPropagation();
+      var ul = h("ul", { class: "bulle-liste" });
+      journalSemaine(doc).forEach(function (x) {
+        ul.append(h("li", null, h("b", { text: LIB_JOURNAL[x.quoi] || x.quoi }), " le " + quandTxt(x.le) + (x.par ? " par " + x.par : ""), x.detail ? h("small", { text: " · " + x.detail }) : null));
+      });
+      bulle(b, [ul]);
+    } });
+    return b;
+  }
   /* Petit lien vers la semaine suivante, sur la ligne « Menu validé » (semaine en cours seulement). */
   function lienSemaineProchaine() {
     if (M.iso(debut) !== M.iso(SEMAINE_EN_COURS)) return null;
@@ -5169,8 +5364,9 @@ var Moteur = (function () {
   var TYPES_REGLE = [["aucune", "Aucune"], ["poisson", "Poisson"], ["uniquement", "Uniquement…"], ["preference", "De préférence…"], ["imposee", "Seulement si imposée"]];
   var JOURS_MIN = ["samedi", "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi"];
 
-  function sansCategorie(r) { return !(r.cat && LIB_CAT[r.cat]); }
-  function aCompleter(r) { return (!r.ingredients.length && !r.sansIngredients) || r._regle.incomplete || (r._regle.type === "imposee" && /^uniquement\s*$/.test(M.norm(r.regle))); }
+  function estRestaurant(r) { return !!r && M.norm(r.nom) === "restaurant"; }
+  function sansCategorie(r) { return !estRestaurant(r) && !(r.cat && LIB_CAT[r.cat]); }
+  function aCompleter(r) { return (!r.ingredients.length && !r.sansIngredients && !estRestaurant(r)) || r._regle.incomplete || (r._regle.type === "imposee" && /^uniquement\s*$/.test(M.norm(r.regle))); }
   function statutRecette(r) {
     var hist = Store.historique(M.iso(debut)).filter(function (e) { return e.date < M.iso(debut); });
     var w = M.semainesDepuis(M.dernieres(hist)[r.nom], debut);
@@ -5326,6 +5522,7 @@ var Moteur = (function () {
   /* ---------- Animation de validation : un thème par mois ---------- */
   var THEMES_ANIM = ["Cotillons", "Neige", "Fleurs de printemps", "Pâques : lapins en chocolat et œufs", "Muguet", "Soleil", "Feu d'artifice du 14 juillet", "L'eau et le soleil", "La rentrée", "Halloween : citrouille et sorcière", "Feuilles d'automne", "Noël : sapin, étoile et traîneau"];
   function animationsActives() { try { return localStorage.getItem("menus-animation") !== "0"; } catch (e) { return true; } }
+  window.__apercuValidation = function (m) { return animerValidation(m); };
   function lancerCotillons() { return animationsActives() ? animerValidation(moisMajoritaire(M.iso(debut))) : 0; }
 
   var cacheEmoji = {};
@@ -5349,6 +5546,14 @@ var Moteur = (function () {
     document.body.append(cv);
     var x = cv.getContext("2d"); x.scale(dpr, dpr);
     var parts = [], avant = [], apres = [], duree = 5200;
+    // Zone de la coche « Menu validé » : les grands éléments fixes (citrouille, sapin, soleil…) restent hors de cette zone.
+    var zH = H0 * 0.16, zB = H0 * 0.4, zG = W0 * 0.25, zD = W0 * 0.75;
+    try {
+      var zr = [".tn-fin .fin-coche", ".tn-fin .fin-titre"].map(function (q) { var e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }).filter(function (r) { return r && r.height; });
+      if (zr.length) { zH = Math.min.apply(null, zr.map(function (r) { return r.top; })); zB = Math.max.apply(null, zr.map(function (r) { return r.bottom; })); zG = Math.min.apply(null, zr.map(function (r) { return r.left; })); zD = Math.max.apply(null, zr.map(function (r) { return r.right; })); }
+    } catch (e) {}
+    var libre = zB + 24;
+    function dansZone(px, py, m) { return px > zG - m && px < zD + m && py > zH - m && py < zB + m; }
     function rnd(a, b) { return a + Math.random() * (b - a); }
     function pick(t) { return t[(Math.random() * t.length) | 0]; }
     function ease(k) { k = Math.max(0, Math.min(1, k)); return 1 - Math.pow(1 - k, 3); }
@@ -5407,6 +5612,8 @@ var Moteur = (function () {
       for (var i = 0; i < nb; i++) (function (i) {
         var t0 = i < nb - 4 ? 100 + i * (petit ? 330 : 260) + rnd(0, 180) : (nb - 4) * (petit ? 330 : 260) + 500 + rnd(0, 250);
         var sx = rnd(W0 * 0.15, W0 * 0.85), ty = rnd(H0 * 0.12, H0 * 0.42), col = pick(cols), eclate = false;
+        for (var essai = 0; essai < 12 && dansZone(sx, ty, 40); essai++) { sx = rnd(W0 * 0.1, W0 * 0.9); ty = rnd(H0 * 0.08, H0 * 0.6); }
+        if (dansZone(sx, ty, 40)) ty = Math.min(H0 * 0.7, libre + 60);
         parts.push({ x: sx, y: H0 + 10, vy: -Math.sqrt(2 * 0.18 * (H0 - ty)), d: t0, g: 0.18, fr: 1, vmax: 99, sway: 0, vx: rnd(-0.6, 0.6), dessin: "fusee", c: "#F5B400", w: 4,
           apres: function (p) {
             if (eclate || p.vy < -0.5) return;
@@ -5550,8 +5757,9 @@ var Moteur = (function () {
               chute({ n: Math.round(30 * nF), dessin: "oeuf", cols: ["#FFB5C2", "#B5EAD7", "#C7CEEA", "#FFDAC1", "#FFF5BA", "#A0D2EB"], cols2: ["#E63946", "#2A9D8F", "#6B2FA3", "#F4A261", "#457B9D"], taille: [28, 44], vy: [2, 3], vmax: 4.6, sway: 0.7, vr: 0.04 }); break;
       case 4: chute({ n: Math.round(55 * nF), dessin: "muguet", taille: [34, 56], vy: [1.4, 2.4], vmax: 3.6, sway: 1, vr: 0.02 });
               chute({ n: Math.round(14 * nF), emojis: ["🍀"], taille: [18, 26], vy: [1.5, 2.5], vmax: 3.6, sway: 1 }); break;
-      case 5: soleil(W0 / 2, H0 * 0.33, Math.min(W0, H0) * (petit ? 0.17 : 0.13), true);
-              eclats(W0 / 2, H0 * 0.33, petit ? 70 : 110, ["#FFCC00", "#FF9F1C", "#FFB703", "#FB8500", "#FFE066"], { d: 600, dessins: ["etoile", "rond"] }); break;
+      case 5: var Rj = Math.min(W0, H0) * (petit ? 0.17 : 0.13), cyJ = Math.min(H0 - Rj * 1.6, libre + Rj * 2);
+              soleil(W0 / 2, cyJ, Rj, true);
+              eclats(W0 / 2, cyJ, petit ? 70 : 110, ["#FFCC00", "#FF9F1C", "#FFB703", "#FB8500", "#FFE066"], { d: 600, dessins: ["etoile", "rond"] }); break;
       case 6: feux(["#2E6BFF", "#FF3B30", "#A7B1C2", "#4D8BFF", "#FF5A4E"], petit ? 13 : 16); duree = 6800; break;
       case 7: aout(); duree = 6000; break;
       case 8: chute({ n: Math.round(50 * nF), dessins: ["crayon", "crayon", "cahier", "regle", "lettre"], cols: ["#E63946", "#2A9D8F", "#F4A261", "#457B9D", "#6B2FA3", "#E9C46A"], lettres: ["A", "B", "C", "1", "2", "3"], taille: [34, 54], vy: [2, 3], vmax: 4.6, sway: 0.7, vr: 0.05 }); break;
@@ -5561,7 +5769,10 @@ var Moteur = (function () {
     }
 
     function aout() {
-      soleil(W0 * 0.78, H0 * 0.17, Math.min(W0, H0) * (petit ? 0.12 : 0.09), false);
+      var Ra = Math.min(W0, H0) * (petit ? 0.12 : 0.09), cxA = W0 * 0.8, cyA = H0 * 0.17;
+      if (dansZone(cxA, cyA, Ra * 1.5)) cyA = Math.max(Ra + 8, zH - Ra * 1.5);
+      if (dansZone(cxA, cyA, Ra * 1.2)) { cxA = Math.min(W0 - Ra - 8, zD + Ra * 1.5); }
+      soleil(cxA, cyA, Ra * (cyA < Ra * 1.6 ? 0.8 : 1), false);
       var couches = [["rgba(144,224,239,.75)", 0, 18, 0.012, 0.0022, 0], ["rgba(0,180,216,.7)", 26, 14, 0.016, -0.003, 2], ["rgba(0,119,182,.75)", 52, 11, 0.02, 0.004, 4]];
       var prochaine = 900;
       function niveau(el) { var monte = ease(el / 1300), descend = el > duree - 1400 ? ease((el - (duree - 1400)) / 1400) : 0; return H0 + 30 - (H0 * 0.36) * monte + (H0 * 0.42) * descend; }
@@ -5584,7 +5795,7 @@ var Moteur = (function () {
       });
     }
     function halloween() {
-      var cx = W0 / 2, cy = H0 * 0.45, R = Math.min(W0, H0) * (petit ? 0.17 : 0.12), boom = 1500, fait = false;
+      var R = Math.min(W0, H0) * (petit ? 0.17 : 0.12), cx = W0 / 2, cy = Math.min(H0 - R * 1.4, Math.max(H0 * 0.45, libre + R * 1.35)), boom = 1500, fait = false;
       avant.push(function (el) {
         if (el < boom) {
           var k = ease(el / 500), trem = el > 600 ? Math.sin(el / 25) * 0.08 * ((el - 600) / 900) : 0, gonfle = 1 + (el > 900 ? (el - 900) / 600 * 0.18 : 0);
@@ -5597,16 +5808,18 @@ var Moteur = (function () {
         }
       });
       var t0 = 2000, depart = -120, fin = W0 + 120;
+      // La sorcière passe au-dessus de la coche (ou en dessous s'il n'y a pas la place).
+      var haut = zH > 110 ? Math.max(64, zH * 0.6) : libre + 70;
       apres.push(function (el) {
         if (el < t0) return;
         var k = (el - t0) / (duree - t0 - 300); if (k > 1) return;
-        var px = depart + (fin - depart) * k, py = H0 * 0.22 + Math.sin(el / 280) * 18 - k * H0 * 0.06;
+        var px = depart + (fin - depart) * k, py = haut + Math.sin(el / 280) * 10;
         x.translate(px, py); x.rotate(-0.08 + Math.sin(el / 280) * 0.05); var e = petit ? 1 : 1.3; x.scale(e, e); sorciere(el);
         if (Math.random() < 0.6) parts.push({ x: px - 92 * e, y: py + 8 * e, vx: rnd(-1, 0.2), vy: rnd(-0.5, 0.8), d: el, g: 0.02, fr: 0.98, vmax: 2, sway: 0.2, dessin: "etoile", c: pick(["#F4C430", "#B784F2", "#FFFFFF"]), w: rnd(5, 9), vie: 900 });
       });
     }
     function noel() {
-      var cx = W0 / 2, base = H0 * 0.86, T = Math.min(H0 * 0.5, W0 * (petit ? 0.9 : 0.6));
+      var cx = W0 / 2, base = H0 * 0.86, T = Math.min(H0 * 0.5, W0 * (petit ? 0.9 : 0.6), (base - libre) / 1.22);
       var boules = [];
       for (var i = 0; i < 22; i++) { var ty = rnd(0.1, 0.85), lg = T * 0.4 * (1 - ty) * (ty < 0.27 ? 1 : ty < 0.52 ? 0.85 : 0.75); boules.push({ x: rnd(-lg * 0.8, lg * 0.8), y: ty, c: pick(["#E63946", "#F4C430", "#4D8BFF", "#FFFFFF", "#C77DFF"]), r: rnd(0.012, 0.02), ph: rnd(0, 6) }); }
       // grand sapin décoré qui pousse depuis le bas, étoile au sommet
@@ -5639,7 +5852,7 @@ var Moteur = (function () {
       apres.push(function (el) {
         if (el < t0) return;
         var k = (el - t0) / (duree - t0 - 200); if (k > 1) return;
-        var e = petit ? 0.85 : 1.15, px = W0 + 200 * e - (W0 + 420 * e) * k, py = H0 * 0.16 + Math.sin(el / 300) * 14 - k * H0 * 0.05;
+        var e = petit ? 0.85 : 1.15, px = W0 + 200 * e - (W0 + 420 * e) * k, py = (zH > 110 ? Math.max(46, zH * 0.45) : libre + 60) + Math.sin(el / 300) * 8;
         x.translate(px, py); x.scale(e, e); x.rotate(0.06 + Math.sin(el / 300) * 0.04);
         traineau(el);
         if (Math.random() < 0.7) parts.push({ x: px + 70 * e, y: py + 14 * e, vx: rnd(0.2, 1.2), vy: rnd(-0.4, 0.6), d: el, g: 0.02, fr: 0.98, vmax: 2, sway: 0.2, dessin: "etoile", c: pick(["#F4C430", "#FFE680", "#FFFFFF"]), w: rnd(5, 9), vie: 1000 });
