@@ -943,6 +943,9 @@ body.vue-mobile .arow { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); 
 .fete-bouton { cursor: pointer; font: inherit; font-weight: 700; text-align: left; }
 .fete-chevron { display: inline-block; font-size: .8em; transition: transform .2s; }
 .fete-bouton.ouvert .fete-chevron { transform: rotate(180deg); }
+.fr-actions { flex-wrap: wrap; gap: 8px; }
+.rattacher-zone { display: contents; }
+.rattacher-zone .choix-ligne { flex: 1 1 100%; }
 .chg-zone { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 .chg-zone > .btn { align-self: flex-start; }
 .chg-plan { border: 1px dashed var(--line); background: none; color: var(--muted); font: 600 .72rem var(--font); border-radius: 999px; padding: 3px 9px; cursor: pointer; }
@@ -2402,7 +2405,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "15 oct. 14h40";
+  var VERSION_SITE = "15 oct. 15h00";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -6197,7 +6200,48 @@ var Moteur = (function () {
     }
     return h("section", { class: "card fiche-liee vide" }, h("span", { class: "lbl", text: "Fiche recette" }),
       h("p", { class: "status", text: src.ficheAFaire ? "Fiche à faire : elle est prévue mais pas encore créée." : "Pas de fiche illustrée pour cette recette (ce n'est pas obligatoire)." }),
-      h("a", { class: "btn", href: lienNouvelleFiche(src), text: "+ Créer la fiche" }));
+      h("div", { class: "bar fr-actions" }, h("a", { class: "btn", href: lienNouvelleFiche(src), text: "+ Créer la fiche" }), zoneRattacher(src)));
+  }
+  /* Fiches pas encore rattachées à une recette (ni par lien, ni par le même titre). */
+  function fichesLibres() {
+    var ids = {}, noms = {};
+    TOUTES.forEach(function (r) { if (!r.effacee) { ids[r._id] = 1; noms[M.norm(r.nom)] = 1; } });
+    return Object.keys(Store.fiches || {}).map(function (id) { return Object.assign({ id: id }, Store.fiches[id]); }).filter(function (f) {
+      if (!f || !f.title) return false;
+      if (f.recette && f.recette !== "-" && ids[f.recette]) return false;
+      if (!f.recette && noms[M.norm(f.title)]) return false;
+      return true;
+    });
+  }
+  /* Recette sans fiche : rattacher une fiche existante (celles de la même catégorie d'abord). */
+  function zoneRattacher(src) {
+    var libres = fichesLibres();
+    if (!libres.length) return null;
+    var z = h("span", { class: "rattacher-zone" });
+    var btn = h("button", { type: "button", class: "btn ghost", text: "Rattacher une fiche existante", onclick: ouvrir });
+    function ouvrir() {
+      clear(z);
+      var sel = chercheur({ label: "Fiche à rattacher", placeholder: "Fiche : tapez les 1res lettres…", items: function () {
+        return libres.slice().sort(function (a, b) {
+          var ma = src.cat && a.cat === src.cat ? 0 : 1, mb = src.cat && b.cat === src.cat ? 0 : 1;
+          return ma - mb || a.title.localeCompare(b.title, "fr");
+        }).map(function (f) {
+          return { v: f.id, label: f.title, sub: f.cat && LIB_CAT[f.cat] ? LIB_CAT[f.cat] : "", groupe: src.cat && f.cat === src.cat ? "Même catégorie" : "Autres fiches" };
+        });
+      }, onPick: function (x) {
+        if (!x || !x.v) return;
+        var f = Store.fiches[x.v]; if (!f) return;
+        f.recette = src._id;
+        Promise.resolve(Store.cloud && Store.cloud.doc("fiches/" + x.v).update({ recette: src._id })).then(function () {
+          if (f.cat && LIB_CAT[f.cat] && !src.cat) catDepuisFiche(src._id, f.cat);
+          rouvrir(src._id, "Fiche « " + f.title + " » rattachée à cette recette.");
+        }, function () { rouvrir(src._id, "Rattachement impossible. Réessayez."); });
+      } });
+      z.append(h("div", { class: "choix-ligne" }, sel, h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: function () { clear(z); z.append(btn); } })));
+      setTimeout(function () { var i = sel.querySelector("input"); if (i) i.focus(); }, 30);
+    }
+    z.append(btn);
+    return z;
   }
 
   /* Animations de passage d'écran : le livre (livre de recettes PDF) et le cuisinier au paperboard (création d'une fiche). */
