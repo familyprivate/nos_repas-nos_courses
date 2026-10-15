@@ -221,6 +221,13 @@ details summary { cursor: pointer; font-weight: 600; }
 .items li { border-bottom: 1px solid var(--line); }
 .qty-pas { display: inline-flex; align-items: center; gap: 4px; }
 .qty-pas .qty { min-width: 3.2em; text-align: center; }
+.qty-edit { border: 0; background: none; font: inherit; font-weight: 700; color: var(--accent); padding: 2px 2px; cursor: text; }
+.qty-crayon { border: 0; background: none; color: var(--muted); font-size: 12px; padding: 2px 4px; cursor: pointer; opacity: .7; line-height: 1; }
+.qty-crayon:hover { opacity: 1; color: var(--accent); }
+.qty-editeur { display: inline-flex; align-items: center; gap: 4px; }
+.shop-item .qty-editeur input.qty-input, body.vue-mobile .shop-item .qty-editeur input.qty-input { width: 4.6em; height: 30px; font-size: 13px; padding: 2px 4px; min-height: 0; appearance: auto; -webkit-appearance: none; accent-color: auto; margin: 0; flex: none; }
+.pas-btn.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+.qty-input { width: 7.5em; font: 600 14px var(--font); padding: 4px 6px; border: 1px solid var(--accent); border-radius: 6px; text-align: center; }
 .qty-pas.modifie .qty { color: var(--accent); font-weight: 800; }
 .pas-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 700 15px/1 var(--font); cursor: pointer; padding: 0; display: inline-grid; place-items: center; }
 .pas-btn:disabled { opacity: .3; cursor: default; }
@@ -2415,7 +2422,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "15 oct. 15h30";
+  var VERSION_SITE = "15 oct. 16h05";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -3442,8 +3449,9 @@ var Moteur = (function () {
       var p = h("input", { type: "text", id: "aj-p-" + i, placeholder: "Produit", value: a.produit, "aria-label": "Produit", oninput: function () { a.produit = p.value; sauver(); } });
       var q = h("input", { type: "text", id: "aj-q-" + i, placeholder: "Quantité", value: a.quantite, "aria-label": "Quantité", oninput: function () { a.quantite = q.value; sauver(); majPas(); } });
       var moins = h("button", { type: "button", class: "pas-btn", "aria-label": "Moins", text: "−" }), plus = h("button", { type: "button", class: "pas-btn", "aria-label": "Plus", text: "+" });
-      function majPas() { moins.disabled = !nouvelleQte(a.quantite, -1); plus.disabled = !nouvelleQte(a.quantite, 1); }
-      function pas(sens) { var nq = nouvelleQte(a.quantite, sens); if (!nq) return; a.quantite = nq; q.value = nq; sauver(); majPas(); }
+      function moinsAj() { var nq = nouvelleQte(a.quantite, -1); if (nq) return nq; var x = lireQte(a.quantite); return x && x.a === 1 && x.b === 1 ? "" : null; }
+      function majPas() { moins.disabled = moinsAj() == null; plus.disabled = !nouvelleQte(a.quantite, 1); }
+      function pas(sens) { var nq = sens < 0 ? moinsAj() : nouvelleQte(a.quantite, sens); if (nq == null) return; a.quantite = nq; q.value = nq; sauver(); majPas(); }
       moins.addEventListener("click", function () { pas(-1); }); plus.addEventListener("click", function () { pas(1); });
       majPas();
       var qBloc = h("div", { class: "aj-qte" }, moins, q, plus);
@@ -3852,24 +3860,52 @@ var Moteur = (function () {
     }
     return fmtQ(a, b, u);
   }
+  /* Onglet Courses : ✎ ouvre un petit éditeur (− quantité + ✓) sans refaire le menu. */
+  function editeurQte(ancre, valeur, onValider) {
+    var inp = h("input", { type: "text", class: "qty-input", value: valeur || "", placeholder: "ex. 6 tranches", "aria-label": "Quantité" });
+    function pas(sens) {
+      var v = inp.value.trim(), nq = nouvelleQte(v, sens);
+      if (nq == null && sens < 0) { var x = lireQte(v); if (x && x.a === 1 && x.b === 1) nq = ""; }
+      if (nq != null) inp.value = nq;
+    }
+    var fini = false;
+    function ok() { if (fini) return; fini = true; onValider(inp.value.trim()); }
+    var z = h("span", { class: "qty-editeur", onclick: function (e) { e.preventDefault(); e.stopPropagation(); } },
+      h("button", { type: "button", class: "pas-btn", text: "−", "aria-label": "Moins", onclick: function () { pas(-1); inp.focus(); } }), inp,
+      h("button", { type: "button", class: "pas-btn", text: "+", "aria-label": "Plus", onclick: function () { pas(1); inp.focus(); } }),
+      h("button", { type: "button", class: "pas-btn ok", text: "✓", "aria-label": "Valider la quantité", onclick: ok }));
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); ok(); } else if (e.key === "Escape") { fini = true; renderCoursesOnglet(); } });
+    ancre.replaceWith(z); inp.focus(); inp.select();
+  }
   function stepperQte(l) {
-    var ok = !l.quantite || lireQte(l.quantite);
-    if (!ok) return h("span", { class: "qty", text: l.quantite });
-    function changer(sens) {
-      var nq = nouvelleQte(l.quantite, sens); if (!nq) return;
+    var base = l.quantiteBase != null ? l.quantiteBase : l.quantite, modifie = l.quantiteBase != null;
+    function poser(nq) {
+      nq = String(nq == null ? "" : nq).trim();
       if (l.source === "ajout") S.ajouts[l.index].quantite = nq;
       else {
         if (!S.qtes) S.qtes = {};
-        var base = l.quantiteBase != null ? l.quantiteBase : l.quantite;
         if (nq === base) delete S.qtes[l.id]; else S.qtes[l.id] = { base: base, q: nq };
       }
       sauver(); renderPrep();
     }
-    var modifie = l.quantiteBase != null;
-    return h("span", { class: "qty-pas" + (modifie ? " modifie" : "") },
-      h("button", { type: "button", class: "pas-btn", "aria-label": "Moins de " + l.produit, text: "−", disabled: !nouvelleQte(l.quantite, -1), onclick: function () { changer(-1); } }),
-      h("span", { class: "qty", title: modifie ? "Calculé : " + l.quantiteBase : null, text: l.quantite || "—" }),
-      h("button", { type: "button", class: "pas-btn", "aria-label": "Plus de " + l.produit, text: "+", onclick: function () { changer(1); } }));
+    // « − » à 1 : retour à « — » (sans quantité) si c'était le cas au départ, ou pour un article ajouté.
+    function moinsCible() { var nq = nouvelleQte(l.quantite, -1); if (nq) return nq; var x = lireQte(l.quantite); return x && x.a === 1 && x.b === 1 && (base === "" || l.source === "ajout") ? "" : null; }
+    var pasOk = !l.quantite || lireQte(l.quantite);
+    // Toucher la quantité : la taper librement (« 1 paquet », « 6 tranches »…).
+    var val = h("button", { type: "button", class: "qty qty-edit", title: (modifie ? "Calculé : " + (base || "—") + ". " : "") + "Toucher pour taper la quantité", text: l.quantite || "—", onclick: function () {
+      var inp = h("input", { type: "text", class: "qty-input", value: l.quantite || "", placeholder: "ex. 6 tranches", "aria-label": "Quantité de " + l.produit });
+      var fini = false;
+      function valider() { if (fini) return; fini = true; poser(inp.value); }
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); inp.blur(); } else if (e.key === "Escape") { fini = true; renderPrep(); } });
+      inp.addEventListener("blur", valider);
+      val.replaceWith(inp); inp.focus(); inp.select();
+    } });
+    var mc = moinsCible();
+    var crayon = h("button", { type: "button", class: "qty-crayon", "aria-label": "Taper la quantité de " + l.produit, title: "Taper la quantité", text: "✎", onclick: function () { val.click(); } });
+    return h("span", { class: "qty-pas" + (modifie ? " modifie" : "") }, crayon,
+      pasOk ? h("button", { type: "button", class: "pas-btn", "aria-label": "Moins de " + l.produit, text: "−", disabled: mc == null, onclick: function () { if (mc != null) poser(mc); } }) : null,
+      val,
+      pasOk ? h("button", { type: "button", class: "pas-btn", "aria-label": "Plus de " + l.produit, text: "+", onclick: function () { var nq = nouvelleQte(l.quantite, 1); if (nq) poser(nq); } }) : null);
   }
   function renderCourses(editable) {
     var liste = listeCourses();
@@ -6809,7 +6845,7 @@ var Moteur = (function () {
         var cb = h("input", { type: "checkbox", id: "shop-" + l.k, checked: !!coches[l.k] });
         var row = h("label", { class: "shop-item" + (coches[l.k] ? " done" : "") + (l.aj ? " ajout" : ""), for: "shop-" + l.k }, cb,
           h("span", { class: "nm" }, l.produit, l.aj ? h("small", { class: "aj-par", text: " ajouté" + (l.par ? " par " + l.par : "") }) : null),
-          h("span", { class: "qty" }, l.quantite || "", l.aj ? h("button", { type: "button", class: "icon aj-x", "aria-label": "Retirer " + l.produit, text: "✕", onclick: function (e) {
+          h("span", { class: "qty" }, boutonCrayonCourses(id, l), l.quantite || "", l.aj ? h("button", { type: "button", class: "icon aj-x", "aria-label": "Retirer " + l.produit, text: "✕", onclick: function (e) {
             e.preventDefault(); e.stopPropagation();
             var doc0 = Store.menus[id], ancien = doc0.ajouts && !Array.isArray(doc0.ajouts) && doc0.ajouts[l.aj];
             var champ = ancien ? "ajouts" : "ajoutsRapides", patch = {}; patch[champ] = {}; patch[champ][l.aj] = null;
@@ -6856,6 +6892,28 @@ var Moteur = (function () {
       if (bloc.querySelector("label")) sec.append(bloc);
     });
     return sec;
+  }
+  function boutonCrayonCourses(id, l) {
+    var b = h("button", { type: "button", class: "qty-crayon", text: "✎", "aria-label": "Modifier la quantité de " + l.produit, title: "Modifier la quantité" });
+    b.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var span = b.parentNode;
+      editeurQte(span, l.quantite, function (nq) {
+        var doc0 = Store.menus[id], patch = {};
+        if (l.aj) {
+          var champ = doc0.ajouts && !Array.isArray(doc0.ajouts) && doc0.ajouts[l.aj] ? "ajouts" : "ajoutsRapides";
+          patch[champ] = {}; patch[champ][l.aj] = Object.assign({}, doc0[champ][l.aj], { quantite: nq });
+          doc0[champ][l.aj].quantite = nq;
+        } else {
+          var idx = indexerLignes(doc0.courses), ligne = idx.m[l.k];
+          if (!ligne) { renderCoursesOnglet(); return; }
+          ligne.quantite = nq; patch.courses = doc0.courses;
+        }
+        fileEcriture = fileEcriture.then(function () { return Store.updateMenu(id, patch); }).catch(function () {});
+        renderCoursesOnglet();
+      });
+    });
+    return b;
   }
   function ligneJourCourses(id, doc) {
     var deb = M.fromIso ? M.fromIso(id) : debut, faites = coursesFaites(doc, deb), auto = doc.coursesFaites == null;
