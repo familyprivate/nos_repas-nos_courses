@@ -897,7 +897,16 @@ label.fete-apart small { font-weight: 500; color: var(--muted); font-size: .82re
 .fete-apart-apercu { border: 1.5px dashed var(--accent); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
 .mname.fete { color: var(--ink); font-weight: 400; }
 .mname.fete { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
-.combo-fete { position: relative; flex: 1; min-width: 0; }
+.combo-fete { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.combo-fete .fete-select { width: 100%; min-width: 0; max-width: 100%; font: 600 .95rem var(--font); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.aj-qte { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.aj-qte input { flex: 1; min-width: 0; text-align: center; font-size: 13px; padding-left: 2px; padding-right: 2px; }
+body.vue-mobile .arow { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+.combo-fete.tj-fete { grid-column: 2 / -1; flex-direction: row; align-items: center; margin-top: -2px; }
+.tj-fete-lab { flex: none; font-weight: 700; color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
+.combo-fete.tj-fete .fete-nom, .combo-fete.tj-fete .fete-select { flex: 1; width: auto; }
+.aj-qte { gap: 4px; }
+.aj-qte .pas-btn { flex: none; width: 28px; height: 28px; font-size: 16px; }
 .combo-fete .fete-nom { width: 100%; }
 .combo-fete.grille .fete-nom { font: 400 1rem/1.3 var(--font); color: var(--ink); }
 .fete-titre-or { color: #1a1a1a; font-weight: 700; border: 1.5px solid #8c6216; border-radius: 10px; padding: 3px 10px; text-shadow: 0 1px 0 rgba(255,255,255,.35);
@@ -2393,7 +2402,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "15 oct. 14h05";
+  var VERSION_SITE = "15 oct. 14h40";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -2755,7 +2764,7 @@ var Moteur = (function () {
       var rows4 = h("div", { class: "rows", id: "ajouts" });
       var pick4 = selectArticles("aj-pick", function (a) { S.ajouts.push(a); sauver(); renderAjouts(rows4, false); });
       page.append(h("section", { class: "card" }, rows4, h("div", { class: "pickbar" }, pick4, h("button", { type: "button", class: "btn", text: "+ Saisie libre", onclick: function () {
-        S.ajouts.push({ produit: "", quantite: "", categorie: "D" }); sauver(); renderAjouts(rows4, true);
+        S.ajouts.push({ produit: "", quantite: "1", categorie: "D" }); sauver(); renderAjouts(rows4, true);
       } }))));
       renderAjouts(rows4, false);
       // Repas de fête prévu : petite mention du vin, rouge / blanc / rosé en un geste (repris des articles enregistrés).
@@ -2868,40 +2877,41 @@ var Moteur = (function () {
     document.body.append(dl);
     return document.createTextNode("");
   }
-  /* Choix de l'occasion : champ texte + liste déroulante filtrée (anniversaires, fêtes, occasions courantes). */
+  /* Choix de l'occasion : vraie liste déroulante du téléphone (sélecteur natif), puis « Autre » pour taper librement. */
+  var ORDRE_FETES = ["Anniversaire de Louane", "Anniversaire de Gabriel", "Anniversaire de Sabrina", "Anniversaire de Yann", "Anniversaire de mariage",
+    "Saint-Valentin", "Réveillon de Noël", "Noël", "Saint-Sylvestre", "Jour de l'an", "Pâques"];
   function optionsFetes() {
-    var vus = {}, out = [], auj = M.fromIso(M.iso(debut));
+    var vus = {}, tous = [], auj = M.fromIso(M.iso(debut));
     evenementsProches(auj, 366).filter(function (x) { return x.e.type === "anniv" || x.e.type === "fete"; }).sort(function (a, b) { return a.n - b.n; })
-      .forEach(function (x) { var n = nomFete(x.e); if (vus[n]) return; vus[n] = 1; out.push({ v: n, sub: M.fr(x.e.date).slice(0, 5) }); });
-    ["Repas de famille", "Repas entre amis", "Baptême", "Communion", "Crémaillère"].forEach(function (n) { if (!vus[n]) out.push({ v: n, sub: "" }); });
+      .forEach(function (x) { var n = nomFete(x.e); if (vus[M.norm(n)]) return; vus[M.norm(n)] = 1; tous.push({ v: n, sub: M.fr(x.e.date).slice(0, 5) }); });
+    var out = [], pris = {};
+    ORDRE_FETES.forEach(function (n) {
+      var o = tous.filter(function (t) { return M.norm(t.v) === M.norm(n); })[0];
+      out.push(o || { v: n, sub: "" }); pris[M.norm(n)] = 1;
+    });
+    tous.forEach(function (t) { if (!pris[M.norm(t.v)]) { out.push(t); pris[M.norm(t.v)] = 1; } });
+    ["Repas de famille", "Repas entre amis", "Baptême", "Communion", "Crémaillère"].forEach(function (n) { if (!pris[M.norm(n)]) out.push({ v: n, sub: "" }); });
     return out;
   }
   var comboFeteAOuvrir = null;
   function comboFete(valeur, onChange, cls, cle) {
-    var wrap = h("div", { class: "cherche combo-fete" + (cls ? " " + cls : "") });
-    var inp = h("input", { type: "text", class: "cherche-in fete-nom", value: valeur || "", placeholder: "Quelle fête ? Choisissez ou tapez", autocomplete: "off", "aria-label": "Occasion du repas de fête", role: "combobox", "aria-expanded": "false" });
-    var liste = h("ul", { class: "cherche-liste", role: "listbox", hidden: true });
-    function dessiner() {
-      clear(liste);
-      var q = tout ? "" : M.norm(inp.value), tous = optionsFetes(), l = tous.filter(function (o) { return !q || M.norm(o.v).indexOf(q) !== -1; });
-      if (q && !tous.some(function (o) { return M.norm(o.v) === q; })) l.unshift({ v: inp.value.trim(), sub: "texte libre" });
-      l.slice(0, 40).forEach(function (o) {
-        liste.append(h("li", { role: "option", class: "cherche-opt" + (M.norm(o.v) === M.norm(inp.value) ? " choisi" : ""), onmousedown: function (e) { e.preventDefault(); }, onclick: function () { inp.value = o.v; fermer(); onChange(o.v); } },
-          h("span", { text: o.v }), o.sub ? h("small", { text: o.sub }) : null));
-      });
-    }
-    // Toucher le champ montre toute la liste (la fête choisie est surlignée) ; taper filtre.
-    var tout = true;
-    function ouvrir() { dessiner(); liste.hidden = false; inp.setAttribute("aria-expanded", "true"); wrap.classList.add("ouvert");
-      var c = liste.querySelector(".choisi"); if (c && c.scrollIntoView) c.scrollIntoView({ block: "nearest" }); }
-    function fermer() { liste.hidden = true; inp.setAttribute("aria-expanded", "false"); wrap.classList.remove("ouvert"); }
-    inp.addEventListener("focus", function () { tout = true; ouvrir(); });
-    inp.addEventListener("click", function () { if (liste.hidden) { tout = true; ouvrir(); } });
-    inp.addEventListener("input", function () { tout = false; ouvrir(); onChange(inp.value); });
-    inp.addEventListener("blur", function () { setTimeout(fermer, 150); });
-    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); fermer(); inp.blur(); } });
-    wrap.append(inp, liste);
-    if (cle && comboFeteAOuvrir === cle) { comboFeteAOuvrir = null; setTimeout(function () { inp.focus(); }, 60); }
+    var wrap = h("div", { class: "combo-fete" + (cls ? " " + cls : "") });
+    var liste = optionsFetes(), connu = liste.some(function (o) { return M.norm(o.v) === M.norm(valeur || ""); });
+    var sel = h("select", { class: "fete-select", "aria-label": "Occasion du repas de fête" });
+    sel.append(h("option", { value: "", text: "Quelle fête ? Choisissez…" }));
+    liste.forEach(function (o) { sel.append(h("option", { value: o.v, text: o.v + (o.sub ? " (" + o.sub + ")" : "") })); });
+    sel.append(h("option", { value: "__autre", text: "✎ Autre occasion (à taper)…" }));
+    var inp = h("input", { type: "text", class: "fete-nom", value: connu ? "" : (valeur || ""), placeholder: "Tapez l'occasion", "aria-label": "Autre occasion", autocomplete: "off" });
+    sel.value = !valeur ? "" : connu ? liste.filter(function (o) { return M.norm(o.v) === M.norm(valeur); })[0].v : "__autre";
+    inp.hidden = sel.value !== "__autre";
+    sel.addEventListener("change", function () {
+      if (sel.value === "__autre") { inp.hidden = false; inp.focus(); onChange(inp.value.trim()); }
+      else { inp.hidden = true; onChange(sel.value); }
+    });
+    inp.addEventListener("input", function () { onChange(inp.value); });
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); inp.blur(); } });
+    wrap.append(sel, inp);
+    if (cle && comboFeteAOuvrir === cle) { comboFeteAOuvrir = null; setTimeout(function () { sel.focus(); try { if (sel.showPicker) sel.showPicker(); } catch (e) {} }, 60); }
     return wrap;
   }
   /* Occasion proposée d'office : un anniversaire ou une fête tombant ce jour-là. */
@@ -2995,6 +3005,7 @@ var Moteur = (function () {
     var d = M.addDays(debut, j), rep = S.reponses;
     var row = h("div", { class: "tj" + (estAujourdhui(j) ? " auj" : ""), style: couleursJour(d) },
       h("div", { class: "tj-date" }, h("span", { class: "dnum", text: String(d.getDate()).padStart(2, "0") }), h("span", { class: "dname", text: nomJour(j) })));
+    var finLigne = [];
     slotKeysDuJour(j).forEach(function (key) {
       var repas = key.split("-")[1], etat = etatCreneau(key), ev = rep.evenements[key];
       var cell = h("div", { class: "tj-cell" });
@@ -3007,7 +3018,10 @@ var Moteur = (function () {
       } }, h("small", { text: repas }), h("b", { text: LIB_TN[etat || ""] })));
       if (etat === "fete") {
         // Choix de l'occasion : événements de la famille et du calendrier, ou texte libre.
-        cell.append(comboFete(ev && ev.texte, function (v) { if (rep.evenements[key]) { rep.evenements[key].texte = v; sauver(); } }, "tj-txt"));
+        // Sur toute la largeur de la ligne (sous Midi et Soir) pour lire le nom en entier.
+        var cf = comboFete(ev && ev.texte, function (v) { if (rep.evenements[key]) { rep.evenements[key].texte = v; sauver(); } }, "tj-txt tj-fete");
+        var lab = h("small", { class: "tj-fete-lab", text: "🎉 " + repas + " :" }); cf.prepend(lab);
+        finLigne.push(cf);
       }
       if (etat === "invitation") {
         var t = h("input", { type: "text", class: "tj-txt", placeholder: "Chez qui ?", value: ev && ev.texte ? ev.texte : "", "aria-label": "Invitation : chez qui ?" });
@@ -3016,6 +3030,7 @@ var Moteur = (function () {
       }
       row.append(cell);
     });
+    finLigne.forEach(function (x) { row.append(x); });
     return row;
   }
 
@@ -3100,7 +3115,7 @@ var Moteur = (function () {
     var rows4 = h("div", { class: "rows", id: "ajouts" });
     var pick4 = selectArticles("aj-pick", function (a) { S.ajouts.push(a); sauver(); renderAjouts(rows4, false); });
     q4.append(rows4, h("div", { class: "pickbar" }, pick4, h("button", { type: "button", class: "btn", text: "+ Saisie libre", onclick: function () {
-      S.ajouts.push({ produit: "", quantite: "", categorie: "D" }); sauver(); renderAjouts(rows4, true);
+      S.ajouts.push({ produit: "", quantite: "1", categorie: "D" }); sauver(); renderAjouts(rows4, true);
     } })));
     renderAjouts(rows4, false);
 
@@ -3338,8 +3353,8 @@ var Moteur = (function () {
     return out;
   }
   function estEnregistre(nom, quantite) {
-    var n = M.norm(nom), q = M.norm(quantite || "");
-    return mesArticles().some(function (a) { return M.norm(a.produit) === n && (quantite == null || M.norm(a.quantite) === q); });
+    var n = M.norm(nom), q = M.norm(quantite || "1");
+    return mesArticles().some(function (a) { return M.norm(a.produit) === n && (quantite == null || M.norm(a.quantite || "1") === q); });
   }
   /* Tous les articles proposés : les miens + ceux de la base (sans doublon), triés par nom. */
   function tousArticles() {
@@ -3391,7 +3406,7 @@ var Moteur = (function () {
   }
   function selectArticles(id, onPick) {
     var w = chercheur({ id: id, label: "Articles enregistrés", placeholder: "🔍 Article enregistré : tapez les 1res lettres…", items: itemsArticles, vide: "Pas trouvé : ajoutez-le ci-dessous comme nouvel article.",
-      onPick: function (x) { var a = x.a; onPick({ produit: a.produit, quantite: a.quantite || "", categorie: a.categorie || "D" }); } });
+      onPick: function (x) { var a = x.a; onPick({ produit: a.produit, quantite: a.quantite || "1", categorie: a.categorie || "D" }); } });
     w.classList.add("pick-article");
     return w;
   }
@@ -3412,11 +3427,17 @@ var Moteur = (function () {
     var last = null;
     S.ajouts.forEach(function (a, i) {
       var p = h("input", { type: "text", id: "aj-p-" + i, placeholder: "Produit", value: a.produit, "aria-label": "Produit", oninput: function () { a.produit = p.value; sauver(); } });
-      var q = h("input", { type: "text", id: "aj-q-" + i, placeholder: "Quantité", value: a.quantite, "aria-label": "Quantité", oninput: function () { a.quantite = q.value; sauver(); } });
+      var q = h("input", { type: "text", id: "aj-q-" + i, placeholder: "Quantité", value: a.quantite, "aria-label": "Quantité", oninput: function () { a.quantite = q.value; sauver(); majPas(); } });
+      var moins = h("button", { type: "button", class: "pas-btn", "aria-label": "Moins", text: "−" }), plus = h("button", { type: "button", class: "pas-btn", "aria-label": "Plus", text: "+" });
+      function majPas() { moins.disabled = !nouvelleQte(a.quantite, -1); plus.disabled = !nouvelleQte(a.quantite, 1); }
+      function pas(sens) { var nq = nouvelleQte(a.quantite, sens); if (!nq) return; a.quantite = nq; q.value = nq; sauver(); majPas(); }
+      moins.addEventListener("click", function () { pas(-1); }); plus.addEventListener("click", function () { pas(1); });
+      majPas();
+      var qBloc = h("div", { class: "aj-qte" }, moins, q, plus);
       var c = options(h("select", { id: "aj-c-" + i, "aria-label": "Rayon" }), CAT_OPTIONS, a.categorie || "D");
       c.addEventListener("change", function () { a.categorie = c.value; sauver(); });
       var del = h("button", { type: "button", class: "icon", "aria-label": "Retirer", text: "✕", onclick: function () { S.ajouts.splice(i, 1); sauver(); renderAjouts(wrap, false); } });
-      wrap.append(h("div", { class: "arow" }, p, q, c, h("div", { class: "rowtools" }, boutonEnregistrer(a, function () { renderAjouts(wrap, false); }), del)));
+      wrap.append(h("div", { class: "arow" }, p, qBloc, c, h("div", { class: "rowtools" }, boutonEnregistrer(a, function () { renderAjouts(wrap, false); }), del)));
       last = p;
     });
     if (focusLast && last) last.focus();
@@ -3811,7 +3832,12 @@ var Moteur = (function () {
     var x = lireQte(q); if (!x) return null;
     var p = pasQte(x.u, x.b), a = Math.round((x.a + sens * p) * 1000) / 1000, b = Math.round((x.b + sens * p) * 1000) / 1000;
     if (a <= 0) return null;
-    return fmtQ(a, b, x.u);
+    var u = x.u;
+    // « bouteille » → « 2 bouteilles », et l'inverse en redescendant à 1 (unités de mesure inchangées).
+    if (/^[a-zà-ÿ]{3,}$/i.test(u) && ["g", "kg", "ml", "cl", "l"].indexOf(M.norm(u)) === -1) {
+      if (b > 1 && !/[sx]$/i.test(u)) u += "s"; else if (b <= 1 && /s$/i.test(u)) u = u.slice(0, -1);
+    }
+    return fmtQ(a, b, u);
   }
   function stepperQte(l) {
     var ok = !l.quantite || lireQte(l.quantite);
