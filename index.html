@@ -1319,6 +1319,17 @@ body.vue-mobile .mtools .icon { width: 36px; height: 36px; }
 .courses-pli[open] summary::after { content: "▴"; }
 .courses-pli summary small { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--accent); }
 .ing-avert{grid-column:1/-1;color:#b45309;font-size:.78rem}.ing-avert:empty{display:none}
+.version-app{text-align:center;color:var(--muted,#8a8a8a);font-size:.75rem;margin:28px 0 8px;letter-spacing:.02em}
+.version-app .info-i{vertical-align:middle;margin-left:4px}
+.versions-bulle{display:grid;gap:10px;text-align:left}
+.vb-tete{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vb-tete small{color:var(--muted,#8a8a8a)}
+.vb-type{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em}
+.vb-type.majeur{background:#f6e7c1;color:#7a5200}.vb-type.mineur{background:#dff1e4;color:#1d6b35}.vb-type.correctif{background:#e6eef9;color:#244f8f}
+.vb-def{display:block;color:var(--muted,#8a8a8a);margin-top:2px}
+.versions-bulle ul{margin:6px 0 0;padding-left:18px}.versions-bulle li{margin:2px 0}
+.vb-item.ancien{border-top:1px solid rgba(0,0,0,.1);padding-top:8px;opacity:.85}
+.bulle.dessus::before{top:auto;bottom:-7px;border-left:0;border-top:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
 </style>
 
 <div id="verrou" class="verrou"></div>
@@ -2440,7 +2451,35 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "16 oct. 19h00";
+  var VERSION_SITE = "16 oct. 20h15";
+  /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
+  var VERSION_APP = "1.0.0", VERSION_DATE = "16 oct. 2026";
+  function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
+  /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
+  var JOURNAL_VERSIONS = [
+    { v: "1.0.0", date: "16 oct. 2026", type: "majeur", notes: [
+      "Première version officielle d'À table !",
+      "Menus de la semaine, liste de courses et recettes partagés entre Yann et Sabrina",
+      "Repas de fête, restos, invitations et imprévus",
+      "Historique de ce que vous avez vraiment mangé"
+    ] }
+  ];
+  var TYPES_VERSION = {
+    majeur: { lib: "Version majeure", def: "Grosse évolution de l'appli." },
+    mineur: { lib: "Nouveautés", def: "Ajout ou changement d'une fonction visible." },
+    correctif: { lib: "Correctif", def: "Correction de bugs ou de textes, rien de nouveau." }
+  };
+  function contenuVersions() {
+    var box = h("div", { class: "versions-bulle" });
+    JOURNAL_VERSIONS.slice(0, 3).forEach(function (j, i) {
+      var t = TYPES_VERSION[j.type] || TYPES_VERSION.mineur;
+      box.append(h("div", { class: "vb-item" + (i ? " ancien" : "") },
+        h("div", { class: "vb-tete" }, h("b", { text: libVersionApp(j.v) }), h("span", { class: "vb-type " + j.type, text: t.lib }), h("small", { text: j.date })),
+        i ? null : h("small", { class: "vb-def", text: t.def }),
+        h("ul", null, j.notes.map(function (n) { return h("li", { text: n }); }))));
+    });
+    return box;
+  }
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -2609,7 +2648,11 @@ var Moteur = (function () {
     var r = ancre.getBoundingClientRect(), w = Math.min(320, window.innerWidth - 24);
     el.style.width = "max-content"; el.style.maxWidth = w + "px";
     var left = Math.max(12, Math.min(r.left + r.width / 2 - el.offsetWidth / 2, window.innerWidth - el.offsetWidth - 12));
-    el.style.left = (left + window.scrollX) + "px"; el.style.top = (r.bottom + window.scrollY + 8) + "px";
+    // Pas la place en dessous (barre du bas) mais de la place au-dessus : on ouvre vers le haut.
+    var barre = document.querySelector(".bottombar"), basDispo = window.innerHeight - (barre && barre.offsetHeight ? barre.offsetHeight : 0) - 8;
+    var dessus = r.bottom + 8 + el.offsetHeight > basDispo && r.top - 8 - el.offsetHeight > 8;
+    el.classList.toggle("dessus", dessus);
+    el.style.left = (left + window.scrollX) + "px"; el.style.top = ((dessus ? r.top - 8 - el.offsetHeight : r.bottom + 8) + window.scrollY) + "px";
     el.style.setProperty("--fleche", Math.max(14, Math.min(el.offsetWidth - 14, r.left + r.width / 2 - left)) + "px");
     ancre.setAttribute("aria-expanded", "true");
     bulleOuverte = { el: el, ancre: ancre };
@@ -7255,6 +7298,9 @@ var Moteur = (function () {
       h("label", { class: "check", for: "fete-on" }, onF, " Activer"),
       h("div", { class: "pickbar" }, selF, h("button", { type: "button", class: "btn", text: "▶ Voir", onclick: function () { jouerFete(lf[+selF.value]); } })));
     panelRegl.append(carteCodeAcces(), c1, c2, c3, carteCourses(), carteMemoire(), carteRepartir());
+    var iV = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "Nouveautés de cette version", "aria-expanded": "false" });
+    iV.addEventListener("click", function () { bulle(iV, contenuVersions()); });
+    panelRegl.append(h("p", { class: "version-app" }, "À table ! · " + libVersionApp() + " · " + VERSION_DATE + " ", iV));
   }
 
   /* ---------- Statistiques : repas réellement consommés (semaines terminées + repas ajoutés à la main) ---------- */
