@@ -330,6 +330,19 @@ body.vue-mobile .lien-proch { font-size: 11.5px; padding: 3px 7px; }
 .envois{margin:8px 0}.envois-liste{margin:6px 0 8px;padding-left:18px;font-size:.92rem}.envois-liste li{margin:3px 0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .jour-courses{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:6px 0 12px;padding:8px 12px;border:1px dashed var(--line,#ccc);border-radius:10px;font-size:.92rem}
 .jour-courses.fait{border-style:solid;opacity:.85}
+.lien-cf{border:0;background:none;padding:0;color:var(--accent);font:600 .85rem var(--font);text-decoration:underline;cursor:pointer;text-align:left}
+.jour-courses.compact{justify-content:flex-start;gap:8px;padding:6px 10px;border-style:solid;opacity:1}
+.jour-courses.compact .jc-lbl{flex:0 0 auto;font-weight:700}
+.seg-mini{display:inline-flex;gap:4px}
+.seg-mini .chip{padding:4px 10px;font-size:.82rem;min-height:0}
+.shop-compte{display:flex;align-items:center;gap:10px}
+.shop-compte > .status:first-child{flex:1}
+.dl-ligne{align-items:center;justify-content:flex-end}
+.statut-ligne .dl-statut{margin-left:auto;flex:none}
+.dl-ligne > .status:empty{display:none}
+.jour-courses.compact span{flex:0 0 auto}
+.jour-courses.compact{flex-wrap:nowrap}
+.jour-courses.compact .info-i{margin-left:auto}
 .jour-courses span{flex:1 1 220px}
 .annul-modifs{justify-content:flex-end;margin:4px 0 8px;gap:10px;flex-wrap:wrap}
 .annul-modifs .status{flex:1 1 220px;margin:0}
@@ -664,6 +677,8 @@ body.vue-mobile .panel-fiches { margin-inline: -16px; }
 body.fiches-immersif .bottombar, body.fiches-immersif #basenav, body.fiches-immersif .navrow, body.fiches-immersif .top, body.fiches-immersif #storestatus { display: none !important; }
 body.vue-mobile.fiches-immersif { padding-block: 0 !important; }
 body[data-onglet="recettes"] .weeknav { display: none; }
+body[data-sous="art"] .weeknav { display: none; }
+body[data-sous="art"] .eyebrow { visibility: hidden; }
 body[data-onglet="recettes"] .eyebrow { visibility: hidden; }
 .seg.seg4 button { white-space: normal; line-height: 1.15; }
 body.vue-mobile .seg.seg4 button { font-size: 10.5px; letter-spacing: .02em; padding: 8px 2px; }
@@ -1303,6 +1318,7 @@ body.vue-mobile .mtools .icon { width: 36px; height: 36px; }
 .courses-pli summary::after { content: "▾"; color: var(--accent); }
 .courses-pli[open] summary::after { content: "▴"; }
 .courses-pli summary small { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--accent); }
+.ing-avert{grid-column:1/-1;color:#b45309;font-size:.78rem}.ing-avert:empty{display:none}
 </style>
 
 <div id="verrou" class="verrou"></div>
@@ -2109,7 +2125,7 @@ var Moteur = (function () {
             clearTimeout(relanceRapide); relanceRapide = setTimeout(function () { echecRecent = false; synchro(); }, 4000);
             majEtat(etat.connecte, ""); return;
           }
-          majEtat(false, m === "cle" ? "Clé refusée : reconnectez cet appareil." : m === "introuvable" ? "Fichier de mémoire introuvable." : (navigator.onLine === false ? "Hors connexion." : "Mémoire en ligne injoignable."));
+          majEtat(false, m === "cle" ? "Clé refusée : reconnecte cet appareil." : m === "introuvable" ? "Fichier de mémoire introuvable." : (navigator.onLine === false ? "Hors connexion." : "Mémoire en ligne injoignable."));
           if (etat.premier) { etat.premier = false; notifier(); }
         }
         if (!ops.length || m === "cle") { horsLigne(); return; }
@@ -2424,7 +2440,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "15 oct. 16h30";
+  var VERSION_SITE = "16 oct. 19h00";
   /* Nouvelle version du site publiée ? On le signale pour que tous les appareils aient la même. */
   function verifierMiseAJour() {
     if (window.claude || !/^https?:$/.test(location.protocol)) return;
@@ -2632,7 +2648,7 @@ var Moteur = (function () {
   }
 
   /* ================= Parcours « tunnel » : une étape = une page ================= */
-  var ETAPES_TN = [["semaine", "La semaine"], ["imposee", "Une recette imposée ?"], ["articles", "Des articles en plus ?"], ["menu", "Votre menu"], ["liste", "Votre liste de courses"]];
+  var ETAPES_TN = [["semaine", "La semaine"], ["imposee", "Une recette imposée ?"], ["articles", "Des articles en plus ?"], ["menu", "Ton menu"], ["liste", "Ta liste de courses"]];
   var finTunnel = false, sensTn = 1;
   function idxEtape(p) { for (var i = 0; i < ETAPES_TN.length; i++) if (ETAPES_TN[i][0] === p) return i; return 0; }
   function pageTn() {
@@ -2646,7 +2662,10 @@ var Moteur = (function () {
     if ((p === "semaine" || p === "fete" || p === "imposee" || p === "vin" || p === "articles") && S.stage === "proposition") S.stage = "questions";
     S.page = p; S.tunnel = true; sauver(); renderPrep(); window.scrollTo(0, 0);
   }
-  function quitterTunnel() { S.tunnel = false; sauver(true); finTunnel = false; renderPrep(); window.scrollTo(0, 0); }
+  function quitterTunnel() {
+    // L'enregistrement peut déclencher une relecture de la mémoire (resync) : on garde l'état qu'on vient de quitter.
+    S.tunnel = false; var garde = S; sauver(true); S = garde; S.tunnel = false; finTunnel = false; renderPrep(); window.scrollTo(0, 0);
+  }
   var prepaTimer = null;
   function lancerPrepa() { S.page = "prepa"; S.tunnel = true; sensTn = 1; sauver(); renderPrep(); window.scrollTo(0, 0); }
   function armerPrepa() {
@@ -2660,7 +2679,7 @@ var Moteur = (function () {
     var heure = new Date(e.vu || Date.now()).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
     var enCours = S.stage === "proposition";
     var etape = enCours ? (S.page === "liste" ? 4 : 3) : idxEtape(S.page || "semaine");
-    var COURTS = ["La semaine", "Recette imposée", "Articles en plus", "Votre menu", "La liste"];
+    var COURTS = ["La semaine", "Recette imposée", "Articles en plus", "Ton menu", "La liste"];
     var liste = h("ol", { class: "tn-plan" });
     ETAPES_TN.forEach(function (x, i) { liste.append(h("li", { class: i < etape ? "fait" : i === etape ? "encours" : "" }, h("b", { text: i < etape ? "✓" : String(i + 1) }), h("span", { text: COURTS[i] }))); });
     var resume = h("div", { class: "lecture-resume" });
@@ -2683,8 +2702,8 @@ var Moteur = (function () {
     } });
     panelPrep.append(h("section", { class: "tn-entree lecture-autre" },
       h("div", { class: "statut-bloc" }, statut("todo", "Menu en préparation")),
-      h("h2", { text: moi ? "Vous préparez ce menu sur un autre appareil" : nom + " prépare le menu" }),
-      h("p", { class: "status", text: moi ? "Dernière action à " + heure + ". Continuez ici : l'autre appareil passera en lecture." : "Dernière action à " + heure + ". Vous voyez ses choix en direct ; une seule personne modifie à la fois." }),
+      h("h2", { text: moi ? "Tu prépares ce menu sur un autre appareil" : nom + " prépare le menu" }),
+      h("p", { class: "status", text: moi ? "Dernière action à " + heure + ". Continue ici : l'autre appareil passera en lecture." : "Dernière action à " + heure + ". Tu vois ses choix en direct ; une seule personne modifie à la fois." }),
       resume.childNodes.length ? resume : null,
       liste,
       h("div", { class: "bar" }, prendre)));
@@ -2696,13 +2715,13 @@ var Moteur = (function () {
     var etape = enCours ? (S.page === "liste" ? 4 : 3) : idxEtape(S.page || "semaine");
     var commence = enCours || (S.page && S.page !== "semaine");
     var liste = h("ol", { class: "tn-plan" });
-    var COURTS = ["La semaine", "Recette imposée", "Articles en plus", "Votre menu", "La liste"];
+    var COURTS = ["La semaine", "Recette imposée", "Articles en plus", "Ton menu", "La liste"];
     ETAPES_TN.forEach(function (e, i) { liste.append(h("li", { class: i < etape && commence ? "fait" : i === etape && commence ? "encours" : "" }, h("b", { text: i < etape && commence ? "✓" : String(i + 1) }), h("span", { text: COURTS[i] }))); });
     panelPrep.append(h("section", { class: "tn-entree" },
       h("div", { class: "statut-bloc" }, statut("todo", deja ? "Modification à valider" : enCours ? "Menu à valider" : "Menu à faire")),
-      h("h2", { text: enCours ? "Votre menu est prêt" : "Préparez le menu de la semaine" }),
-      h("p", { class: "status", text: enCours ? "Il reste à le relire et à valider la liste de courses." : "Trois petites questions, puis votre menu et votre liste de courses. Environ une minute." }),
-      commence && S.appareil && S.appareil !== ID_APPAREIL ? h("p", { class: "status ok-msg", text: "Commencé sur un autre appareil" + (S.modifie ? ", le " + M.fr(new Date(S.modifie)).slice(0, 5) + " à " + new Date(S.modifie).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "") + " : vous reprenez où il en est." }) : null,
+      h("h2", { text: enCours ? "Ton menu est prêt" : "Prépare le menu de la semaine" }),
+      h("p", { class: "status", text: enCours ? "Il reste à le relire et à valider la liste de courses." : "Trois petites questions, puis ton menu et ta liste de courses. Environ une minute." }),
+      commence && S.appareil && S.appareil !== ID_APPAREIL ? h("p", { class: "status ok-msg", text: "Commencé sur un autre appareil" + (S.modifie ? ", le " + M.fr(new Date(S.modifie)).slice(0, 5) + " à " + new Date(S.modifie).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "") + " : tu reprends où il en est." }) : null,
       h("button", { type: "button", class: "btn primary tn-go", text: commence ? "Reprendre →" : "Commencer →", onclick: function () { sensTn = 1; S.tunnel = true; if (!S.page) S.page = "semaine"; sauver(); renderPrep(); window.scrollTo(0, 0); } }),
       deja ? boutonAnnulerModifs("btn ghost") : null,
       liste));
@@ -2763,7 +2782,7 @@ var Moteur = (function () {
     var rep = S.reponses, enCoursSem = semaineEnCours() && Store.menus[M.iso(debut)];
     if (p === "semaine") {
       var dejaPasses = 0; for (var jj = 0; jj < 7; jj++) if (jourPasse(jj)) dejaPasses++;
-      page.append(enteteTn(0, "La semaine", "Touchez un repas pour changer : Prévu, Exclu, Invitation ou Restaurant. Les midis de semaine sont exclus par défaut." + (dejaPasses ? " Les jours passés restent tels quels." : "")));
+      page.append(enteteTn(0, "La semaine", "Touche un repas pour changer : Prévu, Exclu, Invitation, Resto en famille, Resto en amoureux ou Fête. Les midis de semaine sont exclus par défaut." + (dejaPasses ? " Les jours passés restent tels quels." : "")));
       var liste = h("div", { class: "tj-liste" });
       for (var j = 0; j < 7; j++) liste.append(jourTunnel(j));
       page.append(liste, basTn(null, h("button", { type: "button", class: "btn primary", text: "Continuer →", onclick: function () { allerPage(clesFete().length ? "fete" : "imposee"); } })));
@@ -2805,7 +2824,7 @@ var Moteur = (function () {
               sauver(); renderAjouts(rows4, false); majVin();
             } }));
           });
-          vinL.append(h("span", { text: "🍷 Repas de fête prévu : pensez au vin !" }), choix);
+          vinL.append(h("span", { text: "🍷 Repas de fête prévu : pense au vin !" }), choix);
         };
         majVin(); rows4.parentNode.parentNode.insertBefore(vinL, rows4.parentNode);
       }
@@ -2815,7 +2834,7 @@ var Moteur = (function () {
       page.classList.add("tn-prepa"); armerPrepa();
       page.append(enteteTn(-1, null, null), prepaVisuel());
     } else if (p === "menu") {
-      page.append(enteteTn(3, "Votre menu", "Touchez ↻ pour une autre recette, ✎ pour choisir vous-même."));
+      page.append(enteteTn(3, "Ton menu", "Touche ↻ pour une autre recette, ✎ pour choisir toi-même."));
       flashEl = h("p", { class: "status", role: "status" });
       page.append(flashEl);
       var av = (S.menu.avertissements || []);
@@ -2827,19 +2846,28 @@ var Moteur = (function () {
       var nbL = listeCourses().lignes.length;
       page.append(basTn(enCoursSem ? null : function () { allerPage("articles", -1); }, h("button", { type: "button", class: "btn primary", text: "Voir la liste de courses (" + nbL + ") →", onclick: function () { allerPage("liste"); } })));
     } else if (p === "liste") {
-      page.append(enteteTn(4, "Votre liste de courses", "Retirez ce que vous avez déjà, ajoutez ce qui manque."));
+      page.append(enteteTn(4, "Ta liste de courses", "Retire ce que tu as déjà, ajoute ce qui manque."));
       var dejaV = Store.menus[M.iso(debut)];
-      if (dejaV && dejaV.courses) page.append(h("div", { class: "bar annul-modifs" }, h("p", { class: "status", text: coursesFaites(dejaV, debut)
-        ? "Courses déjà faites : après validation, l'onglet Courses n'affichera que le complément à acheter."
-        : "Courses prévues " + libelleCourses(debut) + " : la liste sera simplement remplacée." }), boutonAnnulerModifs("btn")));
+      if (dejaV && dejaV.courses) {
+        var cfF = coursesFaites(dejaV, debut);
+        // Exception au jour des courses : un petit lien pour dire l'inverse.
+        var lienCF = h("button", { type: "button", class: "lien-cf", text: cfF ? "Pas encore faites ? Refaire la liste entière" : "Déjà faites ? N'afficher que le complément", onclick: function () {
+          var v = !cfF; dejaV.coursesFaites = v;
+          fileEcriture = fileEcriture.then(function () { return Store.updateMenu(M.iso(debut), { coursesFaites: v }); }).catch(function () {});
+          renderPrep();
+        } });
+        page.append(h("div", { class: "bar annul-modifs" }, h("p", { class: "status" }, cfF
+          ? "Courses déjà faites : après validation, l'onglet Courses n'affichera que le complément à acheter. "
+          : "Courses prévues " + libelleCourses(debut) + " : la liste sera simplement remplacée. ", lienCF), boutonAnnulerModifs("btn")));
+      }
       if (S.menu.creneaux.some(function (c) { return c.type === "fete"; }) && !S.ajouts.some(function (a) { return /\bvins?\b/i.test(a.produit || ""); }))
-        page.append(h("p", { class: "vin-bandeau", text: "🍷 N'oubliez pas de prendre du vin pour votre repas de fête !" }));
+        page.append(h("p", { class: "vin-bandeau", text: "🍷 N'oublie pas de prendre du vin pour ton repas de fête !" }));
       page.append(renderCourses(true));
       var sansI = platsSansIngredients(S.menu.creneaux);
       if (sansI.length) {
         var cleSI = sansI.join("|"), cbSI = h("input", { type: "checkbox", checked: S.sansIngrOk === cleSI });
         cbSI.addEventListener("change", function () { S.sansIngrOk = cbSI.checked ? cleSI : ""; sauver(); });
-        page.append(h("label", { class: "check sans-ingr-q" }, cbSI, h("span", { text: "Avez-vous ajouté les articles des plats sans recettes suivants : " + sansI.join(" · ") + " ?" })));
+        page.append(h("label", { class: "check sans-ingr-q" }, cbSI, h("span", { text: "As-tu ajouté les articles des plats sans recettes suivants : " + sansI.join(" · ") + " ?" })));
       }
       var vnote = h("p", { class: "status", role: "status" });
       var vbtn = h("button", { type: "button", class: "btn primary", text: "Oui, valider le menu et la liste", onclick: function () { valider(vbtn, vnote); } });
@@ -2870,7 +2898,7 @@ var Moteur = (function () {
     return l;
   }
   /* Recettes proposées dans une rubrique : seulement celles de sa catégorie ; texte libre possible. */
-  function videRubrique(lab) { return "Aucune recette classée « " + lab + " » : tapez le nom (texte libre), ou classez vos recettes dans Mes recettes."; }
+  function videRubrique(lab) { return "Aucune recette classée « " + lab + " » : tape le nom (texte libre), ou classe tes recettes dans Mes recettes."; }
   function itemsRubrique(lab) {
     var cle = cleRubrique(lab), avec = [], sans = [];
     NOMS.forEach(function (n) {
@@ -2920,10 +2948,10 @@ var Moteur = (function () {
     var wrap = h("div", { class: "combo-fete" + (cls ? " " + cls : "") });
     var liste = optionsFetes(), connu = liste.some(function (o) { return M.norm(o.v) === M.norm(valeur || ""); });
     var sel = h("select", { class: "fete-select", "aria-label": "Occasion du repas de fête" });
-    sel.append(h("option", { value: "", text: "Quelle fête ? Choisissez…" }));
+    sel.append(h("option", { value: "", text: "Quelle fête ? Choisis…" }));
     liste.forEach(function (o) { sel.append(h("option", { value: o.v, text: o.v + (o.sub ? " (" + o.sub + ")" : "") })); });
     sel.append(h("option", { value: "__autre", text: "✎ Autre occasion (à taper)…" }));
-    var inp = h("input", { type: "text", class: "fete-nom", value: connu ? "" : (valeur || ""), placeholder: "Tapez l'occasion", "aria-label": "Autre occasion", autocomplete: "off" });
+    var inp = h("input", { type: "text", class: "fete-nom", value: connu ? "" : (valeur || ""), placeholder: "Tape l'occasion", "aria-label": "Autre occasion", autocomplete: "off" });
     sel.value = !valeur ? "" : connu ? liste.filter(function (o) { return M.norm(o.v) === M.norm(valeur); })[0].v : "__autre";
     inp.hidden = sel.value !== "__autre";
     sel.addEventListener("change", function () {
@@ -2948,7 +2976,7 @@ var Moteur = (function () {
   }
   function renderPageFete(page) {
     var rep = S.reponses;
-    page.append(enteteTn(0, "Repas de fête", "Composez le menu de chaque repas de fête : apéritif, cocktail, entrée, plat, dessert. Plusieurs recettes par rubrique si vous voulez, ou un plat tapé à la main s'il n'est pas encore dans vos recettes."));
+    page.append(enteteTn(0, "Repas de fête", "Compose le menu de chaque repas de fête : apéritif, cocktail, entrée, plat, dessert. Plusieurs recettes par rubrique si tu veux, ou un plat tapé à la main s'il n'est pas encore dans tes recettes."));
     clesFete().forEach(function (key) {
       var ev = rep.evenements[key], j = +key.split("-")[0], repas = key.split("-")[1];
       if (!ev.plats) ev.plats = [];
@@ -3066,7 +3094,7 @@ var Moteur = (function () {
       '<rect x="20" y="96" width="24" height="14" rx="7"/><rect x="156" y="96" width="24" height="14" rx="7"/>' +
       '<path class="corps" d="M36 92h128v40a26 26 0 0 1-26 26H62a26 26 0 0 1-26-26z"/>' +
       '<g class="couvercle"><rect x="30" y="78" width="140" height="16" rx="8"/><rect x="88" y="66" width="24" height="14" rx="6"/></g></svg>';
-    v.append(h("h1", { class: "tn-titre", text: "On prépare votre menu…" }), txt, h("div", { class: "prepa-barre" }, h("i")));
+    v.append(h("h1", { class: "tn-titre", text: "On prépare ton menu…" }), txt, h("div", { class: "prepa-barre" }, h("i")));
     return v;
   }
 
@@ -3118,8 +3146,8 @@ var Moteur = (function () {
     // Q1 : créneaux de la semaine (exclusions + midis ajoutés)
     var dejaPasses = 0; for (var jj = 0; jj < 7; jj++) if (jourPasse(jj)) dejaPasses++;
     panelPrep.append(h("div", { class: "statut-bloc todo" }, statut("todo", "Menu à faire"),
-      h("p", { class: "status", text: dejaPasses ? "La semaine a commencé : le menu portera sur les jours restants." : "Répondez aux questions puis générez le menu." })));
-    var q1 = h("section", { class: "card" }, qHead(1, "Des jours à exclure ? Des midis à ajouter ?", "Les midis du lundi au vendredi sont exclus par défaut : passez-les sur « Prévu » pour ajouter un déjeuner. Une invitation ou un restaurant en famille ne compte pas dans l'historique."));
+      h("p", { class: "status", text: dejaPasses ? "La semaine a commencé : le menu portera sur les jours restants." : "Réponds aux questions puis génère le menu." })));
+    var q1 = h("section", { class: "card" }, qHead(1, "Des jours à exclure ? Des midis à ajouter ?", "Les midis du lundi au vendredi sont exclus par défaut : passe-les sur « Prévu » pour ajouter un déjeuner. Une invitation ou un restaurant en famille ne compte pas dans l'historique."));
     var grid = h("div", { class: "daygrid" });
     for (var j = 0; j < 7; j++) grid.append(dayBox(j));
     q1.append(grid);
@@ -3270,7 +3298,7 @@ var Moteur = (function () {
   function chercheur(opts) {
     var wrap = h("div", { class: "cherche" });
     var inp = h("input", { type: "search", id: opts.id || null, class: "cherche-in", autocomplete: "off", autocapitalize: "off", spellcheck: false, enterkeyhint: "done",
-      placeholder: opts.placeholder || "Tapez pour chercher…", "aria-label": opts.label || opts.placeholder || "Rechercher", role: "combobox", "aria-expanded": "false" });
+      placeholder: opts.placeholder || "Tape pour chercher…", "aria-label": opts.label || opts.placeholder || "Rechercher", role: "combobox", "aria-expanded": "false" });
     var liste = h("ul", { class: "cherche-liste", role: "listbox", hidden: true });
     var choisi = opts.value || "", actif = 0, vus = [], enRecherche = false;
     function afficheValeur() { var it = (opts.items() || []).filter(function (x) { return x.v === choisi; })[0]; inp.value = opts.garder && it ? it.label : ""; }
@@ -3316,7 +3344,12 @@ var Moteur = (function () {
     inp.addEventListener("focus", function () { if (opts.garder) inp.select(); ouvrir(); });
     inp.addEventListener("click", ouvrir);
     inp.addEventListener("input", function () { liste.hidden = true; ouvrir(); actif = 0; dessiner(); });
-    inp.addEventListener("blur", function () { setTimeout(fermer, 120); });
+    inp.addEventListener("blur", function () {
+      // Texte libre : ce qui est tapé est gardé même si on touche ailleurs sans choisir dans la liste.
+      var v = inp.value.trim();
+      if (opts.libre && v && !(opts.garder && choisi)) { setTimeout(function () { if (inp.value.trim() === v && !liste.hidden) prendre({ v: v, label: v }); else fermer(); }, 120); return; }
+      setTimeout(fermer, 120);
+    });
     inp.addEventListener("keydown", function (e) {
       if (e.key === "ArrowDown") { e.preventDefault(); actif = Math.min(vus.length - 1, actif + 1); dessiner(); }
       else if (e.key === "ArrowUp") { e.preventDefault(); actif = Math.max(0, actif - 1); dessiner(); }
@@ -3336,7 +3369,7 @@ var Moteur = (function () {
     var rep = S.reponses;
     if (!rep.imposees.length) { wrap.append(h("p", { class: "empty", text: "Aucune." })); return; }
     rep.imposees.forEach(function (im, i) {
-      var rs = chercheur({ id: "imp-r-" + i, label: "Recette", placeholder: "Recette : tapez les 1res lettres…", garder: true, value: im.recette, items: itemsRecettes, onPick: function (x) { im.recette = x.v; sauver(); } });
+      var rs = chercheur({ id: "imp-r-" + i, label: "Recette", placeholder: "Recette : tape les 1res lettres…", garder: true, value: im.recette, items: itemsRecettes, onPick: function (x) { im.recette = x.v; sauver(); } });
       var pv = (im.jour == null ? "" : im.jour + "-" + (im.repas || ""));
       var ps = options(h("select", { id: "imp-p-" + i, "aria-label": "Créneau" }), PLACEMENTS, pv);
       ps.addEventListener("change", function () {
@@ -3427,7 +3460,7 @@ var Moteur = (function () {
     return out;
   }
   function selectArticles(id, onPick) {
-    var w = chercheur({ id: id, label: "Articles enregistrés", placeholder: "🔍 Article enregistré : tapez les 1res lettres…", items: itemsArticles, vide: "Pas trouvé : ajoutez-le ci-dessous comme nouvel article.",
+    var w = chercheur({ id: id, label: "Articles enregistrés", placeholder: "🔍 Article enregistré : tape les 1res lettres…", items: itemsArticles, vide: "Pas trouvé : ajoute-le ci-dessous comme nouvel article.",
       onPick: function (x) { var a = x.a; onPick({ produit: a.produit, quantite: a.quantite || "1", categorie: a.categorie || "D" }); } });
     w.classList.add("pick-article");
     return w;
@@ -3537,7 +3570,7 @@ var Moteur = (function () {
     var l = platsSansIngredients(creneaux);
     if (!l.length) return null;
     var ico = h("span", { class: "alerte-ico" }); ico.innerHTML = ICO_ALERTE;
-    return h("div", { class: "alerte-courses", role: "note" }, ico, h("p", null, h("b", { text: "Pensez à prévoir les courses pour : " }), l.join(" · "),
+    return h("div", { class: "alerte-courses", role: "note" }, ico, h("p", null, h("b", { text: "Pense à prévoir les courses pour : " }), l.join(" · "),
       h("small", { text: "Ces plats n'ont pas d'ingrédients enregistrés : leurs articles ne sont pas dans la liste de courses." })));
   }
   /* Listes de courses à part des repas de fête (case cochée). */
@@ -3647,7 +3680,7 @@ var Moteur = (function () {
     });
     if (!passes.length) return null;
     var zone = h("div", { class: "chg-zone" });
-    var btnChg = h("button", { type: "button", class: "chg-ico", text: "⇄ Imprévu ?", title: "Un repas ne s'est pas passé comme prévu ? Notez ce que vous avez mangé.", "aria-label": "Un repas a changé ?", onclick: function () { if (zone.childNodes.length) bouton(); else etape1(); } });
+    var btnChg = h("button", { type: "button", class: "chg-ico", text: "⇄ Imprévu ?", title: "Un repas ne s'est pas passé comme prévu ? Note ce que vous avez mangé.", "aria-label": "Un repas a changé ?", onclick: function () { if (zone.childNodes.length) bouton(); else etape1(); } });
     function bouton() { clear(zone); }
     function enregistrer(k, val) {
       if (!reelsAvant[idSem]) reelsAvant[idSem] = clone(docSem.reels || {});
@@ -3722,15 +3755,15 @@ var Moteur = (function () {
       if (zone.childNodes.length) { clear(zone); return; }
       zone.append(h("div", { class: "confirm-eff" },
         h("p", null, h("b", { text: "Effacer le menu du " + M.fr(debut).slice(0, 5) + " au " + M.fr(M.addDays(debut, 6)).slice(0, 5) + " ?" }),
-          h("span", { text: " Le menu, la liste de courses et les réponses sont supprimés pour tout le monde. Vous repartez d'une semaine vierge." })),
+          h("span", { text: " Le menu, la liste de courses et les réponses sont supprimés pour tout le monde. Tu repars d'une semaine vierge." })),
         h("div", { class: "bar" },
           h("button", { type: "button", class: "btn danger", text: "Oui, effacer la semaine", onclick: function (e) {
             e.target.disabled = true;
             oublierBrouillon(id); lsDel(cleBrouillon());
             Store.deleteMenu(id).then(function () {
               delete Store.menus[id]; chargerSemaine(); renderEntete(); renderPrep(); window.scrollTo(0, 0);
-              toast("Semaine effacée : vous pouvez préparer un nouveau menu.");
-            }, function () { e.target.disabled = false; toast("Effacement impossible. Réessayez."); });
+              toast("Semaine effacée : tu peux préparer un nouveau menu.");
+            }, function () { e.target.disabled = false; toast("Effacement impossible. Réessaie."); });
           } }),
           h("button", { type: "button", class: "btn ghost", text: "Annuler", onclick: function () { clear(zone); } }))));
     } });
@@ -3795,7 +3828,7 @@ var Moteur = (function () {
         tools.append(h("button", { type: "button", class: "icon", title: slot && slot.type === "recette" ? "Autre recette" : "Tirer une recette", "aria-label": "Tirer une recette pour " + libelle, text: "↻", onclick: function () { tirerCreneau(j, repas, hist); } }));
       }
       tools.append(h("button", { type: "button", class: "icon", title: "Choisir", "aria-label": "Choisir pour " + libelle, text: "✎", onclick: function () {
-        var sel = chercheur({ label: "Choix pour " + libelle, placeholder: "Recette : tapez les 1res lettres…", value: slot && slot.recette || "",
+        var sel = chercheur({ label: "Choix pour " + libelle, placeholder: "Recette : tape les 1res lettres…", value: slot && slot.recette || "",
           items: function () {
             return [{ v: "__auto", label: "↻ Tirage automatique", groupe: "Options", haut: true }].concat(
               CHOIX_EVT.map(function (o) { return { v: o[0], label: o[1], groupe: "Sans recette", haut: true }; }),
@@ -3973,7 +4006,7 @@ var Moteur = (function () {
         h("label", { class: "check", for: "new-mem" }, mem, " Enregistrer aussi dans mes articles habituels")));
     }
     var notes = h("div", { class: "notes" });
-    if (liste.sansIngredients.length) notes.append(h("p", { text: "Ingrédients non renseignés dans la base, rien ajouté pour : " + liste.sansIngredients.join(", ") + "." }));
+    // (Plats sans ingrédients : signalés par l'alerte ⚠ et la case à cocher avant validation, plus de ligne en double ici.)
     if (liste.lignes.some(function (l) { return /\?$/.test(l.quantite); })) notes.append(h("p", { text: "« + ? » : une des recettes ne donne pas de quantité pour ce produit." }));
     if (notes.childNodes.length) box.append(notes);
     return box;
@@ -3985,7 +4018,7 @@ var Moteur = (function () {
       h("button", { type: "button", class: "btn", text: "Autre tirage", onclick: function () { generer(); } }));
     var mob = vueMobile();
     panelPrep.append(h("div", { class: "statut-bloc todo" }, statut("todo", Store.menus[M.iso(debut)] ? "Modification à valider" : "Menu à valider"),
-      h("p", { class: "status", text: Store.menus[M.iso(debut)] ? "Le menu validé reste en place tant que vous ne validez pas ces changements." : "Proposition prête : ajustez-la puis validez en bas de page." })));
+      h("p", { class: "status", text: Store.menus[M.iso(debut)] ? "Le menu validé reste en place tant que tu ne valides pas ces changements." : "Proposition prête : ajuste-la puis valide en bas de page." })));
     flashEl = h("p", { class: "status", role: "status" });
     panelPrep.append(flashEl);
 
@@ -4067,7 +4100,7 @@ var Moteur = (function () {
       }, 900);
     }, function (e) {
       btn.disabled = false; note.className = "status err";
-      note.textContent = e && e.code === "quota_exceeded" ? "Stockage plein : supprimez d'anciennes semaines dans l'historique." : "Enregistrement impossible. Réessayez.";
+      note.textContent = e && e.code === "quota_exceeded" ? "Stockage plein : supprime d'anciennes semaines dans l'historique." : "Enregistrement impossible. Réessaie.";
     });
   }
 
@@ -4094,8 +4127,9 @@ var Moteur = (function () {
         h("button", { type: "button", class: "btn", text: "Voir le complément", onclick: function () { choisirOnglet("courses"); window.scrollTo(0, 0); } })));
     }
     if (!puce) {
-      var btn = h("button", { type: "button", class: "btn primary dlbtn", text: "Télécharger le menu", onclick: function () { telecharger("menu", btn, note); } });
-      panelPrep.append(h("div", { class: "bar" }, btn, note));
+      // Même petit bouton ⤓ que la semaine en cours (à droite), pour toutes les semaines.
+      var ligneSt = panelPrep.querySelector(".statut-ligne");
+      if (ligneSt) { ic.classList.add("dl-statut"); ligneSt.append(ic); panelPrep.append(note); } else panelPrep.append(h("div", { class: "bar end dl-ligne" }, note, ic));
     }
     panelPrep.append(renderMenuGrille(false));
     // Une seule ligne : Modifier ce menu · ⇄ Un repas a changé ? (semaine entamée) · Effacer la semaine (semaine à venir).
@@ -4254,7 +4288,7 @@ var Moteur = (function () {
       var img = h("img", { class: "plat-img", alt: "Fiche recette : " + (f.title || nom), src: f.thumb || "" });
       var zone = h("div", { class: "plat-zoom" }, img);
       img.addEventListener("click", function () { zone.classList.toggle("zoome"); });
-      corps.append(zone, h("p", { class: "status plat-aide", text: "Touchez la fiche pour zoomer." }));
+      corps.append(zone, h("p", { class: "status plat-aide", text: "Touche la fiche pour zoomer." }));
       if (BUS.rendu) BUS.rendu(f.id).then(function (url) { img.src = url; }, function () {});
       corps.append(h("div", { class: "bar plat-actions" }, h("button", { type: "button", class: "btn ghost", text: "Ouvrir dans Mes fiches →", onclick: function () { var depuis = { onglet: ongletActif, y: y }; aller(function () { retourFiche = depuis; ouvrirFichesIntegre(lienFiche(f)); versFiches({ retourApp: true }); }); } })));
     } else if (r) {
@@ -4265,7 +4299,7 @@ var Moteur = (function () {
       var act = h("div", { class: "bar plat-actions" });
       if (r.sansIngredients || /^(restaurant|restes?|grignotage|invitation)/i.test(M.norm(r.nom))) {}
       else if (fichesDispo()) act.append(h("button", { type: "button", class: "btn primary", text: "Créer la fiche de cette recette", onclick: function () { aller(function () { ouvrirFichesIntegre(lienNouvelleFiche(r)); }); } }));
-      else act.append(h("p", { class: "status", text: "Pas encore de fiche : reliez cet appareil à la mémoire partagée pour en créer une." }));
+      else act.append(h("p", { class: "status", text: "Pas encore de fiche : relie cet appareil à la mémoire partagée pour en créer une." }));
       act.append(h("button", { type: "button", class: "btn ghost", text: "Ouvrir dans Recettes →", onclick: function () { aller(function () { choisirOnglet("rec"); ouvrirFiche(r._id); window.scrollTo(0, 0); }); } }));
       corps.append(act);
     } else {
@@ -4330,7 +4364,7 @@ var Moteur = (function () {
             note.className = "status"; note.textContent = nom + " enregistré.";
           }, function (e) {
             if (e && e.code === "declined") return;
-            if (e && e.code === "rate_limited") { note.className = "status warn"; note.textContent = "Une demande est déjà ouverte. Réessayez dans un instant."; return; }
+            if (e && e.code === "rate_limited") { note.className = "status warn"; note.textContent = "Une demande est déjà ouverte. Réessaie dans un instant."; return; }
             apercuImage(canvas, nom);
           });
         });
@@ -4346,7 +4380,7 @@ var Moteur = (function () {
     var ov = h("div", { class: "overlay", onclick: function (e) { if (e.target === ov) fermer(); } },
       h("div", { class: "dialog apercu", role: "dialog", "aria-modal": "true", "aria-label": nom },
         h("img", { src: canvas.toDataURL("image/png"), alt: nom }),
-        h("p", { text: "Touchez « Enregistrer dans Photos », puis « Enregistrer l'image »." }),
+        h("p", { text: "Touche « Enregistrer dans Photos », puis « Enregistrer l'image »." }),
         h("div", { class: "bar" }, go, h("button", { type: "button", class: "btn", text: "Fermer", onclick: fermer }))));
     document.body.append(ov); go.focus();
   }
@@ -4387,7 +4421,7 @@ var Moteur = (function () {
           }, function (e) {
             if (e && e.code === "declined") return;
             note.className = "status warn";
-            note.textContent = e && e.code === "rate_limited" ? "Une demande est déjà ouverte. Réessayez dans un instant." : "Téléchargement impossible ici : appui long ou clic droit sur l'image.";
+            note.textContent = e && e.code === "rate_limited" ? "Une demande est déjà ouverte. Réessaie dans un instant." : "Téléchargement impossible ici : appui long ou clic droit sur l'image.";
           });
         }, "image/png");
       });
@@ -4490,7 +4524,7 @@ var Moteur = (function () {
     var sansI = platsSansIngredients(data.creneaux), hAl = 0;
     if (sansI.length) {
       x.font = "500 26px " + F_SANS;
-      var lAl = wrap(x, "Pensez à prévoir les courses pour : " + sansI.join(" · "), W - 160 - 90);
+      var lAl = wrap(x, "Pense à prévoir les courses pour : " + sansI.join(" · "), W - 160 - 90);
       hAl = 40 + lAl.length * 34 + 20;
     }
     var left = 80, right = W - 80, top = 336, bottom = H - 80 - hAl, rowH = (bottom - top) / 7, col0 = 270, colW = (right - left - col0) / 2;
@@ -4596,10 +4630,20 @@ var Moteur = (function () {
     clear(panelHist);
     var ids = Object.keys(Store.menus).sort().reverse();
     var c1 = h("section", { class: "card" }, h("h2", { text: "Semaines validées", style: "font-size:1.2rem" }));
-    if (!ids.length) c1.append(h("p", { class: "empty", text: "Aucune semaine validée. Elles s'ajoutent ici quand vous cliquez sur « Oui, valider »." }));
+    if (!ids.length) c1.append(h("p", { class: "empty", text: "Aucune semaine validée. Elles s'ajoutent ici quand tu touches « Oui, valider »." }));
     ids.forEach(function (id) {
       var m = Store.menus[id];
-      var recs = (m.creneaux || []).filter(function (c) { return c.type === "recette"; }).map(function (c) { return c.recette; });
+      // Ce qui a vraiment été mangé : imprévus notés, recettes, fêtes, invitations, restaurants.
+      var reelsM = m.reels || {}, vusK = {}, recs = [];
+      (m.creneaux || []).slice().sort(function (a, b) { return a.jour - b.jour || (a.repas === "Midi" ? -1 : 1); }).forEach(function (c) {
+        vusK[c.key] = 1;
+        var r = reelsM[c.key];
+        if (r) { if (r.type !== "saute") recs.push(libReel(r)); return; }
+        if (c.type === "recette" && c.recette) recs.push(c.recette);
+        else if (c.type === "fete") recs.push(emojiFete(c.texte) + " " + (c.texte || "Repas de fête"));
+        else if (c.type === "invitation" || c.type === "resto") recs.push(libInvit(c) || c.texte);
+      });
+      Object.keys(reelsM).forEach(function (k) { if (!vusK[k] && reelsM[k] && reelsM[k].type !== "saute") recs.push(libReel(reelsM[k])); });
       var actions = h("div", { class: "bar" });
       if (confirmId === "menu:" + id) {
         actions.append(h("span", { class: "confirm" }, "Supprimer cette semaine ?",
@@ -4610,21 +4654,21 @@ var Moteur = (function () {
           h("button", { type: "button", class: "btn ghost mini", text: "Voir le menu →", onclick: function () { retour = { onglet: ongletActif, debut: debut, y: window.scrollY }; allerSemaine(M.fromIso(id)); choisirOnglet("prep"); window.scrollTo(0, 0); } }),
           h("button", { type: "button", class: "icon", "aria-label": "Supprimer", text: "✕", onclick: function () { confirmId = "menu:" + id; renderHist(); } }));
       }
-      c1.append(h("div", { class: "hweek" }, h("div", { class: "bar" }, h("b", { text: M.fr(M.fromIso(m.debut)) + " → " + M.fr(M.fromIso(m.fin)) }), actions), h("p", { text: recs.join(" · ") || "Aucune recette." })));
+      c1.append(h("div", { class: "hweek" }, h("div", { class: "bar" }, h("b", { text: M.fr(M.fromIso(m.debut)) + " → " + M.fr(M.fromIso(m.fin)) }), actions), h("p", { text: recs.join(" · ") || "Aucun repas noté." })));
     });
 
     var c2 = h("section", { class: "card" }, h("h2", { text: "Recettes servies hors de l'outil", style: "font-size:1.2rem" }),
-      h("p", { class: "status", text: "Pour démarrer avec votre historique ChatGPT : ajoutez les recettes des dernières semaines. Elles comptent pour les délais. Gnocchis ou Pâtes farcies un vendredi soir fixent l'alternance." }));
-    var rsW = chercheur({ id: "man-r", label: "Recette", placeholder: "Recette : tapez les 1res lettres…", garder: true, items: itemsRecettes, onPick: function () {} });
+      h("p", { class: "status", text: "Pour démarrer avec ton historique ChatGPT : ajoute les recettes des dernières semaines. Elles comptent pour les délais. Gnocchis ou Pâtes farcies un vendredi soir fixent l'alternance." }));
+    var rsW = chercheur({ id: "man-r", label: "Recette", placeholder: "Recette : tape les 1res lettres…", garder: true, items: itemsRecettes, onPick: function () {} });
     var rs = { get value() { return rsW._valeur(); }, set value(v) { if (!v) rsW._vider(); } };
     var dt = h("input", { type: "date", id: "man-d", "aria-label": "Date", value: M.iso(M.addDays(debut, -1)) });
     var rp = options(h("select", { id: "man-p", "aria-label": "Repas" }), ["Soir", "Midi"], "Soir");
     var mnote = h("p", { class: "status", role: "status" });
     c2.append(h("form", { class: "mform", onsubmit: function (e) {
       e.preventDefault();
-      if (!rs.value || !dt.value) { mnote.className = "status err"; mnote.textContent = "Choisissez une recette et une date."; return; }
+      if (!rs.value || !dt.value) { mnote.className = "status err"; mnote.textContent = "Choisis une recette et une date."; return; }
       Store.addManuel({ recette: rs.value, date: dt.value, repas: rp.value }).then(function () { mnote.className = "status"; mnote.textContent = rs.value + " ajouté au " + M.fr(M.fromIso(dt.value)) + "."; rs.value = ""; },
-        function () { mnote.className = "status err"; mnote.textContent = "Ajout impossible. Réessayez."; });
+        function () { mnote.className = "status err"; mnote.textContent = "Ajout impossible. Réessaie."; });
     } }, rsW, dt, rp, h("button", { type: "submit", class: "btn", text: "Ajouter" })), mnote);
 
     var man = Object.keys(Store.manuels).map(function (id) { return { id: id, m: Store.manuels[id] }; })
@@ -4718,18 +4762,18 @@ var Moteur = (function () {
     citation: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 17c0-5 2-9 6-10l1 2c-2 1-3 3-3 5h3v5H4zm9 0c0-5 2-9 6-10l1 2c-2 1-3 3-3 5h3v5h-7z"/></svg>'
   };
   var ASTUCES = [
-    "Sortez la viande du frigo une demi-heure avant de la cuire : elle cuira plus régulièrement.",
-    "Laissez reposer une viande rôtie quelques minutes après la cuisson : elle reste plus juteuse.",
-    "Herbes fraîches : enroulez-les dans un papier absorbant humide, elles tiennent plusieurs jours de plus au frigo.",
-    "Roulez un citron sous la paume avant de le couper : il donnera plus de jus.",
-    "Œufs durs : plongez-les dans l'eau froide dès la fin de la cuisson, ils s'écaleront plus facilement.",
-    "Salez l'eau des pâtes une fois qu'elle bout, et gardez une louche d'eau de cuisson pour lier la sauce.",
-    "Rangez les produits les plus récents au fond du frigo : les plus anciens partent en premier.",
-    "Cuisinez une double portion un soir : le déjeuner du lendemain est déjà prêt.",
-    "Congelez le pain en tranches : il passe directement du congélateur au grille-pain.",
+    "Sors la viande du frigo une demi-heure avant de la cuire : elle cuira plus régulièrement.",
+    "Laisse reposer une viande rôtie quelques minutes après la cuisson : elle reste plus juteuse.",
+    "Herbes fraîches : enroule-les dans un papier absorbant humide, elles tiennent plusieurs jours de plus au frigo.",
+    "Roule un citron sous la paume avant de le couper : il donnera plus de jus.",
+    "Œufs durs : plonge-les dans l'eau froide dès la fin de la cuisson, ils s'écaleront plus facilement.",
+    "Sale l'eau des pâtes une fois qu'elle bout, et garde une louche d'eau de cuisson pour lier la sauce.",
+    "Range les produits les plus récents au fond du frigo : les plus anciens partent en premier.",
+    "Cuisine une double portion un soir : le déjeuner du lendemain est déjà prêt.",
+    "Congèle le pain en tranches : il passe directement du congélateur au grille-pain.",
     "Un oignon se coupe avec moins de larmes avec un couteau bien aiguisé.",
-    "Faites vos courses avec la liste par rayon : on gagne du temps et on oublie moins de choses.",
-    "Goûtez avant de servir : un peu de sel, de poivre ou un filet de citron change tout."
+    "Fais tes courses avec la liste par rayon : on gagne du temps et on oublie moins de choses.",
+    "Goûte avant de servir : un peu de sel, de poivre ou un filet de citron change tout."
   ];
   var CITATIONS = [
     ["Dis-moi ce que tu manges, je te dirai ce que tu es.", "Brillat-Savarin"],
@@ -4774,7 +4818,7 @@ var Moteur = (function () {
     var anniv = function (prenom, m, j) { return { nom: "Anniv. " + prenom, date: D(m, j), type: "anniv", ico: "🎂", avant: "L'anniversaire de " + prenom + " approche : son plat préféré au menu ?", jour: "Joyeux anniversaire " + prenom + " !" }; };
     return [
       { nom: "Jour de l'an", date: D(1, 1), type: "fete", avant: "Le Nouvel An approche : on prévoit quoi pour le 1er janvier ?", jour: "Bonne année ! Une nouvelle année de bons petits plats commence." },
-      { nom: "Épiphanie", date: D(1, 6), type: "fete", avant: "L'Épiphanie arrive : pensez à la galette des rois !", jour: "C'est l'Épiphanie : qui aura la fève ?" },
+      { nom: "Épiphanie", date: D(1, 6), type: "fete", avant: "L'Épiphanie arrive : pense à la galette des rois !", jour: "C'est l'Épiphanie : qui aura la fève ?" },
       { nom: "Chandeleur", date: D(2, 2), type: "fete", avant: "La Chandeleur arrive : farine, œufs et lait pour les crêpes !", jour: "C'est la Chandeleur : des crêpes ce soir ?" },
       { nom: "Mardi gras", date: M.addDays(pq, -47), type: "fete", avant: "Mardi gras approche : beignets ou crêpes au programme ?", jour: "C'est Mardi gras : beignets et crêpes de rigueur !" },
       { nom: "Saint-Valentin", date: D(2, 14), type: "fete", avant: "La Saint-Valentin approche : un dîner en amoureux ?", jour: "Bonne Saint-Valentin !" },
@@ -4789,7 +4833,7 @@ var Moteur = (function () {
       { nom: "Halloween", date: D(10, 31), type: "fete", ico: "🎃", avant: "Halloween approche : des citrouilles au menu ?", jour: "Joyeux Halloween ! Des bonbons ou un sort ?" },
       { nom: "Beaujolais nouveau", date: jeudiN(an, 10, 3), type: "fete", ico: "🍷", avant: "Le Beaujolais nouveau arrive : un apéro entre grands ?", jour: "C'est le Beaujolais nouveau : santé (avec modération) !" },
       { nom: "Réveillon de Noël", date: D(12, 24), type: "fete", avant: "Le réveillon de Noël approche : on prévoit le menu de fête ?", jour: "C'est le réveillon : bonne soirée en famille !" },
-      { nom: "Noël", date: D(12, 25), type: "fete", avant: "Noël approche : pensez au repas de fête !", jour: "Joyeux Noël à toute la famille !" },
+      { nom: "Noël", date: D(12, 25), type: "fete", avant: "Noël approche : pense au repas de fête !", jour: "Joyeux Noël à toute la famille !" },
       { nom: "Saint-Sylvestre", date: D(12, 31), type: "fete", avant: "La Saint-Sylvestre approche : apéro dînatoire ou raclette ?", jour: "Bonne Saint-Sylvestre ! On fête la nouvelle année ce soir." },
       // La famille
       { nom: "Anniv. de mariage", date: D(6, 20), type: "anniv", ico: "💍", avant: "Votre anniversaire de mariage approche : un dîner en amoureux ?", jour: "Joyeux anniversaire de mariage !" },
@@ -5139,7 +5183,7 @@ var Moteur = (function () {
       var quand = x.n === 1 ? "Demain" : dansProchain ? majuscule(ds) + " · prochain menu" : "Dans " + x.n + " jours";
       if (e.type === "ferie") {
         var jo = e.date.getDay();
-        if (jo >= 1 && jo <= 5) sp.push({ lbl: quand + " · férié", txt: majuscule(ds) + " est férié (" + e.nom + ") : pensez à ajouter le déjeuner au menu." });
+        if (jo >= 1 && jo <= 5) sp.push({ lbl: quand + " · férié", txt: majuscule(ds) + " est férié (" + e.nom + ") : pense à ajouter le déjeuner au menu." });
         return;
       }
       if (e.avant) sp.push({ lbl: quand + " · " + e.nom, txt: e.avant });
@@ -5246,7 +5290,7 @@ var Moteur = (function () {
     var box = h("div", { class: "lock" }, affiche, droite);
     var note = h("p", { class: "status", role: "status" });
     // Code : un vrai champ invisible posé sur 4 cases (le collage et le clavier iPhone fonctionnent normalement).
-    var inp = h("input", { type: "text", id: "code-acces", class: "code-reel", autocomplete: "off", autocapitalize: "characters", autocorrect: "off", spellcheck: false, maxlength: String(LONGUEUR_CODE), "aria-label": "Tapez le code" });
+    var inp = h("input", { type: "text", id: "code-acces", class: "code-reel", autocomplete: "off", autocapitalize: "characters", autocorrect: "off", spellcheck: false, maxlength: String(LONGUEUR_CODE), "aria-label": "Tape le code" });
     var cases = h("div", { class: "code-cases", "aria-hidden": "true" });
     var montre = false;
     function majCases() {
@@ -5260,7 +5304,7 @@ var Moteur = (function () {
     var voir = h("button", { type: "button", class: "btn ghost mini voir", text: "Afficher", "aria-controls": "code-acces", "aria-pressed": "false", onclick: function () {
       montre = !montre; voir.textContent = montre ? "Masquer" : "Afficher"; voir.setAttribute("aria-pressed", String(montre)); majCases(); inp.focus();
     } });
-    var ok = h("button", { type: "submit", class: "btn primary", text: "Validez" });
+    var ok = h("button", { type: "submit", class: "btn primary", text: "Valider" });
     if (mode === "accueil") droite.append(h("div", { id: "lock-cesoir" }));
     if (mode === "accueil") {
       // Appareil déjà déverrouillé ce mois-ci : simple porte d'entrée, sans code.
@@ -5270,7 +5314,7 @@ var Moteur = (function () {
       e.preventDefault();
       var v = inp.value; if (!v.trim()) { inp.focus(); return; }
       var reste = Math.ceil((essais.jusqua - Date.now()) / 1000);
-      if (reste > 0) { note.className = "status err"; note.textContent = "Trop d'essais. Réessayez dans " + reste + " s."; return; }
+      if (reste > 0) { note.className = "status err"; note.textContent = "Trop d'essais. Réessaie dans " + reste + " s."; return; }
       ok.disabled = true;
       empreinte(v).then(function (hx) {
         ok.disabled = false;
@@ -5278,7 +5322,7 @@ var Moteur = (function () {
           essais = { echecs: 0, jusqua: 0 }; sauverEssais(); lsSet("menus-deverrouille", { mois: moisCourant(), empreinte: hx }); ouvrirAvecFete(function () { accueilVu = true; ouvrir(); }); return;
         }
         essais.echecs++;
-        if (essais.echecs >= 5) { essais.jusqua = Date.now() + 30000; essais.echecs = 0; note.textContent = "Code incorrect. Trop d'essais : patientez 30 secondes."; }
+        if (essais.echecs >= 5) { essais.jusqua = Date.now() + 30000; essais.echecs = 0; note.textContent = "Code incorrect. Trop d'essais : patiente 30 secondes."; }
         else note.textContent = "Code incorrect.";
         sauverEssais();
         note.className = "status err";
@@ -5286,7 +5330,7 @@ var Moteur = (function () {
         inp.value = ""; majCases(); inp.focus();
       }, function () { ok.disabled = false; note.className = "status err"; note.textContent = "Vérification impossible sur cet appareil."; });
     } },
-      h("div", { class: "codefield" }, h("div", { class: "bar end" }, h("label", { class: "lbl", for: "code-acces", text: "Tapez le code" }), voir),
+      h("div", { class: "codefield" }, h("div", { class: "bar end" }, h("label", { class: "lbl", for: "code-acces", text: "Tape le code" }), voir),
         h("div", { class: "code-zone" }, cases, inp)),
       note, ok));
     // Bas : la semaine en cours, jour par jour (aujourd'hui en surbrillance).
@@ -5338,11 +5382,11 @@ var Moteur = (function () {
         debut = defautDebut; S = etatVide();
         fermer(); choisirOnglet("prep");
         var st = document.getElementById("storestatus"); st.className = "status"; st.textContent = "L'historique des menus a été réinitialisé. Recettes et articles conservés.";
-      }, function () { note.className = "status err"; note.textContent = "La suppression a échoué en partie. Réessayez."; go.disabled = false; champ.disabled = false; });
+      }, function () { note.className = "status err"; note.textContent = "La suppression a échoué en partie. Réessaie."; go.disabled = false; champ.disabled = false; });
       });
     } },
       h("h2", { id: "reset-titre", text: "Réinitialiser l'historique" }),
-      h("p", { id: "reset-aide", text: "Supprime définitivement les menus des semaines validées et leurs listes de courses, les recettes notées à la main dans l'historique, les brouillons et les cases cochées. Les délais et l'alternance du vendredi repartent de zéro. Vos recettes et vos articles ne sont pas touchés. Cette action est irréversible." }),
+      h("p", { id: "reset-aide", text: "Supprime définitivement les menus des semaines validées et leurs listes de courses, les recettes notées à la main dans l'historique, les brouillons et les cases cochées. Les délais et l'alternance du vendredi repartent de zéro. Tes recettes et tes articles ne sont pas touchés. Cette action est irréversible." }),
       h("label", { class: "lbl", for: "reset-code", text: "Mot code" }), champ,
       note,
       h("div", { class: "bar" }, go, h("button", { type: "button", class: "btn", text: "Annuler", onclick: fermer })));
@@ -5378,7 +5422,7 @@ var Moteur = (function () {
         if (!ok) { go.disabled = false; note.className = "status err"; note.textContent = "Code incorrect."; champ.select(); champ.focus(); return; }
         champ.disabled = true; note.className = "status"; note.textContent = "Suppression en cours…";
         Promise.resolve(opts.action()).then(function () { fermer(); if (opts.apres) opts.apres(); },
-          function () { note.className = "status err"; note.textContent = "La suppression a échoué. Réessayez."; go.disabled = false; champ.disabled = false; });
+          function () { note.className = "status err"; note.textContent = "La suppression a échoué. Réessaie."; go.disabled = false; champ.disabled = false; });
       });
     } },
       h("h2", { id: "suppr-titre", text: opts.titre }),
@@ -6116,7 +6160,7 @@ var Moteur = (function () {
     q = String(q || "");
     var m = /^(.*\S)\s*\+\s*\?$/.exec(q);
     if (!m) return [q];
-    return [m[1], h("span", { class: "qte-plus", title: "Une autre recette de la semaine utilise aussi ce produit, sans quantité précise : prévoyez-en un peu plus.", text: "+ un peu" })];
+    return [m[1], h("span", { class: "qte-plus", title: "Une autre recette de la semaine utilise aussi ce produit, sans quantité précise : prévois-en un peu plus.", text: "+ un peu" })];
   }
   function idProduit(nom) { return M.norm(nom).replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").toUpperCase() || "PRODUIT"; }
 
@@ -6169,7 +6213,7 @@ var Moteur = (function () {
     var out = [], tmp = clone(r), by = M.prepare([tmp]), t = by[tmp.nom] || tmp;
     if (!r.nom) return out;
     var slots = 0; for (var j = 0; j < 7; j++) ["Midi", "Soir"].forEach(function (rr) { if (M.compatible(t, j, rr)) slots++; });
-    var statut = t._regle.type === "imposee" ? "jamais tirée au hasard, seulement si vous l'imposez"
+    var statut = t._regle.type === "imposee" ? "jamais tirée au hasard, seulement si tu l'imposes"
       : (!M.enSaison(t, debut) && !M.enSaison(t, M.addDays(debut, 6))) ? "hors saison la semaine du " + M.fr(debut)
       : "peut être tirée la semaine du " + M.fr(debut) + " (" + slots + " créneau" + (slots > 1 ? "x" : "") + " possible" + (slots > 1 ? "s" : "") + ")";
     out.push(h("p", null, h("b", { text: "Tirage : " }), statut + "."));
@@ -6203,7 +6247,7 @@ var Moteur = (function () {
     function ligne(lbl, val) { return h("div", { class: "fl-ligne" }, h("span", { class: "lbl", text: lbl }), h("span", { text: val })); }
     var ings = src.ingredients.length ? h("ul", { class: "fl-ings" }, src.ingredients.map(function (it) {
       var q = qteVersTexte(it), u = it.unite && it.unite !== "—" ? it.unite : "";
-      return h("li", null, h("span", { text: majuscule(it.produit) }), h("span", { class: "qty", text: (q + (u ? " " + u : "")).trim() }), h("small", { text: M.CAT_NAMES[it.categorie] || "" }));
+      return h("li", null, h("span", { text: majuscule(it.produit) }), h("span", { class: "qty", text: !q && u ? u + " · qté ?" : (q + (u ? " " + u : "")).trim() }), h("small", { text: M.CAT_NAMES[it.categorie] || "" }));
     })) : src.sansIngredients ? h("p", { class: "status", text: "Pas d'ingrédients : c'est voulu pour cette recette." }) : h("p", { class: "status warn", text: "Aucun ingrédient pour l'instant." });
     ajoute(panelRec, 
       navFiche(f),
@@ -6232,7 +6276,7 @@ var Moteur = (function () {
   /* Fiches recettes : elles vivent dans la mémoire partagée. Appareil pas encore relié → on le dit. */
   function noteFichesHorsLigne() {
     return h("section", { class: "card fiche-liee vide" }, h("span", { class: "lbl", text: "Fiche recette" }),
-      h("p", { class: "status", text: "Les fiches recettes sont enregistrées dans la mémoire partagée : reliez d'abord cet appareil (Paramètres › Réglages › Mémoire partagée)." }),
+      h("p", { class: "status", text: "Les fiches recettes sont enregistrées dans la mémoire partagée : relie d'abord cet appareil (Paramètres › Réglages › Mémoire partagée)." }),
       h("div", { class: "bar" }, h("button", { type: "button", class: "btn", text: "Relier cet appareil →", onclick: function () { choisirOnglet("regl"); setTimeout(function () { var m = document.querySelector("#panel-regl .memoire, #panel-regl input[placeholder*='lien de connexion']"); if (m && m.scrollIntoView) m.scrollIntoView({ block: "center" }); }, 200); } })));
   }
   /* Liaison fiche ↔ recette faite par erreur : on la retire (la fiche redevient « à rattacher »). */
@@ -6286,7 +6330,7 @@ var Moteur = (function () {
     var btn = h("button", { type: "button", class: "btn ghost", text: "Rattacher une fiche existante", onclick: ouvrir });
     function ouvrir() {
       clear(z);
-      var sel = chercheur({ label: "Fiche à rattacher", placeholder: "Fiche : tapez les 1res lettres…", items: function () {
+      var sel = chercheur({ label: "Fiche à rattacher", placeholder: "Fiche : tape les 1res lettres…", items: function () {
         return libres.slice().sort(function (a, b) {
           var ma = src.cat && a.cat === src.cat ? 0 : 1, mb = src.cat && b.cat === src.cat ? 0 : 1;
           return ma - mb || a.title.localeCompare(b.title, "fr");
@@ -6300,7 +6344,7 @@ var Moteur = (function () {
         Promise.resolve(Store.cloud && Store.cloud.doc("fiches/" + x.v).update({ recette: src._id })).then(function () {
           if (f.cat && LIB_CAT[f.cat] && !src.cat) catDepuisFiche(src._id, f.cat);
           rouvrir(src._id, "Fiche « " + f.title + " » rattachée à cette recette.");
-        }, function () { rouvrir(src._id, "Rattachement impossible. Réessayez."); });
+        }, function () { rouvrir(src._id, "Rattachement impossible. Réessaie."); });
       } });
       z.append(h("div", { class: "choix-ligne" }, sel, h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: function () { clear(z); z.append(btn); } })));
       setTimeout(function () { var i = sel.querySelector("input"); if (i) i.focus(); }, 30);
@@ -6373,7 +6417,7 @@ var Moteur = (function () {
     });
     var sansCat = !(rec.cat && LIB_CAT[rec.cat]);
     var cCat = h("section", { class: "card" + (f.id && sansCat ? " cat-manque" : "") }, h("span", { class: "lbl", text: f.id ? "Catégorie" : "Catégorie *" }), chipsC,
-      f.id && sansCat ? h("p", { class: "status warn", text: "Catégorie manquante : choisissez-la pour que la recette soit proposée dans les repas de fête." }) : null,
+      f.id && sansCat ? h("p", { class: "status warn", text: "Catégorie manquante : choisis-la pour que la recette soit proposée dans les repas de fête." }) : null,
       h("p", { class: "status", text: "La même que sur les fiches : elle sera déjà cochée en créant la fiche, et range la recette dans sa rubrique des repas de fête." }));
 
     // Saison (obligatoire)
@@ -6418,7 +6462,7 @@ var Moteur = (function () {
       }
       c4.append(grille);
     }
-    if (f.typeRegle) c4.append(h("p", { class: "status", text: "Enregistrée comme : « " + regleTexte(f) + " »" + (f.typeRegle === "poisson" ? " — placée de préférence le samedi midi." : f.typeRegle === "imposee" ? " — jamais tirée au hasard, seulement si vous l'imposez." : "") }));
+    if (f.typeRegle) c4.append(h("p", { class: "status", text: "Enregistrée comme : « " + regleTexte(f) + " »" + (f.typeRegle === "poisson" ? " — placée de préférence le samedi midi." : f.typeRegle === "imposee" ? " — jamais tirée au hasard, seulement si tu l'imposes." : "") }));
 
     // Ingrédients
     var connus = produitsConnus();
@@ -6432,6 +6476,9 @@ var Moteur = (function () {
       var u = h("input", { type: "text", list: "dl-unites", value: l.u, placeholder: "Unité", "aria-label": "Unité" });
       var c = options(h("select", { "aria-label": "Rayon" }), CAT_OPTIONS, l.it.categorie || "D");
       var etat = h("small", { class: "ing-etat" });
+      var avertU = h("small", { class: "ing-avert" });
+      function majAvertU() { avertU.textContent = (l.u || "").trim() && !String(l.q || "").trim() ? "⚠ Indique une quantité, sinon seule l'unité apparaîtra." : ""; }
+      majAvertU();
       var orig = l.texte && f.depuisFiche ? h("small", { class: "ing-orig", text: "Sur la fiche : « " + l.texte + " »" }) : null;
       function majEtat() {
         clear(etat); etat.className = "ing-etat";
@@ -6462,16 +6509,16 @@ var Moteur = (function () {
       }
       p.addEventListener("input", function () {
         l.it.produit = p.value; var k = connus[M.norm(p.value)];
-        if (k) { l.it.id = k.id; if (!l.catTouchee) { l.it.categorie = k.categorie; c.value = k.categorie; } if (!l.u && k.unite && k.unite !== "—") { l.u = k.unite; u.value = k.unite; } }
+        if (k) { l.it.id = k.id; if (!l.catTouchee) { l.it.categorie = k.categorie; c.value = k.categorie; } if (!l.u && k.unite && k.unite !== "—") { l.u = k.unite; u.value = k.unite; majAvertU(); } }
         else l.it.id = null;
         majEtat(); sale(); majApercu();
       });
-      q.addEventListener("input", function () { l.q = q.value; sale(); majApercu(); });
-      u.addEventListener("input", function () { l.u = u.value; sale(); majApercu(); });
+      q.addEventListener("input", function () { l.q = q.value; majAvertU(); sale(); majApercu(); });
+      u.addEventListener("input", function () { l.u = u.value; majAvertU(); sale(); majApercu(); });
       c.addEventListener("change", function () { l.it.categorie = c.value; l.catTouchee = true; sale(); majApercu(); });
       majEtat();
       rows.append(h("div", { class: "ing-row" }, p, q, u, c,
-        h("button", { type: "button", class: "icon", title: "Retirer", "aria-label": "Retirer l'ingrédient", text: "✕", onclick: function () { f.lignes.splice(i, 1); sale(); rerender(); } }), etat, orig));
+        h("button", { type: "button", class: "icon", title: "Retirer", "aria-label": "Retirer l'ingrédient", text: "✕", onclick: function () { f.lignes.splice(i, 1); sale(); rerender(); } }), avertU, etat, orig));
     });
     var cbSans = h("input", { type: "checkbox" }); cbSans.checked = !!rec.sansIngredients;
     cbSans.addEventListener("change", function () { rec.sansIngredients = cbSans.checked; sale(); rerender(); });
@@ -6482,7 +6529,7 @@ var Moteur = (function () {
         f.lignes.push({ it: { produit: "", categorie: "F" }, q: "", u: "" }); sale(); rerender();
         var ins = panelRec.querySelectorAll(".ing-row:not(.ing-head) input.ing-produit"); if (ins.length) ins[ins.length - 1].focus();
       } })),
-      h("p", { class: "status", text: "Quantité : un nombre (2, 0,5) ou une fourchette (6 à 8). Laissez vide si la quantité varie." }));
+      h("p", { class: "status", text: "Quantité : un nombre (2, 0,5) ou une fourchette (6 à 8). Laisse vide si la quantité varie." }));
 
     function majApercu() {
       clear(apercu);
@@ -6574,8 +6621,8 @@ var Moteur = (function () {
         setTimeout(function () { ouvrirFichesIntegre(lienNouvelleFiche(nouv)); setTimeout(function () { if (ovc) ovc.remove(); }, 700); }, 2800); // le temps de l'animation (et de l'enregistrement)
         return;
       }
-      rouvrir(id, f.veutFiche ? "Recette enregistrée. Fiche à faire : retrouvez-la avec le livre en pointillés." : "Recette enregistrée."); if (!f.id) window.scrollTo(0, 0);
-    }, function () { btn.disabled = false; note.className = "status err"; note.textContent = "Enregistrement impossible. Réessayez."; });
+      rouvrir(id, f.veutFiche ? "Recette enregistrée. Fiche à faire : retrouve-la avec le livre en pointillés." : "Recette enregistrée."); if (!f.id) window.scrollTo(0, 0);
+    }, function () { btn.disabled = false; note.className = "status err"; note.textContent = "Enregistrement impossible. Réessaie."; });
   }
 
   /* Export au format BASE_RECETTES (.txt). */
@@ -6604,8 +6651,8 @@ var Moteur = (function () {
   function supprimerArticle(a) {
     demanderCodeSuppr({
       titre: "Supprimer « " + a.produit + (a.quantite ? " (" + a.quantite + ")" : "") + " » ?",
-      texte: a.perso ? "Cet article enregistré est supprimé de vos articles et des favoris."
-        : "Cet ingrédient vient d'une recette : il ne sera plus proposé dans vos articles, mais reste dans ses recettes.",
+      texte: a.perso ? "Cet article enregistré est supprimé de tes articles et des favoris."
+        : "Cet ingrédient vient d'une recette : il ne sera plus proposé dans tes articles, mais reste dans ses recettes.",
       action: function () {
         var p = Store.favoris[a.cle] ? Store.toggleFavori(a.cle, a.produit) : Promise.resolve();
         return p.then(function () { return a.perso ? Store.deleteArticle(a.id) : Store.addArticle({ produit: a.produit, categorie: a.categorie || "D", quantite: "", masque: true }); });
@@ -6634,7 +6681,7 @@ var Moteur = (function () {
       if (exacts.length) {
         aide.classList.add("ok");
         if (!catTouchee) { c.value = exacts[0].categorie; catAuto = true; }
-        aide.append(icone("ok", "ico"), h("span", null, h("b", { text: exacts[0].produit }), " existe déjà (" + exacts.map(function (a) { return (a.quantite || "sans quantité") + (a.perso ? "" : ", ingrédient de recette"); }).join(" ; ") + " · " + M.CAT_NAMES[exacts[0].categorie] + "). Enregistrez seulement s'il s'agit d'une autre quantité."));
+        aide.append(icone("ok", "ico"), h("span", null, h("b", { text: exacts[0].produit }), " existe déjà (" + exacts.map(function (a) { return (a.quantite || "sans quantité") + (a.perso ? "" : ", ingrédient de recette"); }).join(" ; ") + " · " + M.CAT_NAMES[exacts[0].categorie] + "). Enregistre seulement s'il s'agit d'une autre quantité."));
         return;
       }
       var props = [];
@@ -6655,18 +6702,18 @@ var Moteur = (function () {
       e.preventDefault();
       var nom = p.value.trim();
       if (!nom) { p.focus(); return; }
-      if (estEnregistre(nom, q.value.trim())) { note.className = "status warn"; note.textContent = "« " + nom + " » est déjà dans vos articles avec cette quantité."; return; }
+      if (estEnregistre(nom, q.value.trim())) { note.className = "status warn"; note.textContent = "« " + nom + " » est déjà dans tes articles avec cette quantité."; return; }
       Store.addArticle({ produit: nom, categorie: c.value, quantite: q.value.trim() }).then(function () {
         var n2 = panelArt.querySelector("p.status[role=status]");
         if (n2) { n2.className = "status"; n2.textContent = "« " + nom + " » enregistré."; }
         var np = document.getElementById("art-p"); if (np) np.focus();
-      }, function () { note.className = "status err"; note.textContent = "Enregistrement impossible. Réessayez."; });
+      }, function () { note.className = "status err"; note.textContent = "Enregistrement impossible. Réessaie."; });
     } }, p, q, c, h("button", { type: "submit", class: "btn", text: "Enregistrer" })), aide, note);
 
     var tous = tousArticles();
     var nbFav = tous.filter(function (a) { return Store.favoris[a.cle]; }).length;
     var list = h("section", { class: "card" }, h("h2", { text: "Tous les articles", style: "font-size:1.2rem" }),
-      h("p", { class: "status", text: "Cliquez sur l'étoile pour mettre un article en favori : il apparaîtra en tête des suggestions. " + (nbFav ? nbFav + " favori" + (nbFav > 1 ? "s" : "") + "." : "Aucun favori pour l'instant.") }));
+      h("p", { class: "status", text: "Touche l'étoile pour mettre un article en favori : il apparaîtra en tête des suggestions. " + (nbFav ? nbFav + " favori" + (nbFav > 1 ? "s" : "") + "." : "Aucun favori pour l'instant.") }));
     var fi = h("input", { type: "text", id: "art-filtre", placeholder: "Filtrer…", value: filtreArt, "aria-label": "Filtrer les articles", style: "max-width:260px" });
     var tb = h("div", { class: "art-liste" });
     function lignes() {
@@ -6816,8 +6863,10 @@ var Moteur = (function () {
       renderCoursesOnglet();
     } });
     var dlNote = h("p", { class: "status", role: "status" });
-    var dlBtn = h("button", { type: "button", class: "btn primary dlbtn", text: "Télécharger la liste de courses", onclick: function () { telecharger("courses", dlBtn, dlNote); } });
-    panelCourses.append(ligneJourCourses(id, doc));
+    var dlIc = h("button", { type: "button", class: "btn dl-icone", title: "Télécharger la liste de courses", "aria-label": "Télécharger la liste de courses", text: "⤓" });
+    var dlBtn = { set disabled(v) { dlIc.disabled = v; }, get textContent() { return "⤓"; }, set textContent(v) { dlIc.textContent = v === "⤓" ? "⤓" : "…"; } };
+    dlIc.addEventListener("click", function () { telecharger("courses", dlBtn, dlNote); });
+    // (Plus d'encart « Courses faites ? » : l'appli se fie au jour des courses ; exception réglable à la modification du menu.)
     if (comp.plus.length || comp.moins.length) {
       panelCourses.append(blocComplement(id, comp));
       panelCourses.append(h("h2", { class: "liste-titre", text: "Liste complète" }));
@@ -6842,7 +6891,7 @@ var Moteur = (function () {
     inQ.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); ajouter(); } });
     panelCourses.append(h("div", { class: "aj-rapide" }, dlP, inP, inQ, selR, h("button", { type: "button", class: "btn primary", text: "+", "aria-label": "Ajouter à la liste", onclick: ajouter })));
     panelCourses.append(h("div", { class: "shop-head" },
-      h("p", { class: "status", text: faits + " / " + total + " dans le caddie" }),
+      h("div", { class: "shop-compte" }, h("p", { class: "status", text: faits + " / " + total + " dans le caddie" }), dlNote, dlIc),
       h("div", { class: "progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(total), "aria-valuenow": String(faits), "aria-label": "Articles cochés" }, bar),
       h("div", { class: "bar end" }, h("label", { class: "check", for: "masquer-coches" }, masq, " Masquer les articles cochés"),
         faits ? h("button", { type: "button", class: "btn ghost", text: "Tout décocher", onclick: function () {
@@ -6881,8 +6930,7 @@ var Moteur = (function () {
       panelCourses.append(h("p", { class: "sans-recettes " + (okSR ? "ok" : "ko") }, icoSR,
         h("span", { text: okSR ? "Articles des plats sans recettes ajoutés" : "Articles des plats sans recettes non ajoutés (" + doc.sansRecettes.plats.join(" · ") + ")" })));
     }
-    dlBtn.className = "btn dlbtn";
-    panelCourses.append(h("div", { class: "bar dl-bas" }, dlBtn, dlNote));
+
   }
   /* Liste à part d'un repas de fête : ses propres coches, hors du compteur de la semaine. */
   function blocListeFete(id, lf) {
@@ -6934,12 +6982,19 @@ var Moteur = (function () {
       fileEcriture = fileEcriture.then(function () { return Store.updateMenu(id, { coursesFaites: v }); }).catch(function () {});
       doc.coursesFaites = v; renderCoursesOnglet();
     }
-    if (!faites) return h("div", { class: "jour-courses" },
-      h("span", { text: "🛒 Courses prévues " + libelleCourses(deb) + ". D'ici là, si le menu change, la liste est refaite en entier." }),
-      h("button", { type: "button", class: "btn mini", text: "Courses faites ✓", onclick: function () { marquer(true); } }));
-    return h("div", { class: "jour-courses fait" },
-      h("span", { text: "✓ Courses faites" + (auto ? " (" + libelleCourses(deb) + ")" : "") + ". Si le menu change : seulement le complément à acheter." }),
-      h("button", { type: "button", class: "btn ghost mini", text: "Pas encore", onclick: function () { marquer(false); } }));
+    // Version compacte : « 🛒 Courses faites ? Oui / Pas encore » + ⓘ (l'explication est dans l'infobulle).
+    var iJ = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "À quoi sert « Courses faites » ?" });
+    iJ.addEventListener("click", function (e) { e.stopPropagation(); bulle(iJ, [h("div", { class: "bulle-liste" },
+      h("p", null, h("b", { text: "Courses prévues " + libelleCourses(deb) + "." }), " (réglable dans Paramètres)"),
+      h("p", { text: "Pas encore faites : si le menu change, la liste est refaite en entier." }),
+      h("p", { text: "Faites : si le menu change, l'appli n'affiche que le complément à acheter, et ce qui ne sert plus reste « déjà à la maison »." }),
+      h("p", { class: "status", text: auto ? "Réglé automatiquement selon le jour des courses ; tu peux le changer ici." : "Réglé à la main." }))]); });
+    return h("div", { class: "jour-courses compact" + (faites ? " fait" : "") },
+      h("span", { class: "jc-lbl", text: "🛒 Courses faites ?" }),
+      h("span", { class: "seg-mini" },
+        h("button", { type: "button", class: "chip", "aria-pressed": String(faites), text: "Oui", onclick: function () { if (!faites) marquer(true); } }),
+        h("button", { type: "button", class: "chip", "aria-pressed": String(!faites), text: "Pas encore", onclick: function () { if (faites) marquer(false); } })),
+      iJ);
   }
   /* Bloc « À acheter en plus » / « Déjà à la maison » après modification d'un menu validé. */
   function blocComplement(id, comp) {
@@ -6949,7 +7004,7 @@ var Moteur = (function () {
       sec.append(h("div", { class: "cp-tete" },
         h("h2", { text: "À acheter en plus" }),
         h("small", { text: faits ? faits + " / " + comp.plus.length + " dans le caddie" : comp.plus.length + " article" + (comp.plus.length > 1 ? "s" : "") })));
-      sec.append(h("p", { class: "status", text: "Le menu a changé depuis vos courses : seulement ce qui manque." }));
+      sec.append(h("p", { class: "status", text: "Le menu a changé depuis tes courses : seulement ce qui manque." }));
       comp.plus.forEach(function (l) {
         var ck = "plus:" + l.k, cb = h("input", { type: "checkbox", id: "shop-" + ck, checked: !!coches[ck] });
         var info = l.etat === "nouveau" ? "Nouveau" : l.etat === "hausse" ? "Déjà prévu : " + l.avant : "Avant : " + (l.avant || "sans quantité");
@@ -6970,7 +7025,7 @@ var Moteur = (function () {
       comp.moins.forEach(function (l) {
         ul.append(h("li", null, h("span", { text: l.produit }), h("span", { class: "qty", text: l.quantite })));
       });
-      sec.append(h("h3", { text: "Déjà à la maison" }), h("p", { class: "status", text: "Achetés pour un repas retiré : pensez-y pour un autre plat. En tirant une nouvelle recette (↻), l'appli privilégie celles qui les utilisent." }), ul);
+      sec.append(h("h3", { text: "Déjà à la maison" }), h("p", { class: "status", text: "Achetés pour un repas retiré : pense-y pour un autre plat. En tirant une nouvelle recette (↻), l'appli privilégie celles qui les utilisent." }), ul);
     }
     sec.append(h("div", { class: "bar end" },
       h("button", { type: "button", class: "btn ghost", text: comp.plus.length ? "Complément acheté" : "Compris", title: "Ferme ce bloc : la liste actuelle devient la référence", onclick: function () {
@@ -7067,8 +7122,8 @@ var Moteur = (function () {
     }
     var choix = h("div", { class: "chips" }, ["Yann", "Sabrina"].map(function (n) { return h("button", { type: "button", class: "chip", text: n, onclick: function () { ok(n); } }); }));
     var form = h("form", { class: "dialog nom-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "nom-titre", onsubmit: function (e) { e.preventDefault(); ok(champ.value); } },
-      h("h2", { id: "nom-titre", text: "Qui êtes-vous ?" }),
-      h("p", { text: "Pour afficher « Yann prépare le menu… » chez les autres. Mettez le même prénom sur tous vos appareils (téléphone et PC)." }),
+      h("h2", { id: "nom-titre", text: "Qui es-tu ?" }),
+      h("p", { text: "Pour afficher « Yann prépare le menu… » chez les autres. Mets le même prénom sur tous tes appareils (téléphone et PC)." }),
       choix, h("label", { class: "lbl", for: "nom-appareil", text: "Ou un autre nom" }), champ,
       h("div", { class: "bar" }, h("button", { type: "submit", class: "btn primary", text: "Valider" })));
     var overlay = h("div", { class: "overlay", id: "nom-overlay" }, form);
@@ -7084,12 +7139,12 @@ var Moteur = (function () {
     function changer() { Store.setCoursesCfg({ jour: +selJ.value, moment: selM.value }); note.className = "status ok-msg"; note.textContent = "Enregistré" + (partage() ? " pour toute la famille." : "."); }
     selJ.addEventListener("change", changer); selM.addEventListener("change", changer);
     return h("section", { class: "card" }, h("h2", { text: "Jour des courses", style: "font-size:1.2rem" }),
-      h("p", { class: "status", text: "Avant ce moment, un menu modifié refait la liste de courses en entier. Après, l'appli considère que tout est acheté : elle n'affiche que le complément et range le reste dans « Déjà à la maison ». Dans l'onglet Courses, « Courses faites ✓ » permet de le signaler plus tôt." }),
+      h("p", { class: "status", text: "Avant ce moment, un menu modifié refait la liste de courses en entier. Après, l'appli considère que tout est acheté : elle n'affiche que le complément et range le reste dans « Déjà à la maison ». Exception (courses faites plus tôt ou plus tard) : en modifiant le menu, un petit lien sur la page de la liste permet de le changer." }),
       h("div", { class: "bar" }, selJ, selM), note);
   }
   function carteMemoire() {
     if (window.MEMOIRE_DEMO) return h("section", { class: "card memoire" }, h("h2", { text: "Mémoire partagée (brouillon)", style: "font-size:1.2rem" }),
-      h("p", { class: "status", text: "Dans ce brouillon, la mémoire partagée est simulée dans ce navigateur : menus et fiches se voient entre les deux pages, mais rien ne part sur votre feuille Google." }),
+      h("p", { class: "status", text: "Dans ce brouillon, la mémoire partagée est simulée dans ce navigateur : menus et fiches se voient entre les deux pages, mais rien ne part sur ta feuille Google." }),
       h("button", { type: "button", class: "btn danger", text: "Vider la mémoire de démonstration", onclick: function () { lsDel("menus-demo-memoire"); lsDel(CLOUD_CACHE); lsDel(CLOUD_FILE); location.reload(); } }));
     if (window.claude && window.claude.use) return null;
     var cfg = cloudConfig();
@@ -7100,36 +7155,36 @@ var Moteur = (function () {
       var note = h("p", { class: "status", role: "status" });
       var lien = lienConnexion(cfg);
       var ceR = Store.cloud && Store.cloud.etat;
-      if (ceR && ceR.ancienScript) card.append(h("p", { class: "status err", text: "⚠ Le script Google utilisé est l'ancienne version : la protection contre les écrasements ne fonctionne pas. Dans Apps Script : collez le nouveau Code.gs, puis Déployer › Gérer les déploiements › ✏️ › Version : Nouvelle version › Déployer." }));
+      if (ceR && ceR.ancienScript) card.append(h("p", { class: "status err", text: "⚠ Le script Google utilisé est l'ancienne version : la protection contre les écrasements ne fonctionne pas. Dans Apps Script : colle le nouveau Code.gs, puis Déployer › Gérer les déploiements › ✏️ › Version : Nouvelle version › Déployer." }));
       // Repère pour comparer les appareils : ils doivent tous afficher le même.
       var idMem = cfg.type === "gist" ? String(cfg.gist || "") : String((/\/s\/([^/]+)\//.exec(cfg.url || "") || [])[1] || cfg.url || "");
-      card.append(h("p", { class: "status", text: "Repère de la mémoire : " + (idMem ? "…" + idMem.slice(-6) : "?") + " (le même sur tous vos appareils)" }));
+      card.append(h("p", { class: "status", text: "Repère de la mémoire : " + (idMem ? "…" + idMem.slice(-6) : "?") + " (le même sur tous tes appareils)" }));
       card.append(h("p", { class: "status", text: "Version du site : " + VERSION_SITE + (ceR && ceR.connecte ? (ceR.ancienScript ? " · script Google : ancienne version" : " · script Google : à jour") : "") }));
       card.append(h("div", { class: "bar" }, h("span", null, "Cet appareil : ", h("b", { text: NOM_APPAREIL || "sans nom" })), h("button", { type: "button", class: "btn ghost mini", text: "Renommer", onclick: function () { demanderNom(true); } })),
-        h("p", { class: "status", text: "Menus (y compris ceux en préparation), historique, listes cochées, articles, favoris et recettes sont enregistrés " + (cfg.type === "gist" ? "dans un fichier privé sur votre GitHub" : "dans votre feuille Google") + " et partagés entre vos appareils." }), etatEl, envoisEl || "",
+        h("p", { class: "status", text: "Menus (y compris ceux en préparation), historique, listes cochées, articles, favoris et recettes sont enregistrés " + (cfg.type === "gist" ? "dans un fichier privé sur ton GitHub" : "dans ta feuille Google") + " et partagés entre tes appareils." }), etatEl, envoisEl || "",
         h("div", { class: "bar" },
           h("button", { type: "button", class: "btn", text: "↻ Synchroniser", onclick: function () { Store.cloud.synchro(true); } }),
           h("button", { type: "button", class: "btn", text: "Envoyer le lien de connexion", onclick: function () {
-            function ok() { note.className = "status"; note.textContent = "Lien copié : envoyez-le en privé (SMS, WhatsApp) et ouvrez-le sur l'autre appareil, il se connecte tout seul."; }
+            function ok() { note.className = "status"; note.textContent = "Lien copié : envoie-le en privé (SMS, WhatsApp) et ouvre-le sur l'autre appareil, il se connecte tout seul."; }
             if (navigator.share && /iPhone|iPad|Android/i.test(navigator.userAgent)) { navigator.share({ title: "Menus — connexion", url: lien }).then(function () {}, function () {}); return; }
-            if (navigator.clipboard) navigator.clipboard.writeText(lien).then(ok, function () { window.prompt("Copiez ce lien :", lien); }); else window.prompt("Copiez ce lien :", lien);
+            if (navigator.clipboard) navigator.clipboard.writeText(lien).then(ok, function () { window.prompt("Copie ce lien :", lien); }); else window.prompt("Copie ce lien :", lien);
           } })),
         note,
-        h("p", { class: "status", text: "Sur l'autre appareil : ouvrez l'application (l'icône « À table ! » de l'écran d'accueil si vous l'utilisez), allez dans Paramètres › Réglages › Mémoire partagée et collez le lien. Sur iPhone, l'icône et Safari ne partagent pas leurs données : connectez celle que vous utilisez." }),
+        h("p", { class: "status", text: "Sur l'autre appareil : ouvre l'application (l'icône « À table ! » de l'écran d'accueil si tu l'utilises), va dans Paramètres › Réglages › Mémoire partagée et colle le lien. Sur iPhone, l'icône et Safari ne partagent pas leurs données : connecte celle que tu utilises." }),
         h("details", null, h("summary", { text: "Déconnecter cet appareil" }),
           h("p", { class: "status", text: "Cet appareil n'utilisera plus la mémoire partagée (elle n'est pas effacée). Il repartira de ses données locales." }),
           h("button", { type: "button", class: "btn danger", text: "Déconnecter", onclick: function () { lsDel(CLOUD_CFG); lsDel(CLOUD_CACHE); lsDel(CLOUD_FILE); location.reload(); } })));
       return card;
     }
-    var lienIn = h("input", { type: "text", id: "cloud-lien", placeholder: "Collez ici le lien de connexion reçu", autocomplete: "off", spellcheck: false });
+    var lienIn = h("input", { type: "text", id: "cloud-lien", placeholder: "Colle ici le lien de connexion reçu", autocomplete: "off", spellcheck: false });
     var noteL = h("p", { class: "status", role: "status" });
     card.append(h("form", { class: "cloud-form lien-form", onsubmit: function (e) {
       e.preventDefault();
       var c = lireLienMemoire(lienIn.value.trim());
-      if (!c) { noteL.className = "status err"; noteL.textContent = "Ce n'est pas un lien de connexion valide : copiez-le en entier."; return; }
+      if (!c) { noteL.className = "status err"; noteL.textContent = "Ce n'est pas un lien de connexion valide : copie-le en entier."; return; }
       lsSet(CLOUD_CFG, c); noteL.className = "status"; noteL.textContent = "Connectée ! Rechargement…"; setTimeout(function () { location.reload(); }, 600);
-    } }, h("label", { class: "lbl", for: "cloud-lien", text: "Vous avez reçu un lien de connexion ?" }), lienIn, h("div", { class: "bar" }, h("button", { type: "submit", class: "btn primary", text: "Connecter avec le lien" })), noteL),
-      h("p", { class: "status", style: "margin-top:14px", text: "Premier appareil à connecter ? Utilisez une clé GitHub, ou un script Google (tout en bas)." }));
+    } }, h("label", { class: "lbl", for: "cloud-lien", text: "Tu as reçu un lien de connexion ?" }), lienIn, h("div", { class: "bar" }, h("button", { type: "submit", class: "btn primary", text: "Connecter avec le lien" })), noteL),
+      h("p", { class: "status", style: "margin-top:14px", text: "Premier appareil à connecter ? Utilise une clé GitHub, ou un script Google (tout en bas)." }));
     var tok = h("input", { type: "password", id: "cloud-token", placeholder: "ghp_…", autocomplete: "off", spellcheck: false });
     var note2 = h("p", { class: "status", role: "status" });
     var go = h("button", { type: "submit", class: "btn", text: "Connecter" });
@@ -7137,13 +7192,13 @@ var Moteur = (function () {
       h("form", { class: "cloud-form", onsubmit: function (e) {
         e.preventDefault();
         var t = tok.value.trim();
-        if (!t) { note2.className = "status err"; note2.textContent = "Collez la clé GitHub."; return; }
+        if (!t) { note2.className = "status err"; note2.textContent = "Colle la clé GitHub."; return; }
         go.disabled = true; note2.className = "status"; note2.textContent = "Connexion…";
         ghConnecter(t).then(function (id) {
           lsSet(CLOUD_CFG, { type: "gist", token: t, gist: id }); note2.textContent = "Connectée ! Rechargement…"; setTimeout(function () { location.reload(); }, 600);
         }).catch(function (e2) {
           go.disabled = false; note2.className = "status err";
-          note2.textContent = e2.message === "cle" ? "GitHub refuse cette clé : vérifiez qu'elle est complète et que la case « gist » est cochée." : "Impossible de joindre GitHub. Vérifiez la connexion et réessayez.";
+          note2.textContent = e2.message === "cle" ? "GitHub refuse cette clé : vérifie qu'elle est complète et que la case « gist » est cochée." : "Impossible de joindre GitHub. Vérifie la connexion et réessaie.";
         });
       } }, h("label", { class: "lbl", for: "cloud-token", text: "Clé GitHub" }), tok, h("div", { class: "bar" }, go), note2));
     // Variante : script Google déjà déployé (adresse …/exec + clé secrète).
@@ -7161,7 +7216,7 @@ var Moteur = (function () {
           lsSet(CLOUD_CFG, c); note3.textContent = "Connectée ! Rechargement…"; setTimeout(function () { location.reload(); }, 600);
         }).catch(function (e2) {
           go3.disabled = false; note3.className = "status err";
-          note3.textContent = e2.message === "cle" ? "Le script refuse cette clé : vérifiez-la." : "Impossible de joindre le script. Vérifiez l'adresse et que l'accès est « Tout le monde ».";
+          note3.textContent = e2.message === "cle" ? "Le script refuse cette clé : vérifie-la." : "Impossible de joindre le script. Vérifie l'adresse et que l'accès est « Tout le monde ».";
         });
       } }, h("label", { class: "lbl", for: "cloud-url", text: "Adresse du script" }), url, h("label", { class: "lbl", for: "cloud-cle", text: "Clé secrète" }), cle, h("div", { class: "bar" }, go3), note3)));
     return card;
@@ -7498,7 +7553,7 @@ var Moteur = (function () {
     var id = M.iso(debut), d = Store.brouillons[id], v = Store.menus[id];
     if (jeSuisEditeur()) {
       var e = editeurActif(d);
-      if (e && e.id !== ID_APPAREIL) { chargerSemaine(); renderPrepSi(); toast(NOM_APPAREIL && e.nom && M.norm(e.nom) === M.norm(NOM_APPAREIL) ? "Vous avez repris le menu sur un autre appareil." : (e.nom || "Un autre appareil") + " a pris la main sur le menu."); return; }
+      if (e && e.id !== ID_APPAREIL) { chargerSemaine(); renderPrepSi(); toast(NOM_APPAREIL && e.nom && M.norm(e.nom) === M.norm(NOM_APPAREIL) ? "Tu as repris le menu sur un autre appareil." : (e.nom || "Un autre appareil") + " a pris la main sur le menu."); return; }
       if (!d && v && (v.valideLe || "") > (S.modifie || "")) { chargerSemaine(); renderPrepSi(); toast("Le menu a été validé sur un autre appareil."); }
       return;
     }
@@ -7512,7 +7567,7 @@ var Moteur = (function () {
     if (cles.indexOf("brouillons/" + id) === -1 && cles.indexOf("menus/" + id) === -1) return;
     var d = Store.brouillons[id], e = d && d.editeur;
     finTunnel = false; chargerSemaine(); renderPrepSi();
-    toast("Modifié entre-temps" + (e && e.nom ? " par " + e.nom : " sur un autre appareil") + " : vous voyez maintenant sa version.");
+    toast("Modifié entre-temps" + (e && e.nom ? " par " + e.nom : " sur un autre appareil") + " : tu vois maintenant sa version.");
   }
   var toastEl = null, toastMinuteur = null;
   function toast(msg) {
@@ -9671,7 +9726,7 @@ $('livre-go').addEventListener('click',avantLivre);
 
 /* ================= Mes fiches (base de données de la page) ================= */
 var CAT_ORDER=['aperitif','entree','plat','dessert','cocktail'];
-var CAT_PLURAL={entree:'Entrées',plat:'Plats',dessert:'Desserts',aperitif:'Apéritifs & snacks',cocktail:'Cocktails'};
+var CAT_PLURAL={entree:'Entrées',plat:'Plats',dessert:'Desserts',aperitif:'Apéritifs / Snacks',cocktail:'Cocktails'};
 var library=[],libDb=null,libState='loading',libFilter='all',viewing=null;
 function str(v){return typeof v==='string'?v:'';}
 function validFiche(id,d){
