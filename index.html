@@ -1455,8 +1455,16 @@ button.mname-lien{padding:6px 0;margin:-6px 0}
 .appoint-tete small{color:var(--muted)}
 .listes-pli{margin:4px 0 8px}
 .listes-pli summary{cursor:pointer;font-weight:700;color:var(--accent-t)}
-.listes-passees{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:8px;font-size:14px}
-.listes-passees small{display:block;color:var(--muted)}
+.listes-passees{list-style:none;padding:0;margin:10px 0 12px;display:flex;flex-direction:column}
+.listes-passees li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.listes-passees li:last-child{border-bottom:0}
+.lp-coche{width:26px;height:26px;border-radius:50%;background:var(--ok,#1B6B35);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.lp-txt{flex:1;min-width:0}
+.lp-txt small{display:block;color:var(--muted);font-size:13px}
+.listes-passees .info-i{margin-left:auto}
+.bulle-liste{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.bulle-liste .pas-pris{opacity:.6}
+.bulle-liste small{color:var(--muted)}
 .art-lieu{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}
 .art-lieu-lib{font-size:13px;color:var(--muted);margin-right:2px}
 .art-lieu .chip{-webkit-tap-highlight-color:transparent}
@@ -2588,7 +2596,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "19 oct. 12h30";
+  var VERSION_SITE = "19 oct. 14h30";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
   var VERSION_APP = "1.1.0", VERSION_DATE = "19 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
@@ -2615,6 +2623,7 @@ var Moteur = (function () {
       "Les onglets Menu et Courses s'ouvrent toujours sur la semaine en cours ; ce que tu prépares pour une autre semaine reste enregistré",
       "Chaque article a son endroit habituel (« Toujours acheté : 🚗 Drive / 🏬 Magasin »), réglé en le touchant dans Base › Articles, avec un filtre « 🏬 Magasin » : la liste se range toute seule dans les bonnes colonnes",
       "Liste de courses : bouton « Tout cocher » (seulement le drive ou le magasin si le filtre est choisi), avec « Annuler » juste après",
+      "Courses faites : les listes de la semaine sont résumées (date, nombre d'articles) et un ⓘ montre les articles de chacune ; « Rouvrir la dernière liste » si besoin",
       "Chaque nouvelle liste (liste d'appoint) est distincte : elle part de zéro et garde sa propre date de clôture",
       "Placard plus malin : une recette qui dit « huile » ou « sucre » reconnaît ton huile d'olive ou ton sucre en poudre du placard ; « persil plat » reconnaît le persil",
       "Petits textes dans la couleur du mois un peu plus foncés, pour mieux les lire",
@@ -7421,33 +7430,41 @@ var Moteur = (function () {
     doc.cloture = null; doc.listes = Object.assign({}, doc.listes || {}); doc.listes[n] = patch.listes[n];
     ecrireMenu(id, patch); renderCoursesOnglet();
   }
-  /* Listes déjà clôturées de la semaine (principale + appoint), pour mémoire. */
-  function listesPassees(doc, ajouts, nbPrincipale) {
+  /* Listes déjà clôturées de la semaine (principale + appoint), avec leurs articles. */
+  function listesPassees(doc, toutes) {
     var nC = listeCourante(doc), out = [];
     for (var n = 0; n <= nC; n++) {
       var inf = infoListe(doc, n), fin = (inf && inf.fin) || (!n ? doc.coursesFaitesLe : null);
       if (!fin || !fin.le || (n === nC && !doc.cloture)) continue;
-      var arts = Object.keys(ajouts).filter(function (k) { return listeDeAj(ajouts[k]) === n; }).map(function (k) { return majuscule(ajouts[k].produit) + (ajouts[k].quantite ? " (" + ajouts[k].quantite + ")" : ""); });
-      out.push({ n: n, fin: fin, nb: n ? arts.length : nbPrincipale, arts: arts });
+      out.push({ n: n, fin: fin, lignes: toutes.filter(function (l) { return l.liste === n; }) });
     }
     return out;
   }
-  function carteCloture(id, doc, ajouts, nbPrincipale) {
-    var n = listeCourante(doc), passees = listesPassees(doc, ajouts, nbPrincipale);
-    var box = h("section", { class: "card cloture-carte" },
-      h("p", { class: "cloture-ok" }, h("span", { class: "cl-ico", text: "✓" }), h("span", null, h("b", { text: n ? nomListe(n) + " faite" : "Courses faites" }), h("br"), libCloture(doc.cloture))));
-    if (passees.length > 1) {
-      var ul = h("ul", { class: "listes-passees" });
-      passees.forEach(function (x) {
-        ul.append(h("li", null, h("b", { text: nomListe(x.n) }), " · " + libCloture(x.fin) + " · " + x.nb + " article" + (x.nb > 1 ? "s" : ""),
-          x.n && x.arts.length ? h("small", { text: x.arts.join(", ") }) : null));
-      });
-      box.append(h("details", { class: "listes-pli" }, h("summary", { text: "Les " + passees.length + " listes de la semaine" }), ul));
-    }
-    box.append(h("p", { class: "status", text: "Besoin de quelque chose en cours de semaine ? Ouvre une nouvelle liste : elle part de zéro, à part des précédentes." }),
+  /* Contenu de la bulle ⓘ : les articles d'une liste clôturée. */
+  function bulleListe(x) {
+    var ul = h("ul", { class: "bulle-liste" });
+    x.lignes.forEach(function (l) {
+      ul.append(h("li", { class: l.fait ? "" : "pas-pris" }, h("span", { text: (l.fait ? "✓ " : "✗ ") + l.produit }), l.quantite ? h("small", { text: " · " + l.quantite }) : null, l.lieu === "magasin" ? h("small", { text: " · 🏬" }) : null));
+    });
+    if (!x.lignes.length) ul.append(h("li", { text: "Aucun article." }));
+    return h("div", null, h("b", { text: nomListe(x.n) }), ul);
+  }
+  function carteCloture(id, doc, toutes) {
+    var n = listeCourante(doc), passees = listesPassees(doc, toutes);
+    var ul = h("ul", { class: "listes-passees" });
+    passees.forEach(function (x) {
+      var nb = x.lignes.length;
+      var iB = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "Voir les articles : " + nomListe(x.n), "aria-expanded": "false" });
+      iB.addEventListener("click", function () { bulle(iB, bulleListe(x)); });
+      ul.append(h("li", null, h("span", { class: "lp-coche", "aria-hidden": "true", text: "✓" }),
+        h("span", { class: "lp-txt" }, h("b", { text: nomListe(x.n) }), h("small", { text: libCloture(x.fin) + " · " + nb + " article" + (nb > 1 ? "s" : "") })), iB));
+    });
+    return h("section", { class: "card cloture-carte" },
+      h("h2", { text: passees.length > 1 ? "Les " + passees.length + " listes de la semaine" : "Courses faites", style: "font-size:1.2rem" }),
+      ul,
+      h("p", { class: "status", text: "Besoin de quelque chose en cours de semaine ? Ouvre une nouvelle liste : elle part de zéro, à part des précédentes." }),
       h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "+ Nouvelle liste", onclick: function () { nouvelleListe(id, doc); } }),
-        h("button", { type: "button", class: "lien-cf", text: n ? "Rouvrir la liste d'appoint n°" + n : "Rouvrir la liste", onclick: function () { rouvrirListe(id, doc); } })));
-    return box;
+        h("button", { type: "button", class: "lien-cf", text: "Rouvrir la dernière liste", onclick: function () { rouvrirListe(id, doc); } })));
   }
   /* En-tête d'une liste d'appoint ouverte. */
   function enteteAppoint(id, doc, nbLignes) {
@@ -7492,10 +7509,17 @@ var Moteur = (function () {
     Object.keys(ajouts).forEach(function (a) { var x = ajouts[a]; if (x && x.produit) lignes.push({ k: "aj-" + a, aj: a, produit: majuscule(x.produit), quantite: x.quantite || "", categorie: x.categorie || "D", par: x.par || "" }); });
     var comp = complementDe(doc);
     // Listes distinctes : la principale (recettes + ajouts n°0), puis chaque liste d'appoint avec ses seuls ajouts.
-    var nListe = listeCourante(doc), clot = nListe > 0, nbPrincipale = lignes.filter(function (l) { return !l.aj; }).length + Object.keys(ajouts).filter(function (k) { return !listeDeAj(ajouts[k]); }).length;
+    var nListe = listeCourante(doc), clot = nListe > 0;
+    if (doc.cloture && doc.cloture.le) {
+      // Liste clôturée : récapitulatif des listes de la semaine, chacune consultable (ⓘ).
+      var toutes = lignes.map(function (l) {
+        var x = l.aj ? ajouts[l.aj] : null;
+        return { produit: l.produit, quantite: l.quantite, liste: x ? listeDeAj(x) : 0, fait: !!coches[l.k], lieu: x && (x.lieu === "drive" || x.lieu === "magasin") ? x.lieu : lieuDe(doc, l.produit) };
+      });
+      panelCourses.append(carteCloture(id, doc, toutes)); return;
+    }
     lignes = lignes.filter(function (l) { return l.aj ? listeDeAj(ajouts[l.aj]) === nListe : !nListe; });
     if (nListe) { placardL = []; comp = { plus: [], moins: [] }; }
-    if (doc.cloture && doc.cloture.le) { panelCourses.append(carteCloture(id, doc, ajouts, nbPrincipale)); return; }
     if (nListe) panelCourses.append(enteteAppoint(id, doc, lignes.length));
     // Drive / magasin : chaque article a son lieu ; on n'affiche que l'onglet choisi.
     var nbLieu = { tout: 0, drive: 0, magasin: 0 }, resteLieu = { tout: 0, drive: 0, magasin: 0 };
