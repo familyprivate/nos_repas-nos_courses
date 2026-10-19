@@ -2588,7 +2588,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "19 oct. 11h50";
+  var VERSION_SITE = "19 oct. 12h30";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
   var VERSION_APP = "1.1.0", VERSION_DATE = "19 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
@@ -2614,6 +2614,7 @@ var Moteur = (function () {
       "Le placard se règle en bas de Base › Articles (⚙️ Réglages des articles)",
       "Les onglets Menu et Courses s'ouvrent toujours sur la semaine en cours ; ce que tu prépares pour une autre semaine reste enregistré",
       "Chaque article a son endroit habituel (« Toujours acheté : 🚗 Drive / 🏬 Magasin »), réglé en le touchant dans Base › Articles, avec un filtre « 🏬 Magasin » : la liste se range toute seule dans les bonnes colonnes",
+      "Liste de courses : bouton « Tout cocher » (seulement le drive ou le magasin si le filtre est choisi), avec « Annuler » juste après",
       "Chaque nouvelle liste (liste d'appoint) est distincte : elle part de zéro et garde sa propre date de clôture",
       "Placard plus malin : une recette qui dit « huile » ou « sucre » reconnaît ton huile d'olive ou ton sucre en poudre du placard ; « persil plat » reconnaît le persil",
       "Petits textes dans la couleur du mois un peu plus foncés, pour mieux les lire",
@@ -7594,6 +7595,16 @@ var Moteur = (function () {
       h("div", { class: "shop-compte" }, h("p", { class: "status", text: faits + " / " + total + (ongletLieu === "drive" ? " dans le panier du drive" : ongletLieu === "magasin" ? " dans le caddie (magasin)" : " pris") }), dlNote, dlIc),
       h("div", { class: "progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(total), "aria-valuenow": String(faits), "aria-label": "Articles cochés" }, bar),
       h("div", { class: "bar end" }, masq,
+        // Tout cocher : les articles affichés (filtre Tout / Drive / Magasin), avec « Annuler » en cas d'erreur.
+        faits < total ? h("button", { type: "button", class: "btn ghost", text: ongletLieu === "drive" ? "Tout cocher (drive)" : ongletLieu === "magasin" ? "Tout cocher (magasin)" : "Tout cocher", onclick: function () {
+          var patch = {}, annul = {};
+          lignes.forEach(function (l) { if (!coches[l.k]) { coches[l.k] = true; patch[l.k] = true; annul[l.k] = false; } });
+          var n = Object.keys(patch).length;
+          ecrireCoches(id, patch); renderCoursesOnglet();
+          toast("✓ " + n + " article" + (n > 1 ? "s" : "") + " coché" + (n > 1 ? "s" : ""), { lib: "Annuler", fn: function () {
+            Object.keys(annul).forEach(function (k) { coches[k] = false; }); ecrireCoches(id, annul); renderCoursesOnglet();
+          } });
+        } }) : null,
         faits ? h("button", { type: "button", class: "btn ghost", text: "Tout décocher", onclick: function () {
           var patch = {}; Object.keys(coches).forEach(function (k) { if (coches[k]) { coches[k] = false; patch[k] = false; } });
           ecrireCoches(id, patch); renderCoursesOnglet();
