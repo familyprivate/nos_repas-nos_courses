@@ -2596,15 +2596,19 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "19 oct. 14h30";
+  var VERSION_SITE = "20 oct. 9h25";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.1.0", VERSION_DATE = "19 oct. 2026";
+  var VERSION_APP = "1.1.1", VERSION_DATE = "20 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
+    { v: "1.1.1", date: "20 oct. 2026", type: "correctif", notes: [
+      "Ingrédients écrits « 1 C.S de moutarde » ou « 2 C.C de sucre » : seul le produit est gardé (moutarde, sucre), avec la bonne unité",
+      "Fiche rattachée à une recette qui n'a pas encore d'ingrédients : ceux de la fiche sont repris (à vérifier avant d'enregistrer). Bouton « Importer les ingrédients de la fiche » sur une recette déjà rattachée"
+    ] },
     { v: "1.1.0", date: "19 oct. 2026", type: "mineur", notes: [
       "Placard : huile, farine, épices, vinaigre… ne vont plus dans la liste de courses. Ils sont rappelés dans « 🏠 Vérifie ton placard » et un tap les ajoute s'il en manque",
       "Case « Toujours à la maison » sur chaque ingrédient d'une recette, et liste du placard dans Base › Articles",
@@ -6451,7 +6455,8 @@ var Moteur = (function () {
     return q + " " + p;
   }
   // « 200 g de farine », « 2 gousses d’ail, écrasées », « 1/2 citron », « 6 à 8 tomates »
-  var UNITES_LIGNE = [["c. à soupe", /^(c\.?\s*à\s*s(oupe)?\.?|cuill[eè]res?\s+à\s+soupe|cs)\b/i], ["c. à café", /^(c\.?\s*à\s*c(af[ée])?\.?|cuill[eè]res?\s+à\s+caf[ée]|cc)\b/i],
+  var UNITES_LIGNE = [["c. à soupe", /^(c\.?\s*(?:à|a)\s*s(?:oupe)?\.?|c\.\s*s\.?|cs|cuil{1,2}(?:\.|[eè]res?)?\s*(?:à|a)\s*s(?:oupe)?\.?)(?=\s|$)/i],
+    ["c. à café", /^(c\.?\s*(?:à|a)\s*c(?:af[ée])?\.?|c\.\s*c\.?|cc|cuil{1,2}(?:\.|[eè]res?)?\s*(?:à|a)\s*c(?:af[ée])?\.?)(?=\s|$)/i],
     ["kg", /^kg\b/i], ["mg", /^mg\b/i], ["g", /^(g|gr|grammes?)\b/i], ["cl", /^cl\b/i], ["ml", /^ml\b/i], ["dl", /^dl\b/i], ["L", /^(l|litres?)\b/i],
     ["pincée", /^pinc[ée]es?\b/i], ["sachet", /^sachets?\b/i], ["boîte", /^bo[iî]tes?\b/i], ["pot", /^pots?\b/i], ["tranche", /^tranches?\b/i], ["gousse", /^gousses?\b/i],
     ["brin", /^brins?\b/i], ["botte", /^bottes?\b/i], ["bouquet", /^bouquets?\b/i], ["verre", /^verres?\b/i], ["tasse", /^tasses?\b/i], ["paquet", /^paquets?\b/i],
@@ -6645,6 +6650,9 @@ var Moteur = (function () {
       var img = f.thumb ? h("img", { class: "fr-mini", src: f.thumb, alt: "Fiche " + src.nom }) : null;
       return h("section", { class: "card fiche-liee" }, h("span", { class: "lbl", text: "Fiche recette" }),
         h("a", { class: "fr-lien", href: lienFiche(f) }, img, h("span", null, h("b", { text: f.title || src.nom }), h("small", { text: "Photo, étapes et fiche à imprimer" }), h("span", { class: "btn mini", text: "Voir la fiche →" }))),
+        recetteVide(src) && ingrUtiles(ingrDeFiche(f)) ? h("div", { class: "import-fiche" },
+          h("p", { class: "status", text: "Cette recette n'a pas encore d'ingrédients, la fiche en a " + ingrUtiles(ingrDeFiche(f)) + "." }),
+          h("button", { type: "button", class: "btn primary", text: "Importer les ingrédients de la fiche", onclick: function () { importerIngredientsFiche(src._id, f.id, f.title, ingrDeFiche(f)); } })) : null,
         zoneDetacher(f, src));
     }
     return h("section", { class: "card fiche-liee vide" }, h("span", { class: "lbl", text: "Fiche recette" }),
@@ -6683,6 +6691,7 @@ var Moteur = (function () {
         f.recette = src._id;
         Promise.resolve(Store.cloud && Store.cloud.doc("fiches/" + x.v).update({ recette: src._id })).then(function () {
           if (f.cat && LIB_CAT[f.cat] && !src.cat) catDepuisFiche(src._id, f.cat);
+          if (recetteVide(src) && ingrUtiles(ingrDeFiche(f))) { importerIngredientsFiche(src._id, x.v, f.title, ingrDeFiche(f)); return; }
           rouvrir(src._id, "Fiche « " + f.title + " » rattachée à cette recette.");
         }, function () { rouvrir(src._id, "Rattachement impossible. Réessaie."); });
       } });
@@ -6741,7 +6750,7 @@ var Moteur = (function () {
         h("span", { class: "lbl", text: "Depuis la fiche « " + df.nom + " »" }),
         h("p", null, df.total ? df.total + " ingrédient" + (df.total > 1 ? "s" : "") + " repris de la fiche : " + df.reconnus + " reconnu" + (df.reconnus > 1 ? "s" : "") + " dans tes produits" + (aVerif ? ", " + aVerif + " à vérifier (choisis un produit proposé ou le rayon)." : ".") : "La fiche n'a pas d'ingrédient à reprendre."),
         df.ignores.length ? h("p", { class: "status", text: "Non repris (pas utile dans les courses) : " + df.ignores.join(", ") + ". Ajoute-les si besoin." }) : null,
-        h("p", { class: "status", text: "Complète la saison et la règle, puis crée la recette : la fiche y sera rattachée." })));
+        h("p", { class: "status", text: df.existante ? "Vérifie les ingrédients, puis enregistre la recette." : "Complète la saison et la règle, puis crée la recette : la fiche y sera rattachée." })));
     }
 
     // Nom
@@ -8218,6 +8227,26 @@ var Moteur = (function () {
     fiche.veutFiche = false; fiche.ficheMaintenant = false; fiche.sale = true;
     renderRec(); window.scrollTo(0, 0);
   }
+  /* Fiche rattachée à une recette existante sans ingrédients : on reprend ceux de la fiche (écran de contrôle avant d'enregistrer). */
+  function ingrDeFiche(f) { return (f && f.lists && f.lists.ingr) || []; }
+  function ingrUtiles(liste) { return (liste || []).filter(function (x) { return x && x.type !== "head" && String(x.text || "").trim(); }).length; }
+  function recetteVide(r) { return !!r && !(r.ingredients && r.ingredients.length); }
+  function importerIngredientsFiche(recId, ficheId, nomFiche, liste) {
+    var r = TOUTES.filter(function (x) { return x._id === recId; })[0]; if (!r) return;
+    choisirOnglet("rec");
+    ouvrirFiche(recId, true);
+    var connus = produitsConnus(), ignores = [], lignes = [];
+    (liste || []).forEach(function (x) {
+      if (!x || x.type === "head" || !String(x.text || "").trim()) return;
+      var l = ligneVersIngredient(x.text, connus); if (!l) return;
+      if (SANS_COURSES.indexOf(M.norm(l.it.produit)) !== -1) { ignores.push(String(x.text).trim()); return; }
+      lignes.push(l);
+    });
+    fiche.mode = "edition"; fiche.lignes = lignes; fiche.rec.sansIngredients = false;
+    fiche.depuisFiche = { id: ficheId, nom: nomFiche || r.nom, ignores: ignores, reconnus: lignes.filter(function (l) { return l.reconnu; }).length, total: lignes.length, existante: true };
+    fiche.sale = true;
+    renderRec(); window.scrollTo(0, 0);
+  }
   BUS.app = function (d) {
     if (!d || typeof d !== "object") return;
     if (d.fiches === "pret" && fichesAller) { var m = fichesAller; fichesAller = null; BUS.fiches(m); }
@@ -8236,6 +8265,11 @@ var Moteur = (function () {
     if (d.fiches === "onglet" && d.vers) choisirOnglet(d.vers);
     if (d.fiches === "creerRecette") recetteDepuisFiche(d);
     if (d.fiches === "catRecette") catDepuisFiche(d.recette, d.cat);
+    // Fiche rattachée (depuis Mes fiches) à une recette qui n'a pas encore d'ingrédients : on les reprend de la fiche.
+    if (d.fiches === "lierRecette" && d.recette) {
+      var rl = TOUTES.filter(function (x) { return x._id === d.recette; })[0];
+      if (recetteVide(rl) && ingrUtiles(d.ingr)) importerIngredientsFiche(d.recette, d.fiche, d.nom, d.ingr);
+    }
     // Fiche ouverte depuis un menu : la flèche « retour » ramène là où on était.
     if (d.fiches === "retour") { var rt = retourFiche; retourFiche = null; choisirOnglet(rt ? rt.onglet : "prep"); setTimeout(function () { window.scrollTo(0, rt ? rt.y : 0); }, 60); }
   };
@@ -11454,7 +11488,9 @@ majLienMenus=function(f){
     if(!sel.value) return;ok.disabled=true;
     var fd={};Object.keys(f).forEach(function(k){if(k!=='id') fd[k]=f[k];});fd.recette=sel.value;
     var rid=sel.value;
-    libDb.doc('fiches/'+f.id).set(fd).then(function(){f.recette=rid;catVersRecette(rid,f.cat);majLienMenus(f);renderLibrary();});
+    libDb.doc('fiches/'+f.id).set(fd).then(function(){f.recette=rid;catVersRecette(rid,f.cat);majLienMenus(f);renderLibrary();
+      // Dans l'application : si la recette n'a pas encore d'ingrédients, elle reprend ceux de la fiche.
+      if(window.INTEGRE&&window.FICHES_BUS&&window.FICHES_BUS.app) window.FICHES_BUS.app({fiches:'lierRecette',recette:rid,fiche:f.id,nom:(f.title||'').trim(),ingr:(f.lists&&f.lists.ingr)||[]});});
   });
   rang.appendChild(sel);rang.appendChild(ok);box.appendChild(rang);
   var cree=el('button','btn ghost petit','+ Créer la recette « '+(f.title||'')+' »'+(window.INTEGRE?' avec ses ingrédients':''));cree.type='button';
