@@ -226,7 +226,7 @@ details summary { cursor: pointer; font-weight: 600; }
 .qty-crayon { border: 0; background: none; color: var(--muted); font-size: 12px; padding: 2px 4px; cursor: pointer; opacity: .7; line-height: 1; }
 .qty-crayon:hover { opacity: 1; color: var(--accent-t); }
 .qty-editeur { display: inline-flex; align-items: center; gap: 4px; }
-.shop-item .qty-editeur input.qty-input, body.vue-mobile .shop-item .qty-editeur input.qty-input { width: 4.6em; height: 30px; font-size: 13px; padding: 2px 4px; min-height: 0; appearance: auto; -webkit-appearance: none; accent-color: auto; margin: 0; flex: none; }
+.shop-item .qty-editeur input.qty-input, body.vue-mobile .shop-item .qty-editeur input.qty-input { width: 56px; height: 30px; font-size: 13px; padding: 2px 4px; min-height: 0; appearance: auto; -webkit-appearance: none; accent-color: auto; margin: 0; flex: none; }
 .pas-btn.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
 .qty-input { width: 7.5em; font: 600 14px var(--font); padding: 4px 6px; border: 1px solid var(--accent); border-radius: 6px; text-align: center; }
 .qty-pas.modifie .qty { color: var(--accent-t); font-weight: 800; }
@@ -1516,6 +1516,17 @@ button.mname-lien{padding:6px 0;margin:-6px 0}
 .resto-nom{display:inline-flex;align-items:center;margin-left:6px}
 .lien-resto{border:0;background:none;padding:6px 0;margin:-6px 0;font:inherit;font-size:13px;font-weight:600;color:var(--accent-t);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .resto-nom .invit-txt{min-width:0;width:170px;font-size:14px;padding:6px 8px}
+.vb-histo{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.vb-select{width:100%;font-size:14px;min-height:38px}
+.vb-lbl{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.sel-part{display:flex;align-items:center;gap:6px;margin-top:6px;font-weight:600}
+.sel-part.cache{display:none}
+.sel-part small{color:var(--muted);font-weight:500}
+.sel-part .pas-btn{width:30px;height:30px}
+.retirer-q{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex-basis:100%;font-size:13px;margin-top:6px}
+
+/* iPhone : un champ en dessous de 16 px fait zoomer la page au toucher. On garde 16 px partout sur écran tactile. */
+@media (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
 </style>
 
 <div id="verrou" class="verrou"></div>
@@ -2653,15 +2664,22 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "21 oct. 17h30";
+  var VERSION_SITE = "21 oct. 22h15";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.3.0", VERSION_DATE = "21 oct. 2026";
+  var VERSION_APP = "1.4.0", VERSION_DATE = "21 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
+    { v: "1.4.0", date: "21 oct. 2026", type: "mineur", notes: [
+      "Liste de courses : glisse un article vers la gauche pour le supprimer (comme sur iPhone), avec « Annuler »",
+      "« Sélectionner… » : pour un article à plusieurs unités (6 tomates), choisis combien en déplacer vers l'autre liste (3 partent, 3 restent)",
+      "Préparation de la liste : « − » sur un article déjà à 1 propose de le retirer de tes courses",
+      "Plus de zoom de la page quand on touche un champ (crayon, quantité, recherche…) sur iPhone",
+      "Paramètres › Réglages › ⓘ : un menu déroulant pour relire les nouveautés de chaque version précédente"
+    ] },
     { v: "1.3.0", date: "21 oct. 2026", type: "mineur", notes: [
       "Restaurant : tu peux noter le nom du resto (facultatif) pour un resto en famille ou en amoureux, et après publication du menu pour un « Restaurant » tiré au sort (« ＋ Quel restaurant ? »)",
       "Liste de courses : un article coché reste affiché (barré) au lieu de disparaître ; on le décoche d'un toucher en cas d'erreur",
@@ -2723,6 +2741,26 @@ var Moteur = (function () {
     mineur: { lib: "Nouveautés", def: "Ajout ou changement d'une fonction visible." },
     correctif: { lib: "Correctif", def: "Correction de bugs ou de textes, rien de nouveau." }
   };
+  function blocVersion(j, detail) {
+    var t = TYPES_VERSION[j.type] || TYPES_VERSION.mineur;
+    return h("div", { class: "vb-item" },
+      h("div", { class: "vb-tete" }, h("b", { text: libVersionApp(j.v) }), h("span", { class: "vb-type " + j.type, text: t.lib }), h("small", { text: j.date })),
+      detail ? h("small", { class: "vb-def", text: t.def }) : null,
+      h("ul", null, j.notes.map(function (n) { return h("li", { text: n }); })));
+  }
+  /* Réglages › ⓘ : une version à la fois (l'actuelle d'abord) ; un menu déroulant pour relire les précédentes.
+     La bulle est rouverte à chaque choix pour rester bien placée à l'écran. */
+  function contenuVersionsHisto(ancre, choix) {
+    choix = choix || 0;
+    var sel = h("select", { class: "vb-select", "aria-label": "Choisir une version" },
+      JOURNAL_VERSIONS.map(function (j, i) { return h("option", { value: String(i), selected: i === choix, text: libVersionApp(j.v) + " · " + j.date.replace(/ 20\d\d$/, "") + (i ? "" : " (actuelle)") }); }));
+    sel.addEventListener("click", function (e) { e.stopPropagation(); });
+    sel.addEventListener("change", function () { var n = +sel.value; fermerBulle(); bulle(ancre, contenuVersionsHisto(ancre, n)); });
+    // Menu déroulant en haut : toujours visible, même quand la liste des nouveautés est longue.
+    return h("div", { class: "versions-bulle" },
+      JOURNAL_VERSIONS.length > 1 ? h("div", { class: "vb-histo" }, h("label", { class: "vb-lbl", text: "Version" }), sel) : null,
+      blocVersion(JOURNAL_VERSIONS[choix], true));
+  }
   function contenuVersions(depuis) {
     var box = h("div", { class: "versions-bulle" });
     var avant = depuis || (JOURNAL_VERSIONS[1] && JOURNAL_VERSIONS[1].v);
@@ -4367,7 +4405,8 @@ var Moteur = (function () {
       sauver(); renderPrep();
     }
     // « − » à 1 : retour à « — » (sans quantité) si c'était le cas au départ, ou pour un article ajouté.
-    function moinsCible() { var nq = nouvelleQte(l.quantite, -1); if (nq) return nq; var x = lireQte(l.quantite); return x && x.a === 1 && x.b === 1 && (base === "" || l.source === "ajout") ? "" : null; }
+    // « − » à 1 : on propose de retirer l'article (plus de passage par « — »).
+    function moinsCible() { var nq = nouvelleQte(l.quantite, -1); return nq || null; }
     var pasOk = !l.quantite || lireQte(l.quantite);
     // Toucher la quantité : la taper librement (« 1 paquet », « 6 tranches »…).
     var val = h("button", { type: "button", class: "qty qty-edit", title: (modifie ? "Calculé : " + (base || "—") + ". " : "") + "Toucher pour taper la quantité", text: l.quantite || "—", onclick: function () {
@@ -4381,7 +4420,19 @@ var Moteur = (function () {
     var mc = moinsCible();
     var crayon = h("button", { type: "button", class: "qty-crayon", "aria-label": "Taper la quantité de " + l.produit, title: "Taper la quantité", text: "✎", onclick: function () { val.click(); } });
     return h("span", { class: "qty-pas" + (modifie ? " modifie" : "") }, crayon,
-      pasOk ? h("button", { type: "button", class: "pas-btn", "aria-label": "Moins de " + l.produit, text: "−", disabled: mc == null, onclick: function () { if (mc != null) poser(mc); } }) : null,
+      pasOk ? h("button", { type: "button", class: "pas-btn", "aria-label": "Moins de " + l.produit, text: "−", onclick: function (e) {
+        if (mc != null) { poser(mc); return; }
+        // Déjà au minimum : on propose de retirer l'article de la liste.
+        var zone = e.currentTarget.closest(".item") || e.currentTarget.parentNode;
+        if (zone.querySelector(".retirer-q")) return;
+        zone.append(h("span", { class: "retirer-q" }, "Retirer « " + l.produit + " » de tes courses ? ",
+          h("button", { type: "button", class: "btn mini", text: "Oui", onclick: function () {
+            if (l.source === "ajout") S.ajouts.splice(l.index, 1);
+            else if (l.dePlacard) delete (S.placardPlus || {})[M.norm(l.produit)];
+            else S.retires[l.id] = true;
+            sauver(); renderPrep();
+          } }), h("button", { type: "button", class: "btn ghost mini", text: "Non", onclick: function (ev) { ev.currentTarget.parentNode.remove(); } })));
+      } }) : null,
       val,
       pasOk ? h("button", { type: "button", class: "pas-btn", "aria-label": "Plus de " + l.produit, text: "+", onclick: function () { var nq = nouvelleQte(l.quantite, 1); if (nq) poser(nq); } }) : null);
   }
@@ -7828,7 +7879,7 @@ var Moteur = (function () {
           // Plus rien de coché : on revient au réglage par défaut (les prochains articles cochés disparaîtront).
           ecrireCoches(id, patch); renderCoursesOnglet();
         } }) : null,
-        total ? h("button", { type: "button", class: "chip" + (selMode ? " on" : ""), "aria-pressed": String(selMode), text: selMode ? "Terminer la sélection" : "Sélectionner…", title: "Choisir plusieurs articles pour les déplacer vers une autre liste ou les supprimer", onclick: function () { selMode = !selMode; selection = {}; renderCoursesOnglet(); } }) : null),
+        total ? h("button", { type: "button", class: "chip" + (selMode ? " on" : ""), "aria-pressed": String(selMode), text: selMode ? "Terminer la sélection" : "Sélectionner…", title: "Choisir plusieurs articles pour les déplacer vers une autre liste ou les supprimer", onclick: function () { selMode = !selMode; selection = {}; selQte = {}; renderCoursesOnglet(); } }) : null),
       selMode ? h("p", { class: "sel-info", text: "Mode sélection : coche les articles à déplacer ou à supprimer, puis utilise la barre en bas." }) : null));
     // Barre de sélection : créée ici, placée après les articles pour rester collée en bas de l'écran pendant le défilement.
     var barreSelEl = selMode ? barreSelection(id, doc, lignes, LN, lids) : null;
@@ -7845,8 +7896,20 @@ var Moteur = (function () {
       visibles.forEach(function (l) {
         var cb = h("input", { type: "checkbox", id: "shop-" + l.k, checked: selMode ? !!selection[l.k] : !!coches[l.k] });
         if (selMode) {
-          cb.addEventListener("change", function () { if (cb.checked) selection[l.k] = l; else delete selection[l.k]; majBarreSel(); row0.classList.toggle("choisi", cb.checked); });
-          var row0 = h("label", { class: "shop-item sel-item" + (selection[l.k] ? " choisi" : ""), for: "shop-" + l.k }, cb, h("span", { class: "nm" }, l.produit, coches[l.k] ? h("small", { class: "aj-par", text: " (déjà pris)" }) : null), h("span", { class: "qty", text: l.quantite || "" }));
+          // Article à plusieurs unités (6 tomates) : on peut n'en déplacer qu'une partie (3 → autre liste, 3 restent).
+          var qx = !l.ajFusion ? lireQte(l.quantite) : null, divisible = qx && qx.a === qx.b && qx.a > 1 && Math.round(qx.a) === qx.a;
+          var partZone = null;
+          if (divisible) {
+            if (selQte[l.k] == null) selQte[l.k] = qx.a;
+            var nb = h("b", { text: String(selQte[l.k]) });
+            function majPart(d) { selQte[l.k] = Math.max(1, Math.min(qx.a, selQte[l.k] + d)); nb.textContent = String(selQte[l.k]); }
+            partZone = h("span", { class: "sel-part" + (selection[l.k] ? "" : " cache") }, h("small", { text: "à déplacer :" }),
+              h("button", { type: "button", class: "pas-btn", "aria-label": "Moins", text: "−", onclick: function (e) { e.preventDefault(); e.stopPropagation(); majPart(-1); } }), nb,
+              h("button", { type: "button", class: "pas-btn", "aria-label": "Plus", text: "+", onclick: function (e) { e.preventDefault(); e.stopPropagation(); majPart(1); } }),
+              h("small", { text: "sur " + qx.a + (qx.u ? " " + qx.u : "") }));
+          }
+          cb.addEventListener("change", function () { if (cb.checked) selection[l.k] = l; else delete selection[l.k]; majBarreSel(); row0.classList.toggle("choisi", cb.checked); if (partZone) partZone.classList.toggle("cache", !cb.checked); });
+          var row0 = h("label", { class: "shop-item sel-item" + (selection[l.k] ? " choisi" : ""), for: "shop-" + l.k }, cb, h("span", { class: "nm" }, l.produit, coches[l.k] ? h("small", { class: "aj-par", text: " (déjà pris)" }) : null, partZone), h("span", { class: "qty", text: l.quantite || "" }));
           sec.append(row0); return;
         }
         var versL = l.lieu === "drive" ? "magasin" : "drive";
@@ -7875,7 +7938,8 @@ var Moteur = (function () {
           ecrireCoches(id, p); renderCoursesOnglet();
           if (cb.checked && masquerCoches) toast("✓ " + l.produit + " dans le caddie", { lib: "Annuler", fn: function () { coches[l.k] = false; var p2 = {}; p2[l.k] = false; ecrireCoches(id, p2); renderCoursesOnglet(); } });
         });
-        sec.append(row);
+        // Glisser vers la gauche (comme sur iPhone) : supprimer l'article, avec « Annuler ».
+        sec.append(glisserPourSupprimer(row, "Supprimer " + l.produit, function () { supprimerLignesCourses(id, Store.menus[id], [l]); }));
       });
       panelCourses.append(sec);
     });
@@ -7895,9 +7959,30 @@ var Moteur = (function () {
     if (doc.sansRecettes && doc.sansRecettes.plats && doc.sansRecettes.plats.length) panelCourses.append(blocSansRecettes(id, doc));
 
   }
+  /* Suppression d'articles de la liste (un par glissement, plusieurs par la sélection) : annulable. */
+  function supprimerLignesCourses(id, doc, ls) {
+    var avantCourses = clone(doc.courses || []), avantAj = clone(doc.ajoutsRapides || {}), avantAnc = doc.ajouts && !Array.isArray(doc.ajouts) ? clone(doc.ajouts) : null;
+    var p = {}, idx = indexerLignes(doc.courses), aRetirer = [];
+    ls.forEach(function (l) {
+      var ajs = (l.aj ? [l.aj] : []).concat((l.ajFusion || []).map(function (f) { return f.aj; }));
+      ajs.forEach(function (a) {
+        var champ = doc.ajouts && !Array.isArray(doc.ajouts) && doc.ajouts[a] ? "ajouts" : "ajoutsRapides";
+        p[champ] = p[champ] || {}; p[champ][a] = null; if (doc[champ]) doc[champ][a] = null;
+      });
+      if (!l.aj && idx.m[l.k]) aRetirer.push(idx.m[l.k]);
+    });
+    if (aRetirer.length) { doc.courses = (doc.courses || []).filter(function (x) { return aRetirer.indexOf(x) === -1; }); p.courses = doc.courses; }
+    ecrireMenu(id, p); renderCoursesOnglet();
+    var n = ls.length;
+    toast(n > 1 ? n + " articles supprimés" : ls[0].produit + " supprimé", { lib: "Annuler", fn: function () {
+      var r = { courses: avantCourses, ajoutsRapides: avantAj }; if (avantAnc) r.ajouts = avantAnc;
+      doc.courses = avantCourses; doc.ajoutsRapides = clone(avantAj); if (avantAnc) doc.ajouts = clone(avantAnc);
+      ecrireMenu(id, r); renderCoursesOnglet();
+    } });
+  }
   /* ---------- Listes à part, nommées ----------
      doc.listesNommees[lid] = { nom, cree, par } ; doc.dans[clé de ligne] = lid pour un article déplacé (null = liste principale). */
-  var listeVue = "", listeVueSem = "", selMode = false, selection = {}, majBarreSel = function () {};
+  var listeVue = "", listeVueSem = "", selMode = false, selection = {}, selQte = {}, majBarreSel = function () {};
   function listesNommees(doc) { var o = {}, L = (doc && doc.listesNommees) || {}; Object.keys(L).forEach(function (k) { if (L[k] && L[k].nom) o[k] = L[k]; }); return o; }
   function voirListe(id, lid) { listeVue = lid; listeVueSem = id; selMode = false; selection = {}; renderCoursesOnglet(); window.scrollTo(0, 0); }
   function selecteurListes(id, doc, lids, LN, toutes, dansDe) {
@@ -7959,40 +8044,38 @@ var Moteur = (function () {
         h("div", { class: "bar" }, h("button", { type: "button", class: "btn", text: "Oui, supprimer", onclick: supprimerSel }), h("button", { type: "button", class: "btn ghost", text: "Non", onclick: function () { zoneS.hidden = true; } })));
     } });
     majBarreSel = function () { var n = Object.keys(selection).length; cpt.textContent = n ? n + " article" + (n > 1 ? "s" : "") + " sélectionné" + (n > 1 ? "s" : "") : "Aucun article sélectionné"; btnD.disabled = !n; btnS.disabled = !n; };
-    /* Suppression en masse : ajouts retirés, lignes des recettes enlevées de la liste enregistrée (annulable). */
     function supprimerSel() {
-      var cles = Object.keys(selection); if (!cles.length) return;
-      var avantCourses = clone(doc.courses || []), avantAj = clone(doc.ajoutsRapides || {}), avantAnc = doc.ajouts && !Array.isArray(doc.ajouts) ? clone(doc.ajouts) : null;
-      var p = {}, idx = indexerLignes(doc.courses), aRetirer = [];
-      cles.forEach(function (k) {
-        var l = selection[k], ajs = (l.aj ? [l.aj] : []).concat((l.ajFusion || []).map(function (f) { return f.aj; }));
-        ajs.forEach(function (a) {
-          var champ = doc.ajouts && !Array.isArray(doc.ajouts) && doc.ajouts[a] ? "ajouts" : "ajoutsRapides";
-          p[champ] = p[champ] || {}; p[champ][a] = null; if (doc[champ]) doc[champ][a] = null;
-        });
-        if (!l.aj && idx.m[k]) aRetirer.push(idx.m[k]);
-      });
-      if (aRetirer.length) { doc.courses = (doc.courses || []).filter(function (x) { return aRetirer.indexOf(x) === -1; }); p.courses = doc.courses; }
-      ecrireMenu(id, p);
-      var n = cles.length; selMode = false; selection = {}; renderCoursesOnglet();
-      toast(n + " article" + (n > 1 ? "s" : "") + " supprimé" + (n > 1 ? "s" : ""), { lib: "Annuler", fn: function () {
-        var r = { courses: avantCourses, ajoutsRapides: avantAj }; if (avantAnc) r.ajouts = avantAnc;
-        doc.courses = avantCourses; doc.ajoutsRapides = clone(avantAj); if (avantAnc) doc.ajouts = clone(avantAnc);
-        ecrireMenu(id, r); renderCoursesOnglet();
-      } });
+      var ls = Object.keys(selection).map(function (k) { return selection[k]; }); if (!ls.length) return;
+      selMode = false; selection = {}; supprimerLignesCourses(id, doc, ls);
     }
     function deplacer(lid, nouvelle) {
       var cles = Object.keys(selection); if (!cles.length) return;
       var p = { dans: {} };
       if (nouvelle) { p.listesNommees = {}; p.listesNommees[lid] = nouvelle; doc.listesNommees = Object.assign({}, doc.listesNommees || {}); doc.listesNommees[lid] = nouvelle; }
       if (!doc.dans) doc.dans = {};
+      var idxD = indexerLignes(doc.courses), coursesTouchees = false;
       cles.forEach(function (k) {
-        var l = selection[k];
+        var l = selection[k], qx = !l.ajFusion ? lireQte(l.quantite) : null, n = selQte[k];
+        if (qx && n && n < qx.a && qx.a === qx.b) {
+          // Déplacement partiel : la ligne garde le reste, une nouvelle ligne part dans l'autre liste.
+          function unite(v) { return !qx.u ? "" : v > 1 ? qx.u : qx.u.replace(/([^s])s$/i, "$1"); }
+          var reste = fmtQ(qx.a - n, qx.a - n, unite(qx.a - n)), part = fmtQ(n, n, unite(n));
+          if (l.aj) {
+            var champ = doc.ajouts && !Array.isArray(doc.ajouts) && doc.ajouts[l.aj] ? "ajouts" : "ajoutsRapides";
+            p[champ] = p[champ] || {}; p[champ][l.aj] = Object.assign({}, doc[champ][l.aj], { quantite: reste }); doc[champ][l.aj].quantite = reste;
+          } else if (idxD.m[k]) { idxD.m[k].quantite = reste; coursesTouchees = true; }
+          var cle = "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+          var nv = { produit: l.produit, quantite: part, categorie: l.categorie || "D", par: NOM_APPAREIL || "", t: Date.now(), lieu: l.lieu || "drive", liste: listeCourante(doc) };
+          p.ajoutsRapides = p.ajoutsRapides || {}; p.ajoutsRapides[cle] = nv; if (!doc.ajoutsRapides) doc.ajoutsRapides = {}; doc.ajoutsRapides[cle] = nv;
+          p.dans["aj-" + cle] = lid || null; doc.dans["aj-" + cle] = lid || null;
+          return;
+        }
         [k].concat((l.ajFusion || []).map(function (f) { return "aj-" + f.aj; })).forEach(function (kk) { p.dans[kk] = lid || null; doc.dans[kk] = lid || null; });
       });
+      if (coursesTouchees) p.courses = doc.courses;
       ecrireMenu(id, p);
       var nom = lid ? (nouvelle || LN[lid]).nom : "la liste principale", n = cles.length;
-      selMode = false; selection = {}; renderCoursesOnglet();
+      selMode = false; selection = {}; selQte = {}; renderCoursesOnglet();
       toast(n + " article" + (n > 1 ? "s" : "") + " → " + nom, { lib: "Voir", fn: function () { voirListe(id, lid || ""); } });
     }
     var cibles = [];
@@ -8369,7 +8452,7 @@ var Moteur = (function () {
       h("div", { class: "pickbar" }, selF, h("button", { type: "button", class: "btn", text: "▶ Voir", onclick: function () { jouerFete(lf[+selF.value]); } })));
     panelRegl.append(portee(carteCodeAcces(), true), portee(c1), portee(c2), portee(c3), portee(carteCourses(), true), carteMemoire(), portee(carteRepartir(), true));
     var iV = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "Nouveautés de cette version", "aria-expanded": "false" });
-    iV.addEventListener("click", function () { bulle(iV, contenuVersions()); });
+    iV.addEventListener("click", function () { bulle(iV, contenuVersionsHisto(iV, 0)); });
     panelRegl.append(h("p", { class: "version-app" }, "À table ! · " + libVersionApp() + " · " + VERSION_DATE + " ", iV));
   }
 
@@ -9380,6 +9463,9 @@ h1,h2,h3,p{margin:0}
 :host(.theme-sombre) .alerte{filter:brightness(.92)}
 :host(.theme-sombre) .lien-menus.a-rattacher{background:#2A1A1A;border-color:#6A3A3A}
 :host(.theme-sombre) .doublon-box, :host(.theme-sombre) .ctl-doublon{background:#18203A!important;border-color:#3A4C80!important}
+
+/* iPhone : un champ en dessous de 16 px fait zoomer la page au toucher. On garde 16 px partout sur écran tactile. */
+@media (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
 </style><div class="app" id="app">
 
   <div class="sous-onglets" id="sous-onglets" role="tablist" aria-label="Recettes">
