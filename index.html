@@ -1504,7 +1504,7 @@ button.mname-lien{padding:6px 0;margin:-6px 0}
 .btn.danger-ghost{background:none;border-color:var(--danger,#B3261E);color:var(--danger,#B3261E)}
 .sel-barre .btn[disabled]{opacity:.45}
 .liste-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.liste-actions .chip{font-size:.86rem;padding:7px 12px;min-height:36px}
+.liste-actions .chip{font-size:.86rem;padding:7px 14px;min-height:38px;border:1.5px solid var(--ink);background:var(--surface);color:var(--ink)}
 .liste-actions .chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .sel-info{margin:8px 0 0;font-size:13px;color:var(--muted)}
 .aj-nouveau{display:flex;flex-direction:column;gap:6px;border:1.5px dashed var(--line);border-radius:12px;padding:10px 12px;margin:4px 0 8px}
@@ -1513,6 +1513,9 @@ button.mname-lien{padding:6px 0;margin:-6px 0}
 .aj-rayon select{flex:1}
 .aj-nouveau select{max-width:260px;min-height:42px}
 .aj-rapide select[hidden],.aj-nouveau select[hidden]{display:none}
+.resto-nom{display:inline-flex;align-items:center;margin-left:6px}
+.lien-resto{border:0;background:none;padding:6px 0;margin:-6px 0;font:inherit;font-size:13px;font-weight:600;color:var(--accent-t);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.resto-nom .invit-txt{min-width:0;width:170px;font-size:14px;padding:6px 8px}
 </style>
 
 <div id="verrou" class="verrou"></div>
@@ -1825,8 +1828,8 @@ var Moteur = (function () {
       var slot = { key: key, jour: s.jour, repas: s.repas, date: iso(d), type: "libre", recette: null, source: null, texte: "", notes: [] };
       if (ev && ev.etat === "exclu") slot.type = "exclu";
       else if (ev && ev.etat === "invitation") { slot.type = "invitation"; slot.texte = (ev.texte || "").trim() || "Invitation"; }
-      else if (ev && ev.etat === "resto") { slot.type = "resto"; slot.texte = "Restaurant en famille"; }
-      else if (ev && ev.etat === "amoureux") { slot.type = "resto"; slot.texte = "Restaurant en amoureux"; }
+      else if (ev && ev.etat === "resto") { slot.type = "resto"; slot.texte = "Restaurant en famille"; if ((ev.resto || "").trim()) slot.resto = ev.resto.trim(); }
+      else if (ev && ev.etat === "amoureux") { slot.type = "resto"; slot.texte = "Restaurant en amoureux"; if ((ev.resto || "").trim()) slot.resto = ev.resto.trim(); }
       else if (ev && ev.etat === "fete") { slot.type = "fete"; slot.texte = (ev.texte || "").trim() || "Repas de fête"; slot.plats = (ev.plats || []).filter(function (p) { return p && p.recette; }).map(function (p) { return { cat: p.cat, recette: p.recette }; }); if (ev.listeAPart) slot.listeAPart = true; }
       // Q2 : un midi ajouté n'est jamais remplacé par une exclusion de jour entier.
       return slot;
@@ -2650,15 +2653,21 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "21 oct. 13h55";
+  var VERSION_SITE = "21 oct. 17h30";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.2.1", VERSION_DATE = "21 oct. 2026";
+  var VERSION_APP = "1.3.0", VERSION_DATE = "21 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
+    { v: "1.3.0", date: "21 oct. 2026", type: "mineur", notes: [
+      "Restaurant : tu peux noter le nom du resto (facultatif) pour un resto en famille ou en amoureux, et après publication du menu pour un « Restaurant » tiré au sort (« ＋ Quel restaurant ? »)",
+      "Liste de courses : un article coché reste affiché (barré) au lieu de disparaître ; on le décoche d'un toucher en cas d'erreur",
+      "Boutons « Tout cocher », « Tout décocher » et « Sélectionner… » mieux visibles (contour)",
+      "Un article ajouté à la main sans unité s'additionne à celui de la liste : « 1 filet » + 1 → « 2 filets » (au lieu de « 1 filet + 1 »)"
+    ] },
     { v: "1.2.1", date: "21 oct. 2026", type: "correctif", notes: [
       "Liste de courses : les unités des recettes sont gardées (1 tranche de pâté, 2 gousses d'ail, 1 c. à soupe de moutarde) au lieu d'un simple chiffre",
       "Le rayon réglé sur un article (Base › Articles) est toujours celui de la liste de courses, même si une recette le classait ailleurs"
@@ -3393,6 +3402,11 @@ var Moteur = (function () {
         t.addEventListener("input", function () { if (rep.evenements[key]) { rep.evenements[key].texte = t.value; sauver(); } });
         cell.append(t);
       }
+      if (etat === "resto" || etat === "amoureux") {
+        var tr = h("input", { type: "text", class: "tj-txt", placeholder: "Quel resto ? (facultatif)", value: ev && ev.resto ? ev.resto : "", "aria-label": "Nom du restaurant (facultatif)" });
+        tr.addEventListener("input", function () { if (rep.evenements[key]) { rep.evenements[key].resto = tr.value; sauver(); } });
+        cell.append(tr);
+      }
       row.append(cell);
     });
     finLigne.forEach(function (x) { row.append(x); });
@@ -3756,7 +3770,9 @@ var Moteur = (function () {
     var e1 = String(q1 || "").trim() || "1", e2 = String(q2 || "").trim() || "1";
     var x = lireQte(e1), y = lireQte(e2);
     function sing(u) { return M.norm(u).replace(/s$/, ""); }
-    if (x && y && sing(x.u) === sing(y.u)) {
+    // « 1 filet » + « 1 » : l'ajout sans unité compte dans la même unité → « 2 filets ».
+    function metrique(u) { return ["g", "kg", "mg", "ml", "cl", "dl", "l"].indexOf(M.norm(u)) !== -1; }
+    if (x && y && (sing(x.u) === sing(y.u) || (!x.u && !metrique(y.u)) || (!y.u && !metrique(x.u)))) {
       var a = x.a + y.a, b = x.b + y.b, u = x.u || y.u;
       if (/^[a-zà-ÿ]{3,}$/i.test(u) && ["g", "kg", "ml", "cl", "l"].indexOf(M.norm(u)) === -1) { if (b > 1 && !/[sx]$/i.test(u)) u += "s"; }
       return fmtQ(a, b, u);
@@ -4135,13 +4151,47 @@ var Moteur = (function () {
     btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>';
     return { bouton: btn, zone: zone };
   }
-  function libInvit(c) { return c.type === "invitation" && c.texte && c.texte !== "Invitation" && !/^invitation/i.test(c.texte) ? "Invitation chez " + c.texte : c.texte; }
+  function libInvit(c) {
+    if (c.type === "resto") return (c.texte || "Restaurant") + (c.resto ? " · " + c.resto : "");
+    return c.type === "invitation" && c.texte && c.texte !== "Invitation" && !/^invitation/i.test(c.texte) ? "Invitation chez " + c.texte : c.texte;
+  }
+  /* Nom du restaurant (facultatif) : resto choisi (famille / amoureux) ou recette « Restaurant » tirée au sort. */
+  function estCreneauResto(c) { return !!c && (c.type === "resto" || (c.type === "recette" && M.norm(c.recette || "") === "restaurant")); }
+  function libRepas(c) { return c.type === "recette" ? c.recette + (estCreneauResto(c) && c.resto ? " · " + c.resto : "") : libInvit(c); }
+  /* Menu validé : ajouter ou changer le nom du restaurant, enregistré dans le menu (partagé). */
+  function zoneNomResto(slot) {
+    var z = h("span", { class: "resto-nom" });
+    function initial() {
+      clear(z);
+      z.append(h("button", { type: "button", class: "lien-resto", text: slot.resto ? "✎ " + slot.resto : "＋ Quel restaurant ?", "aria-label": slot.resto ? "Changer le nom du restaurant (" + slot.resto + ")" : "Indiquer le nom du restaurant (facultatif)", onclick: function (e) { e.stopPropagation(); editer(); } }));
+    }
+    function editer() {
+      clear(z);
+      var inp = h("input", { type: "text", class: "invit-txt", value: slot.resto || "", placeholder: "Nom du restaurant (facultatif)", "aria-label": "Nom du restaurant" });
+      function ok() {
+        var v = inp.value.trim(), id = M.iso(debut), doc = Store.menus[id];
+        if (v) slot.resto = v; else delete slot.resto;
+        if (doc && doc.creneaux) {
+          var c = doc.creneaux.filter(function (x) { return x.key === slot.key; })[0];
+          if (c) { if (v) c.resto = v; else delete c.resto; ecrireMenu(id, { creneaux: doc.creneaux }); }
+        }
+        initial();
+      }
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); ok(); } if (e.key === "Escape") initial(); });
+      inp.addEventListener("blur", function () { setTimeout(ok, 0); });
+      z.append(inp);
+      setTimeout(function () { inp.focus(); }, 30);
+    }
+    initial(); return z;
+  }
   function cellule(slot, repas, editable, hist, j) {
     var verrou = editable && repasPasse(j, repas); if (verrou) editable = false;
     var cell = h("div", { class: "mcell" }, h("span", { class: "lab", text: repas }));
     var nameEl, tags = h("div", { class: "tags" });
     if (slot && slot.type === "recette") {
       nameEl = editable ? h("span", { class: "mname" }, slot.recette, boutonFicheMenu(slot.recette))
+        : estCreneauResto(slot) ? h("span", { class: "mname evt" }, h("span", { text: "Restaurant" }), zoneNomResto(slot),
+          estAujourdhui(j) && (repas === "Soir" || new Date().getHours() < 14) ? h("span", { class: "badge-jour", text: repas === "Midi" ? "CE MIDI" : "CE SOIR" }) : null)
         : h("button", { type: "button", class: "mname mname-lien", "aria-label": "Voir " + slot.recette, onclick: function () { ouvrirPlat(slot.recette); } }, slot.recette, boutonFicheMenu(slot.recette),
           estAujourdhui(j) && (repas === "Soir" || new Date().getHours() < 14) ? h("span", { class: "badge-jour", text: repas === "Midi" ? "CE MIDI" : "CE SOIR" }) : null);
       // (Plus de badge « imposée » : la recette est placée en priorité, sans mention dans le menu.)
@@ -4155,7 +4205,18 @@ var Moteur = (function () {
         sauver();
       });
       nameEl = h("span", { class: "mname evt invit" }, h("span", { text: "Invitation" }), inpI);
-    } else if (slot && (slot.type === "invitation" || slot.type === "resto")) {
+    } else if (slot && slot.type === "resto" && editable) {
+      // Restaurant choisi : nom facultatif, comme « Chez qui ? » pour une invitation.
+      var inpR = h("input", { type: "text", class: "invit-txt", value: slot.resto || "", placeholder: "Quel restaurant ? (facultatif)", "aria-label": "Nom du restaurant" });
+      inpR.addEventListener("input", function () {
+        var v = inpR.value.trim(); if (v) slot.resto = v; else delete slot.resto;
+        var evR = S.reponses.evenements[slot.key]; if (evR) evR.resto = v;
+        sauver();
+      });
+      nameEl = h("span", { class: "mname evt invit" }, h("span", { text: slot.texte || "Restaurant" }), inpR);
+    } else if (slot && slot.type === "resto") {
+      nameEl = h("span", { class: "mname evt" }, h("span", { text: slot.texte || "Restaurant" }), Store.menus[M.iso(debut)] ? zoneNomResto(slot) : (slot.resto ? h("span", { text: " · " + slot.resto }) : null));
+    } else if (slot && slot.type === "invitation") {
       nameEl = h("span", { class: "mname evt", text: libInvit(slot) });
     } else if (slot && slot.type === "fete") {
       if (editable) {
@@ -4424,6 +4485,7 @@ var Moteur = (function () {
       creneaux: S.menu.creneaux.map(function (c) {
         var o = { key: c.key, jour: c.jour, repas: c.repas, date: c.date, type: c.type, recette: c.recette || null, texte: c.texte || "", source: c.source || null, notes: c.notes || [], plats: c.plats || null };
         if (c.type === "fete" && c.listeAPart) o.listeAPart = true;
+        if (c.resto) o.resto = c.resto;
         return o;
       }),
       // Les produits du placard sont gardés dans la liste enregistrée : l'affichage les range à part (réglage modifiable à tout moment).
@@ -4555,8 +4617,8 @@ var Moteur = (function () {
     function repas(j, r) {
       var c = menu.creneaux.filter(function (x) { return x.key === j + "-" + r; })[0];
       if (!c) return null;
-      if (c.type === "recette") return { t: c.recette, evt: false };
-      if (c.type === "invitation" || c.type === "resto" || c.type === "fete") return { t: c.type === "fete" ? emojiFete(c.texte) + " " + c.texte : c.texte, evt: true };
+      if (c.type === "recette") return { t: libRepas(c), evt: false };
+      if (c.type === "invitation" || c.type === "resto" || c.type === "fete") return { t: c.type === "fete" ? emojiFete(c.texte) + " " + c.texte : libInvit(c), evt: true };
       return null;
     }
     for (var j = jAuj; j < 7; j++) ["Midi", "Soir"].forEach(function (r) { if (j === jAuj && r === "Midi" && apresMidi) return; var x = repas(j, r); if (x) suite.push({ j: j, r: r, x: x }); });
@@ -4584,8 +4646,8 @@ var Moteur = (function () {
     function repas(j, r) {
       var c = menu.creneaux.filter(function (x) { return x.key === j + "-" + r; })[0];
       if (!c) return null;
-      if (c.type === "recette") return { t: c.recette, evt: false };
-      if (c.type === "invitation" || c.type === "resto" || c.type === "fete") return { t: c.type === "fete" ? emojiFete(c.texte) + " " + c.texte : c.texte, evt: true };
+      if (c.type === "recette") return { t: libRepas(c), evt: false };
+      if (c.type === "invitation" || c.type === "resto" || c.type === "fete") return { t: c.type === "fete" ? emojiFete(c.texte) + " " + c.texte : libInvit(c), evt: true };
       return null;
     }
     // Repas à venir dans l'ordre : midi (avant 14 h) puis soir, puis les jours suivants.
@@ -4935,7 +4997,7 @@ var Moteur = (function () {
       ["Midi", "Soir"].forEach(function (repas, k) {
         var s = data.creneaux.filter(function (c) { return c.key === j + "-" + repas; })[0];
         var txt = "—", style = "off";
-        if (s && s.type === "recette") { txt = s.recette; style = "rec"; }
+        if (s && s.type === "recette") { txt = libRepas(s); style = "rec"; }
         else if (s && (s.type === "invitation" || s.type === "resto")) { txt = libInvit(s); style = "evt"; }
         else if (s && s.type === "fete") { txt = s.texte + ((s.plats || []).length ? " : " + s.plats.map(function (p) { return p.recette; }).join(", ") : ""); style = "evt"; }
         var cx = left + col0 + k * colW;
@@ -5037,7 +5099,7 @@ var Moteur = (function () {
         vusK[c.key] = 1;
         var r = reelsM[c.key];
         if (r) { if (r.type !== "saute") recs.push(libReel(r)); return; }
-        if (c.type === "recette" && c.recette) recs.push(c.recette);
+        if (c.type === "recette" && c.recette) recs.push(libRepas(c));
         else if (c.type === "fete") recs.push(emojiFete(c.texte) + " " + (c.texte || "Repas de fête"));
         else if (c.type === "invitation" || c.type === "resto") recs.push(libInvit(c) || c.texte);
       });
@@ -7252,7 +7314,7 @@ var Moteur = (function () {
   var panelCourses = document.getElementById("panel-courses");
   var masquerCoches = false;
   // Par défaut, un article coché disparaît (on voit ce qu'il reste à prendre) ; « Annuler » rattrape un appui de travers.
-  try { masquerCoches = localStorage.getItem("menus-afficher-coches") !== "1"; } catch (e) { masquerCoches = true; }
+  // Les articles cochés restent affichés (barrés) : une coche par erreur se défait d'un simple toucher.
   var coches = {}, cochesSemaine = null, fileEcriture = Promise.resolve();
 
   /* Clés stables par produit (rayon + nom) : les coches survivent à une nouvelle validation. */
@@ -7633,7 +7695,7 @@ var Moteur = (function () {
     var total = lignes.length, faits = lignes.filter(function (l) { return coches[l.k]; }).length;
     var bar = h("i", { style: "width:" + (total ? Math.round(100 * faits / total) : 0) + "%" });
     // Bouton « Afficher les articles cochés (n) » / « Masquer les articles cochés » (cochés masqués par défaut).
-    var masq = faits && !selMode ? h("button", { type: "button", class: "chip", id: "basculer-coches", "aria-pressed": String(!masquerCoches),
+    var masq = false && faits && !selMode ? h("button", { type: "button", class: "chip", id: "basculer-coches", "aria-pressed": String(!masquerCoches),
       text: masquerCoches ? "Voir les cochés (" + faits + ")" : "Masquer les cochés", onclick: function () {
       masquerCoches = !masquerCoches; try { localStorage.setItem("menus-afficher-coches", masquerCoches ? "0" : "1"); } catch (e) {}
       renderCoursesOnglet();
@@ -7758,13 +7820,12 @@ var Moteur = (function () {
         } }) : null,
         masq,
         // « Tout décocher » seulement quand les cochés sont affichés (moins de boutons à l'écran).
-        faits && !masquerCoches && !selMode ? h("button", { type: "button", class: "chip", text: "Tout décocher", onclick: function () {
+        faits && !selMode ? h("button", { type: "button", class: "chip", text: "Tout décocher", onclick: function () {
           // Liste principale : tout (sauf les listes à part) ; liste à part : seulement ses articles.
           var patch = {}, dn = doc.dans || {};
           if (listeVue) lignes.forEach(function (l) { if (coches[l.k]) { coches[l.k] = false; patch[l.k] = false; } });
           else Object.keys(coches).forEach(function (k) { if (coches[k] && !(dn[k] && LN[dn[k]])) { coches[k] = false; patch[k] = false; } });
           // Plus rien de coché : on revient au réglage par défaut (les prochains articles cochés disparaîtront).
-          masquerCoches = true; try { localStorage.setItem("menus-afficher-coches", "0"); } catch (e) {}
           ecrireCoches(id, patch); renderCoursesOnglet();
         } }) : null,
         total ? h("button", { type: "button", class: "chip" + (selMode ? " on" : ""), "aria-pressed": String(selMode), text: selMode ? "Terminer la sélection" : "Sélectionner…", title: "Choisir plusieurs articles pour les déplacer vers une autre liste ou les supprimer", onclick: function () { selMode = !selMode; selection = {}; renderCoursesOnglet(); } }) : null),
