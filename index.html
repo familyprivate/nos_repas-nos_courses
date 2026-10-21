@@ -1990,6 +1990,17 @@ var Moteur = (function () {
     if (!t || t === "—") return "";
     return t.replace(/(s|x)$/, "");
   }
+  /* Unité « de comptage » à afficher (singulier), sauf pièce/unité qui n'apportent rien. */
+  function uniteTexte(u) {
+    var t = String(u || "").trim();
+    if (!t || t === "—" || t === "-" || /^(pi[eè]ces?|unit[ée]s?|pcs?|u)$/i.test(t)) return "";
+    if (!/\s/.test(t) && !/\./.test(t)) t = t.replace(/eaux$/i, "eau").replace(/([^s])s$/i, "$1");
+    return t;
+  }
+  function pluriel(u, n) {
+    if (!(n > 1) || /\s|\./.test(u) || /[sx]$/i.test(u)) return u;
+    return /eau$/i.test(u) ? u + "x" : u + "s";
+  }
   function fmtNum(n) {
     var r = Math.round(n * 1000) / 1000;
     return String(r).replace(".", ",");
@@ -2019,7 +2030,8 @@ var Moteur = (function () {
         if (mn == null && mx == null) { g.inconnu = true; return; }
         if (mn == null) mn = mx; if (mx == null) mx = mn;
         var uk = uniteKey(it.unite);
-        var label = METRIQUES[uk] ? uk : (METRIQUES[norm(it.unite)] ? norm(it.unite) : "");
+        // Unités de mesure (g, cl…) normalisées ; les autres (tranche, gousse, c. à soupe…) sont gardées telles quelles.
+        var label = METRIQUES[uk] ? uk : (METRIQUES[norm(it.unite)] ? norm(it.unite) : uniteTexte(it.unite));
         if (!g.parts[uk]) { g.parts[uk] = { min: 0, max: 0, label: label }; g.ordreU.push(uk); }
         g.parts[uk].min += mn; g.parts[uk].max += mx;
       });
@@ -2032,7 +2044,7 @@ var Moteur = (function () {
         var p = g.parts[uk];
         if (p.max <= 0) return; // jamais de 0
         var v = Math.abs(p.min - p.max) < 1e-9 ? fmtNum(p.min) : fmtNum(p.min) + " à " + fmtNum(p.max);
-        morceaux.push(p.label ? v + " " + (p.label === "l" ? "L" : p.label) : v);
+        morceaux.push(p.label ? v + " " + (p.label === "l" ? "L" : METRIQUES[p.label] ? p.label : pluriel(p.label, p.max)) : v);
       });
       var qte = morceaux.join(" + ");
       if (!morceaux.length) {
@@ -2638,15 +2650,19 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "21 oct. 13h00";
+  var VERSION_SITE = "21 oct. 13h55";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.2.0", VERSION_DATE = "21 oct. 2026";
+  var VERSION_APP = "1.2.1", VERSION_DATE = "21 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
+    { v: "1.2.1", date: "21 oct. 2026", type: "correctif", notes: [
+      "Liste de courses : les unités des recettes sont gardées (1 tranche de pâté, 2 gousses d'ail, 1 c. à soupe de moutarde) au lieu d'un simple chiffre",
+      "Le rayon réglé sur un article (Base › Articles) est toujours celui de la liste de courses, même si une recette le classait ailleurs"
+    ] },
     { v: "1.2.0", date: "21 oct. 2026", type: "mineur", notes: [
       "Liste de courses : suggestions d'articles pendant la saisie, doublon signalé, et « Enregistrer aussi dans mes articles » pour un nouvel article",
       "« Sélectionner… » : choisis plusieurs articles pour les déplacer dans une autre liste, que tu nommes (ex. Lidl), ou pour les supprimer d'un coup. Un bandeau indique alors combien de listes de courses compte la semaine",
@@ -4227,9 +4243,15 @@ var Moteur = (function () {
   var flashEl = null;
   function flash(msg) { if (flashEl) { flashEl.textContent = msg; flashEl.className = "status warn"; } }
 
+  /* Rayon choisi pour un article dans Base › Articles : il prime sur celui des recettes (et suit ses modifications). */
+  function rayonsArticles() {
+    var m = {};
+    Object.keys(Store.articles || {}).forEach(function (id) { var a = Store.articles[id]; if (a && !a.masque && a.produit && a.categorie && M.CAT_NAMES[a.categorie]) m[M.norm(a.produit)] = a.categorie; });
+    return m;
+  }
   function groupeParRayon(lignes) {
-    var g = {};
-    lignes.forEach(function (l) { (g[l.categorie] = g[l.categorie] || []).push(l); });
+    var g = {}, ra = rayonsArticles();
+    lignes.forEach(function (l) { var c = ra[M.norm(l.produit)]; if (c) l.categorie = c; (g[l.categorie] = g[l.categorie] || []).push(l); });
     return M.CAT_ORDER.filter(function (c) { return g[c] && g[c].length; }).map(function (c) { return { cat: c, lignes: g[c] }; });
   }
 
@@ -4682,7 +4704,8 @@ var Moteur = (function () {
     var base = idx.ordre.filter(function (k) { return dansI(k) === listeVue && (listeVue || !nLi) && !auPlacardDoc(doc, idx.m[k]); }).map(function (k) { var o = Object.assign({}, idx.m[k], { fait: !!ck[k] }); ligneAchat(idx.m[k], o, doc); delete o.detailAchat; delete o.placardN; return o; });
     var aj = ajoutsRapides(doc), plus = Object.keys(aj).filter(function (k) { return aj[k] && aj[k].produit && dansI("aj-" + k) === listeVue && (listeVue || listeDeAj(aj[k]) === nLi); }).map(function (k) { return { produit: aj[k].produit, quantite: aj[k].quantite || "", categorie: aj[k].categorie || "D", fait: !!ck["aj-" + k], lieu: aj[k].lieu }; });
     // Drive d'abord, puis les articles à prendre en magasin (marqués 🏬).
-    var tout = base.concat(plus), drive = [], mag = [];
+    var tout = base.concat(plus), drive = [], mag = [], raI = rayonsArticles();
+    tout.forEach(function (l) { var c = raI[M.norm(l.produit)]; if (c) l.categorie = c; });
     tout.forEach(function (l) { if ((l.lieu || lieuDe(doc, l.produit)) === "magasin") { l.produit = "🏬 " + l.produit; mag.push(l); } else drive.push(l); delete l.lieu; });
     return { debut: doc.debut, fin: doc.fin, creneaux: doc.creneaux || [], lignes: drive.concat(mag) };
   }
