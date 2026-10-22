@@ -1426,8 +1426,7 @@ body.vue-mobile[data-onglet="courses"] #panel-courses > .lieu-filtres:first-chil
 .cl-ico{width:38px;height:38px;border-radius:50%;background:var(--ok,#1B6B35);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
 .cloture-mini{font-size:13px;color:var(--muted);margin:0 0 10px}
 .h-courses{display:block;color:var(--muted);margin-top:4px}
-.portee{display:inline-block;margin-left:8px;vertical-align:middle;font-size:11px;font-weight:700;letter-spacing:.02em;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
-.portee.fam{background:var(--accent-soft);color: var(--accent-t)}
+.portee{display:inline-block;margin-left:8px;vertical-align:middle;font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap}
 .art-outils{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}
 .art-filtres{display:flex;gap:6px}
 .art-filtres .chip{font-size:.85rem;padding:5px 11px;min-height:0}
@@ -1527,6 +1526,31 @@ button.mname-lien{padding:6px 0;margin:-6px 0}
 
 /* iPhone : un champ en dessous de 16 px fait zoomer la page au toucher. On garde 16 px partout sur écran tactile. */
 @media (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
+.regl-bloc{padding:0;gap:0;border:1.5px solid var(--line);border-radius:14px;background:var(--surface)}
+body.vue-mobile .regl-bloc{padding:0;gap:0}
+#panel-regl{gap:10px}
+.regl-bloc>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+.regl-bloc>summary::-webkit-details-marker{display:none}
+.regl-ico{font-size:1.35rem;width:30px;text-align:center;flex:none}
+.regl-titre{margin:0;font-size:1.08rem;flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.regl-titre .portee{margin-left:0}
+.regl-chev{font-size:1.4rem;color:var(--muted);transform:rotate(90deg);transition:transform .2s;flex:none}
+.regl-bloc[open] .regl-chev{transform:rotate(-90deg)}
+.regl-corps{padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.regl-bloc[open]{border-color:var(--ink)}
+.sugg-texte{width:100%;min-height:96px;resize:vertical;margin:8px 0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.sugg-liste{margin-top:14px;display:flex;flex-direction:column;gap:0}
+.sugg-item{padding:10px 0;border-bottom:1px solid var(--line);background:var(--surface);display:flex;gap:12px;align-items:flex-start}
+.sugg-coche{padding-top:2px}
+.sugg-coche input{width:22px;height:22px;margin:0;accent-color:var(--ok,#1B6B35)}
+.sugg-corps{flex:1;min-width:0}
+.sugg-item.fait .sugg-txt{color:var(--muted);text-decoration:line-through}
+.sugg-txt{margin:0 0 4px;white-space:pre-wrap}
+.sugg-item small{color:var(--muted)}
+
+.sugg-liste > .btn{margin-top:10px}
+.seg-base .chip{display:inline-flex;align-items:center;gap:6px}
+.seg-ico{font-size:1.05em;line-height:1}
 </style>
 
 <div id="verrou" class="verrou"></div>
@@ -2448,7 +2472,7 @@ var Moteur = (function () {
 
   /* ---------- Stockage (historique partagé côté serveur, sinon navigateur) ---------- */
   var Store = {
-    mode: null, db: null, menus: {}, manuels: {}, articles: {}, favoris: {}, recettes: {}, brouillons: {}, fiches: {}, acces: null, accesCharge: false, ready: false, subs: [],
+    mode: null, db: null, menus: {}, manuels: {}, articles: {}, favoris: {}, recettes: {}, brouillons: {}, fiches: {}, suggestions: {}, acces: null, accesCharge: false, ready: false, subs: [],
     onChange: function () {},
     init: function () {
       var self = this;
@@ -2489,6 +2513,10 @@ var Moteur = (function () {
             var m = {}; snap.docs.forEach(function (d) { if (d.exists) m[d.id] = d.data(); });
             self.recettes = m; self.onChange("recettes");
           }, function () {}));
+          self.subs.push(db.collection("suggestions").onSnapshot(function (snap) {
+            var m = {}; snap.docs.forEach(function (d) { if (d.exists) m[d.id] = d.data(); });
+            self.suggestions = m; self.onChange("suggestions");
+          }, function () {}));
           self.subs.push(db.doc("config/courses").onSnapshot(function (snap) {
             self.coursesCfg = snap.exists ? snap.data() : null; self.onChange("courses-cfg");
           }, function () {}));
@@ -2505,7 +2533,7 @@ var Moteur = (function () {
       this.mode = "local"; this.db = null; this.msg = msg;
       var l = lsGet("menus-historique-local") || {};
       if (!l.articles && window.ARTICLES_DEPART) { l.articles = window.ARTICLES_DEPART; lsSet("menus-historique-local", l); }
-      this.menus = l.menus || {}; this.manuels = l.manuels || {}; this.articles = l.articles || {}; this.favoris = l.favoris || {}; this.recettes = l.recettes || {};
+      this.menus = l.menus || {}; this.manuels = l.manuels || {}; this.articles = l.articles || {}; this.favoris = l.favoris || {}; this.recettes = l.recettes || {}; this.suggestions = l.suggestions || {};
       this.acces = lsGet("menus-acces-local"); this.accesCharge = true;
       this.ready = true; this.onChange("recettes"); this.onChange(); this.onChange("acces");
     },
@@ -2513,7 +2541,19 @@ var Moteur = (function () {
       if (this.mode === "db") return this.db.doc("config/acces").set(data);
       this.acces = data; lsSet("menus-acces-local", data); return Promise.resolve();
     },
-    persistLocal: function () { lsSet("menus-historique-local", { menus: this.menus, manuels: this.manuels, articles: this.articles, favoris: this.favoris, recettes: this.recettes }); },
+    persistLocal: function () { lsSet("menus-historique-local", { menus: this.menus, manuels: this.manuels, articles: this.articles, favoris: this.favoris, recettes: this.recettes, suggestions: this.suggestions }); },
+    addSuggestion: function (data) {
+      if (this.mode === "db") return this.db.collection("suggestions").add(data);
+      this.suggestions["s" + Date.now()] = data; this.persistLocal(); this.onChange("suggestions"); return Promise.resolve();
+    },
+    setSuggestion: function (id, data) {
+      if (this.mode === "db") return this.db.doc("suggestions/" + id).set(data);
+      this.suggestions[id] = data; this.persistLocal(); this.onChange("suggestions"); return Promise.resolve();
+    },
+    deleteSuggestion: function (id) {
+      if (this.mode === "db") return this.db.doc("suggestions/" + id).delete();
+      delete this.suggestions[id]; this.persistLocal(); this.onChange("suggestions"); return Promise.resolve();
+    },
     addArticle: function (data) {
       if (this.mode === "db") return this.db.collection("articles").add(data);
       this.articles["a" + Date.now()] = data; this.persistLocal(); this.onChange("articles"); return Promise.resolve();
@@ -2664,36 +2704,34 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "22 oct. 7h45";
+  var VERSION_SITE = "22 oct. 8h30";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.4.1", VERSION_DATE = "22 oct. 2026";
+  var VERSION_APP = "1.3.0", VERSION_DATE = "22 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
-    { v: "1.4.1", date: "22 oct. 2026", type: "correctif", notes: [
-      "Listes de courses : le nombre affiché sur chaque liste (bandeau « Tu as 2 listes… ») correspond maintenant exactement aux lignes de la liste, même quand un article ajouté à la main rejoint celui d'une recette"
+    { v: "1.3.0", date: "22 oct. 2026", type: "mineur", notes: [
+      "Listes de courses : le nombre affiché sur chaque liste (bandeau « Tu as 2 listes… ») correspond maintenant exactement aux lignes de la liste, même quand un article ajouté à la main rejoint celui d'une recette",
+      "Œufs arrondis à ce qu'on peut acheter (boîtes de 4, 6, 10, 12, 18, 24) : 5 → 6, 7 → 8 ; 16 reste 16 (12 + 4)",
+      "Base de données : petites icônes 📖 Recettes et 🧺 Articles pour mieux les repérer",
+      "Réglages rangés en blocs à déplier, chacun avec son logo ; « Toute la famille » / « Ce téléphone » en petit texte gris",
+      "Nouveau bloc 💡 Suggestions : note une idée d'amélioration (aide ⓘ pour bien l'écrire), partagée avec la famille, coche « fait » (réversible) et bouton pour les copier",
+      "Paramètres › Réglages › ⓘ : versions regroupées (V1.0, V1.1, V1.2, V1.3) et menu déroulant pour relire les précédentes"
     ] },
-    { v: "1.4.0", date: "21 oct. 2026", type: "mineur", notes: [
+    { v: "1.2.0", date: "21 oct. 2026", type: "mineur", notes: [
       "Liste de courses : glisse un article vers la gauche pour le supprimer (comme sur iPhone), avec « Annuler »",
       "« Sélectionner… » : pour un article à plusieurs unités (6 tomates), choisis combien en déplacer vers l'autre liste (3 partent, 3 restent)",
       "Préparation de la liste : « − » sur un article déjà à 1 propose de le retirer de tes courses",
       "Plus de zoom de la page quand on touche un champ (crayon, quantité, recherche…) sur iPhone",
-      "Paramètres › Réglages › ⓘ : un menu déroulant pour relire les nouveautés de chaque version précédente"
-    ] },
-    { v: "1.3.0", date: "21 oct. 2026", type: "mineur", notes: [
       "Restaurant : tu peux noter le nom du resto (facultatif) pour un resto en famille ou en amoureux, et après publication du menu pour un « Restaurant » tiré au sort (« ＋ Quel restaurant ? »)",
       "Liste de courses : un article coché reste affiché (barré) au lieu de disparaître ; on le décoche d'un toucher en cas d'erreur",
       "Boutons « Tout cocher », « Tout décocher » et « Sélectionner… » mieux visibles (contour)",
-      "Un article ajouté à la main sans unité s'additionne à celui de la liste : « 1 filet » + 1 → « 2 filets » (au lieu de « 1 filet + 1 »)"
-    ] },
-    { v: "1.2.1", date: "21 oct. 2026", type: "correctif", notes: [
+      "Un article ajouté à la main sans unité s'additionne à celui de la liste : « 1 filet » + 1 → « 2 filets » (au lieu de « 1 filet + 1 »)",
       "Liste de courses : les unités des recettes sont gardées (1 tranche de pâté, 2 gousses d'ail, 1 c. à soupe de moutarde) au lieu d'un simple chiffre",
-      "Le rayon réglé sur un article (Base › Articles) est toujours celui de la liste de courses, même si une recette le classait ailleurs"
-    ] },
-    { v: "1.2.0", date: "21 oct. 2026", type: "mineur", notes: [
+      "Le rayon réglé sur un article (Base › Articles) est toujours celui de la liste de courses, même si une recette le classait ailleurs",
       "Liste de courses : suggestions d'articles pendant la saisie, doublon signalé, et « Enregistrer aussi dans mes articles » pour un nouvel article",
       "« Sélectionner… » : choisis plusieurs articles pour les déplacer dans une autre liste, que tu nommes (ex. Lidl), ou pour les supprimer d'un coup. Un bandeau indique alors combien de listes de courses compte la semaine",
       "Plats sans ingrédients enregistrés dans la recette : une case à cocher par plat dans la liste de courses ; l'alerte disparaît quand leurs articles sont ajoutés",
@@ -2753,8 +2791,26 @@ var Moteur = (function () {
   }
   /* Réglages › ⓘ : une version à la fois (l'actuelle d'abord) ; un menu déroulant pour relire les précédentes.
      La bulle est rouverte à chaque choix pour rester bien placée à l'écran. */
+  /* Versions regroupées : V1.4 réunit 1.4.0 et ses correctifs (1.4.1…), pour une liste plus courte. */
+  function versionsGroupees() {
+    var g = [], par = {};
+    JOURNAL_VERSIONS.forEach(function (j) {
+      var k = j.v.split(".").slice(0, 2).join(".");
+      if (!par[k]) { par[k] = { v: k + ".0", type: "mineur", dates: [], notes: [], nb: 0 }; g.push(par[k]); }
+      var x = par[k]; x.nb++;
+      if (j.type === "majeur" || (j.type === "mineur" && x.type !== "majeur")) x.type = j.type;
+      if (x.dates.indexOf(j.date) === -1) x.dates.push(j.date);
+      x.notes = x.notes.concat(j.notes);
+    });
+    g.forEach(function (x) {
+      if (x.nb > 1 && x.type === "mineur") x.type = "mineur";
+      var d = x.dates.slice().reverse(); x.date = d.length > 1 ? d[0].replace(/ \S+ \d{4}$/, "") + "–" + d[d.length - 1] : d[0];
+    });
+    return g;
+  }
   function contenuVersionsHisto(ancre, choix) {
     choix = choix || 0;
+    var JOURNAL_VERSIONS = versionsGroupees();
     var sel = h("select", { class: "vb-select", "aria-label": "Choisir une version" },
       JOURNAL_VERSIONS.map(function (j, i) { return h("option", { value: String(i), selected: i === choix, text: libVersionApp(j.v) + " · " + j.date.replace(/ 20\d\d$/, "") + (i ? "" : " (actuelle)") }); }));
     sel.addEventListener("click", function (e) { e.stopPropagation(); });
@@ -3958,6 +4014,7 @@ var Moteur = (function () {
       l.dePlacard = true;
       var a = qteAchat(l.produit, l.quantite); if (a) { l.quantite = a.q; l.detailAchat = a.detail; }
     });
+    c.lignes.forEach(appliquerOeufs);
     // Quantités ajustées à la main (+/−) : gardées tant que le calcul ne change pas pour ce produit.
     var qx = S.qtes || {};
     c.lignes.forEach(function (l) { var o = qx[l.id]; if (o && o.base === l.quantite) { l.quantiteBase = l.quantite; l.quantite = o.q; } });
@@ -4821,6 +4878,7 @@ var Moteur = (function () {
     var aj = ajoutsRapides(doc), plus = Object.keys(aj).filter(function (k) { return aj[k] && aj[k].produit && dansI("aj-" + k) === listeVue && (listeVue || listeDeAj(aj[k]) === nLi); }).map(function (k) { return { produit: aj[k].produit, quantite: aj[k].quantite || "", categorie: aj[k].categorie || "D", fait: !!ck["aj-" + k], lieu: aj[k].lieu }; });
     // Drive d'abord, puis les articles à prendre en magasin (marqués 🏬).
     var tout = base.concat(plus), drive = [], mag = [], raI = rayonsArticles();
+    tout.forEach(function (l) { appliquerOeufs(l); delete l.detailAchat; });
     tout.forEach(function (l) { var c = raI[M.norm(l.produit)]; if (c) l.categorie = c; });
     tout.forEach(function (l) { if ((l.lieu || lieuDe(doc, l.produit)) === "magasin") { l.produit = "🏬 " + l.produit; mag.push(l); } else drive.push(l); delete l.lieu; });
     return { debut: doc.debut, fin: doc.fin, creneaux: doc.creneaux || [], lignes: drive.concat(mag) };
@@ -7195,7 +7253,7 @@ var Moteur = (function () {
 
   /* Étiquette de portée d'un réglage : ce téléphone ou toute la famille. */
   function portee(card, famille) {
-    var t = card && card.querySelector("h2"); if (t) t.append(h("span", { class: "portee" + (famille ? " fam" : ""), text: famille ? "👨‍👩‍👧‍👦 Toute la famille" : "📱 Ce téléphone" }));
+    var t = card && card.querySelector("h2"); if (t) t.append(h("span", { class: "portee" + (famille ? " fam" : ""), text: famille ? "Toute la famille" : "Ce téléphone" }));
     return card;
   }
   /* ---------- Onglet Articles ---------- */
@@ -7529,6 +7587,31 @@ var Moteur = (function () {
     if (ongletActif === "art") Promise.resolve(pr).then(function () { renderArt(); }, function () {});
     return pr;
   }
+  /* Œufs : on ne peut pas en acheter 5. On arrondit au total possible avec des boîtes de 4, 6, 10, 12, 18 ou 24
+     (16 reste 16 = 12 + 4 ; 5 → 6 ; 7 → 8 = 4 + 4). Le détail indique les boîtes et la quantité des recettes. */
+  var BOITES_OEUFS = [24, 18, 12, 10, 6, 4];
+  function estOeufs(p) { return /^oeufs?( frais| bio| plein air| de poules?.*)?$/.test(M.norm(String(p || "").replace(/œ/gi, "oe"))); }
+  function boitesOeufs(n) {
+    // Combinaison avec le moins de boîtes pour exactement n œufs (null si impossible).
+    var best = [[]];
+    for (var t = 1; t <= n; t++) {
+      best[t] = null;
+      BOITES_OEUFS.forEach(function (b) { if (b <= t && best[t - b] && (!best[t] || best[t - b].length + 1 < best[t].length)) best[t] = best[t - b].concat(b); });
+    }
+    return best[n];
+  }
+  function arrondiOeufs(produit, quantite) {
+    if (!estOeufs(produit)) return null;
+    var x = lireQte(quantite); if (!x || x.a !== x.b || x.a <= 0) return null;
+    if (x.u && !/^(oeufs?|œufs?|pi[eè]ces?|unit[ée]s?)$/i.test(x.u)) return null;
+    var n = Math.ceil(x.a), cible = n, combi = null;
+    while (!(combi = boitesOeufs(cible)) && cible < n + 24) cible++;
+    if (!combi) return null;
+    combi.sort(function (a, b) { return b - a; });
+    var detail = (combi.length > 1 ? "boîtes : " + combi.join(" + ") : "boîte de " + combi[0]) + (cible !== x.a ? " · " + fmtN(x.a) + " prévus" : "");
+    return { q: String(cible), detail: detail };
+  }
+  function appliquerOeufs(l) { var o = arrondiOeufs(l.produit, l.quantite); if (o) { l.quantite = o.q; l.detailAchat = o.detail; } return l; }
   /* Produit du placard remis dans la liste : quantité d'achat (paquets entiers) au lieu de la quantité des recettes. */
   function ligneAchat(src, o, doc) {
     if (!src || src.source === "ajout" || src.source === "fete" || !estPlacard(src.produit)) return o;
@@ -7743,6 +7826,7 @@ var Moteur = (function () {
       b.quantite = String(b.quantite || "").trim() ? additionnerQte(b.quantite, l.quantite) : (l.quantite || "");
       (b.ajFusion = b.ajFusion || []).push(l); return false;
     });
+    lignes.forEach(function (l) { if (!l.placardN) appliquerOeufs(l); });
     lignes.forEach(function (l) { nbLieu[l.lieu]++; nbLieu.tout++; if (!coches[l.k]) { resteLieu[l.lieu]++; resteLieu.tout++; } });
     var lignesVue = lignes.slice();
     if (ongletLieu !== "tout") lignes = lignes.filter(function (l) { return l.lieu === ongletLieu; });
@@ -8460,10 +8544,85 @@ var Moteur = (function () {
       h("p", { class: "status", text: "Un jour d'anniversaire ou de fête, l'animation se joue à chaque passage par l'écran d'accueil (à l'ouverture, ou en revenant après plus de 5 minutes). Une touche la passe." }),
       h("label", { class: "check", for: "fete-on" }, onF, " Activer"),
       h("div", { class: "pickbar" }, selF, h("button", { type: "button", class: "btn", text: "▶ Voir", onclick: function () { jouerFete(lf[+selF.value]); } })));
-    panelRegl.append(portee(carteCodeAcces(), true), portee(c1), portee(c2), portee(c3), portee(carteCourses(), true), carteMemoire(), portee(carteRepartir(), true));
+    // Réglages rangés en blocs à déplier, chacun avec son petit logo.
+    panelRegl.append(
+      plierReglage(carteSuggestions(), "💡", "sugg"),
+      plierReglage(portee(carteCodeAcces(), true), "🔒", "acces"),
+      plierReglage(portee(c1), "🎨", "affichage"),
+      plierReglage(portee(c2), "✨", "anim"),
+      plierReglage(portee(c3), "🎉", "fetes"),
+      plierReglage(portee(carteCourses(), true), "🛒", "jour"),
+      plierReglage(carteMemoire(), "☁️", "memoire"),
+      plierReglage(portee(carteRepartir(), true), "♻️", "zero"));
     var iV = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "Nouveautés de cette version", "aria-expanded": "false" });
     iV.addEventListener("click", function () { bulle(iV, contenuVersionsHisto(iV, 0)); });
     panelRegl.append(h("p", { class: "version-app" }, "À table ! · " + libVersionApp() + " · " + VERSION_DATE + " ", iV));
+  }
+
+  /* Réglage replié : le titre (avec son logo et sa portée) sert de bouton pour déplier le contenu. */
+  var reglOuverts = {};
+  function plierReglage(card, ico, cle) {
+    if (!card) return null; var h2 = card.querySelector("h2"); if (!h2) return card;
+    var d = h("details", { class: card.className + " regl-bloc" });
+    d.open = !!reglOuverts[cle];
+    d.addEventListener("toggle", function () { reglOuverts[cle] = d.open; });
+    var sum = h("summary", { class: "regl-tete" }, h("span", { class: "regl-ico", "aria-hidden": "true", text: ico }));
+    h2.style.fontSize = ""; h2.className = "regl-titre"; sum.append(h2, h("span", { class: "regl-chev", "aria-hidden": "true", text: "›" }));
+    d.append(sum);
+    var corps = h("div", { class: "regl-corps" });
+    Array.prototype.slice.call(card.childNodes).forEach(function (n) { corps.append(n); });
+    d.append(corps);
+    return d;
+  }
+  /* Suggestions d'amélioration : notées dans l'appli, partagées (Yann et Sabrina les voient), à copier pour les transmettre. */
+  function carteSuggestions() {
+    var iS = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "Comment bien écrire une suggestion" });
+    iS.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); bulle(iS, [h("div", { class: "bulle-liste" },
+      h("p", null, h("b", { text: "Pour qu'une suggestion soit utile, écris-la de façon claire et complète :" })),
+      h("p", { text: "• Où : l'onglet et l'écran concernés (ex. Courses › liste à part)." }),
+      h("p", { text: "• Ce qui se passe aujourd'hui, et ce que tu voudrais à la place." }),
+      h("p", { text: "• Un exemple concret si possible (ex. « 6 tomates : en mettre 3 dans la liste Lidl »)." }),
+      h("p", { text: "• Une idée par suggestion, en phrases complètes plutôt qu'en abréviations." }))]); });
+    var ta = h("textarea", { class: "sugg-texte", rows: 4, placeholder: "Ex. Dans Courses, quand je coche un article par erreur, je voudrais pouvoir…", "aria-label": "Ta suggestion" });
+    var note = h("p", { class: "status", role: "status" });
+    function envoyer() {
+      var t = ta.value.trim();
+      if (t.length < 15) { note.className = "status warn"; note.textContent = "Écris un peu plus : où, ce qui se passe et ce que tu voudrais (touche ⓘ pour l'aide)."; ta.focus(); return; }
+      Store.addSuggestion({ texte: t, par: NOM_APPAREIL || "", le: new Date().toISOString(), version: VERSION_APP }).then(function () {
+        ta.value = ""; note.className = "status ok-msg"; note.textContent = "Merci ! Suggestion enregistrée.";
+        renderListe();
+      }, function () { note.className = "status err"; note.textContent = "Enregistrement impossible. Réessaie."; });
+    }
+    var liste = h("div", { class: "sugg-liste" });
+    function renderListe() {
+      clear(liste);
+      var ids = Object.keys(Store.suggestions || {}).filter(function (k) { return Store.suggestions[k] && Store.suggestions[k].texte; })
+        .sort(function (a, b) { return String(Store.suggestions[b].le || "").localeCompare(String(Store.suggestions[a].le || "")); });
+      if (!ids.length) { liste.append(h("p", { class: "status", text: "Aucune suggestion pour l'instant." })); return; }
+      liste.append(h("p", { class: "lbl", text: ids.length + " suggestion" + (ids.length > 1 ? "s" : "") + " notée" + (ids.length > 1 ? "s" : "") }));
+      ids.forEach(function (k) {
+        var x = Store.suggestions[k], d = x.le ? new Date(x.le) : null;
+        // Petite coche « fait » (réversible : on la décoche en cas d'erreur).
+        var cbF = h("input", { type: "checkbox", checked: !!x.fait, "aria-label": "Suggestion faite" });
+        cbF.addEventListener("change", function () { Store.setSuggestion(k, Object.assign({}, x, { fait: cbF.checked })).then(renderListe); });
+        var ligne = h("div", { class: "sugg-item" + (x.fait ? " fait" : "") },
+          h("label", { class: "sugg-coche", title: x.fait ? "Fait — décocher en cas d'erreur" : "Cocher quand c'est fait" }, cbF),
+          h("div", { class: "sugg-corps" },
+            h("p", { class: "sugg-txt", text: x.texte }),
+            h("small", { text: (x.par ? x.par + " · " : "") + (d ? M.fr(d).slice(0, 5) + " à " + d.getHours() + " h " + String(d.getMinutes()).padStart(2, "0") : "") + (x.fait ? " · fait ✓" : "") })));
+        liste.append(glisserPourSupprimer(ligne, "Supprimer cette suggestion", function () { Store.deleteSuggestion(k).then(renderListe); }));
+      });
+      var aCopier = ids.filter(function (k) { return !Store.suggestions[k].fait; });
+      if (aCopier.length) liste.append(h("button", { type: "button", class: "btn ghost", text: "Copier les suggestions à traiter (" + aCopier.length + ")", onclick: function (e) {
+        var txt = aCopier.map(function (k, i) { var x = Store.suggestions[k]; return (i + 1) + ". " + x.texte + (x.par ? " (" + x.par + ")" : ""); }).join("\n\n");
+        var b = e.currentTarget;
+        (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { b.textContent = "Copié ✓ — colle-les dans ta conversation avec Claude"; }, function () { b.textContent = "Copie impossible sur cet appareil"; });
+      } }));
+    }
+    renderListe();
+    return h("section", { class: "card sugg-carte" }, h("h2", null, "Suggestions", h("span", { class: "portee fam", text: "Toute la famille" })),
+      h("p", { class: "status" }, "Une idée ou un souci dans l'appli ? Note-le ici ", iS),
+      ta, h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "Envoyer la suggestion", onclick: envoyer })), note, liste);
   }
 
   /* ---------- Statistiques : repas réellement consommés (semaines terminées + repas ajoutés à la main) ---------- */
@@ -8755,8 +8914,9 @@ var Moteur = (function () {
     var sb = document.getElementById("seg-base");
     if (!sb) { sb = h("div", { id: "seg-base", class: "seg-base", role: "tablist", "aria-label": "Base de données" }); seg.parentNode.append(sb); }
     clear(sb); sb.hidden = !(n === "rec" || n === "art");
-    if (!sb.hidden) [["rec", "Recettes"], ["art", "Articles"]].forEach(function (o) {
-      sb.append(h("button", { type: "button", role: "tab", class: "chip", "aria-selected": String(o[0] === n), text: o[1], onclick: function () { choisirOnglet(o[0]); window.scrollTo(0, 0); } }));
+    if (!sb.hidden) [["rec", "Recettes", "📖"], ["art", "Articles", "🧺"]].forEach(function (o) {
+      sb.append(h("button", { type: "button", role: "tab", class: "chip", "aria-selected": String(o[0] === n), onclick: function () { choisirOnglet(o[0]); window.scrollTo(0, 0); } },
+        h("span", { class: "seg-ico", "aria-hidden": "true", text: o[2] }), o[1]));
     });
   }
   function choisirOnglet(n) {
@@ -8870,6 +9030,7 @@ var Moteur = (function () {
       if (ongletActif === "rec") { if (!fiche) renderRec(); else if (fiche.mode === "lecture" && fiche.id && TOUTES.some(function (x) { return x._id === fiche.id; })) rouvrir(fiche.id, fiche.msg); }
       return;
     }
+    if (quoi === "suggestions") { if (ongletActif === "regl" && !document.activeElement.closest(".sugg-carte")) renderRegl(); return; }
     if (quoi === "articles") {
       if (ongletActif === "art") renderArt();
       rafraichirSelectsArticles();
@@ -8962,11 +9123,17 @@ var Moteur = (function () {
       if (!dejaUtilise) { lsSet("menus-version-vue", VERSION_APP); return; }
       vu = "1.0.0";
     }
+    // Renumérotation du 22 oct. 2026 : les anciennes 1.2.1 à 1.4.1 sont regroupées dans la V1.2.
+    // (Une seule fois par appareil : ensuite « 1.3.0 » désigne bien la nouvelle V1.3.)
+    if (!lsGet("menus-version-renum")) {
+      if (["1.2.1", "1.3.0", "1.4.0", "1.4.1"].indexOf(vu) !== -1) vu = "1.2.0";
+      else lsSet("menus-version-renum", 1);
+    }
     if (vu === VERSION_APP) return;
     // Version déjà vue plus récente (ex. un brouillon d'avance) : pas de bandeau « en arrière ».
     function num(v) { return String(v).split(".").map(function (x) { return ("000" + (parseInt(x, 10) || 0)).slice(-3); }).join("."); }
     if (num(vu) > num(VERSION_APP)) { lsSet("menus-version-vue", VERSION_APP); return; }
-    function vue() { lsSet("menus-version-vue", VERSION_APP); }
+    function vue() { lsSet("menus-version-vue", VERSION_APP); lsSet("menus-version-renum", 1); }
     var voir = h("button", { type: "button", class: "btn mini primary", text: "Voir", "aria-expanded": "false" });
     var ferme = h("button", { type: "button", class: "icon", text: "✕", "aria-label": "Fermer", onclick: function () { vue(); fermerBulle(); ban.remove(); } });
     var ban = h("div", { class: "annonce-version", role: "status" },
