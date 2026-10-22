@@ -2664,15 +2664,18 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "21 oct. 22h15";
+  var VERSION_SITE = "22 oct. 7h45";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.4.0", VERSION_DATE = "21 oct. 2026";
+  var VERSION_APP = "1.4.1", VERSION_DATE = "22 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
+    { v: "1.4.1", date: "22 oct. 2026", type: "correctif", notes: [
+      "Listes de courses : le nombre affiché sur chaque liste (bandeau « Tu as 2 listes… ») correspond maintenant exactement aux lignes de la liste, même quand un article ajouté à la main rejoint celui d'une recette"
+    ] },
     { v: "1.4.0", date: "21 oct. 2026", type: "mineur", notes: [
       "Liste de courses : glisse un article vers la gauche pour le supprimer (comme sur iPhone), avec « Annuler »",
       "« Sélectionner… » : pour un article à plusieurs unités (6 tomates), choisis combien en déplacer vers l'autre liste (3 partent, 3 restent)",
@@ -7989,7 +7992,14 @@ var Moteur = (function () {
     var ck = coches, reste = { "": 0 };
     lids.forEach(function (l) { reste[l] = 0; });
     var ar = ajoutsRapides(doc), nC = listeCourante(doc);
+    // Même calcul que la liste affichée : un article ajouté à la main qui rejoint la ligne d'une recette
+    // (même produit, même endroit, même liste) ne compte qu'une fois.
+    function lieuL(l) { var x = l.aj ? ar[l.aj] : null; return x && (x.lieu === "drive" || x.lieu === "magasin") ? x.lieu : lieuDe(doc, l.produit); }
+    function cle(l) { return dansDe(l) + "|" + M.norm(l.produit) + "|" + lieuL(l); }
+    var recettes = {};
+    toutes.forEach(function (l) { if (!l.aj) recettes[cle(l)] = true; });
     toutes.forEach(function (l) {
+      if (l.aj && recettes[cle(l)]) return; // fusionné dans la ligne de la recette
       var d = dansDe(l); if (ck[l.k]) return;
       if (d) { reste[d] = (reste[d] || 0) + 1; return; }
       if (doc.cloture && doc.cloture.le) return; // liste principale clôturée : plus rien à prendre
