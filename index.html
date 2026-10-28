@@ -1551,6 +1551,51 @@ body.vue-mobile .regl-bloc{padding:0;gap:0}
 .sugg-liste > .btn{margin-top:10px}
 .seg-base .chip{display:inline-flex;align-items:center;gap:6px}
 .seg-ico{font-size:1.05em;line-height:1}
+/* Courses déjà faites : complément dans le tunnel */
+.cp-tn { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.cp-tn p { margin: 0; }
+.cp-rien b { color: #1F8A4C; }
+/* Séjours et absences */
+.sej-rythme.replie { padding: 0; background: none; }
+.sej-ry-court { margin: 0; font-size: .85rem; color: var(--muted); }
+.sej-ry-opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; cursor: pointer; }
+.sej-ry-opt input { margin-top: 3px; flex: none; }
+.sej-ry-opt > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sej-ry-opt small { color: var(--muted); font-size: .8rem; }
+.sej-ry-pages { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.sej-ry-p { font-size: .75rem; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); white-space: nowrap; }
+.sej-ry-p.sej { background: color-mix(in srgb, #2E8B57 14%, var(--bg)); border-color: transparent; }
+.sej-ry-p.court { border-style: dashed; }
+.sej-ry-p.suite { border: 0; background: none; color: var(--muted); }
+.sej-rythme { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--sunk); }
+.sej-rythme .sej-ry-t { margin: 0; font-weight: 600; }
+.sej-avenir-t { margin: 4px 0 0; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sej-avenir { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.sej-avenir li { display: flex; gap: 12px; align-items: baseline; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.sej-avenir li > span { flex: 1; min-width: 0; }
+.sej-avenir small { color: var(--muted); }
+.sej-err p { margin: 0 0 8px; }
+.sej-err .btn { color: var(--ink); }
+.absence-carte { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.absence-carte .abs-ico { font-size: 2.4rem; margin: 0; }
+.menu-bloc { display: flex; flex-direction: column; gap: 10px; }
+.sej-bandeau { padding: 7px 12px; margin: 6px 0 0; border-radius: 10px; background: color-mix(in srgb, #2E8B57 12%, var(--bg)); font-size: .85rem; color: var(--ink); }
+.sej-bandeau.abs { background: var(--sunk); color: var(--muted); }
+.sej-bandeau span { color: var(--muted); }
+.mcell.en-sejour { background: color-mix(in srgb, #2E8B57 6%, transparent); border-radius: 8px; }
+.mcell.en-absence { opacity: .6; }
+.mname.absents { color: var(--muted); font-weight: 600; }
+.sej-zone { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.sej-ligne { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; width: 100%; box-sizing: border-box; }
+.sej-ligne p { margin: 0; }
+.sej-ligne small, .sej-expl { color: var(--muted); font-size: .8rem; }
+.sej-lien { color: var(--muted); font-weight: 500; text-decoration-style: dotted; }
+.sej-form { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 12px; border: 1.5px dashed var(--line); border-radius: 12px; box-sizing: border-box; }
+.sej-titre { margin: 0; font-weight: 700; }
+.sej-dates { display: grid; grid-template-columns: 2rem minmax(0, 1fr) 6rem; gap: 8px; align-items: center; }
+.sej-dates input, .sej-dates select { min-width: 0; }
+.sej-apercu small { color: var(--muted); }
+.sej-ailleurs { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; padding: 8px 12px; margin: 0 0 10px; border-radius: 10px; background: color-mix(in srgb, #2E8B57 10%, var(--bg)); font-size: .88rem; }
 </style>
 
 <div id="verrou" class="verrou"></div>
@@ -1832,11 +1877,18 @@ var Moteur = (function () {
      rng: function
    }
   */
-  function creneauxDeBase(midis) {
+  /* Jour de la semaine d'un créneau (0 = samedi … 6 = vendredi), quelle que soit la période. */
+  function wdDate(d) { return (d.getDay() + 1) % 7; }
+  function wdOf(slot) { return slot.wd != null ? slot.wd : slot.date ? wdDate(fromIso(slot.date)) : slot.jour; }
+  function estVenSoir(slot) { return wdOf(slot) === 6 && slot.repas === "Soir"; }
+  function estSamMidi(slot) { return wdOf(slot) === 0 && slot.repas === "Midi"; }
+  /* Période de n jours à partir de debut : les midis du week-end, tous les soirs, et les midis de semaine demandés (positions). */
+  function creneauxDeBase(midis, debut, n) {
     var out = [];
-    for (var j = 0; j < 7; j++) {
-      if (j < 2 || midis.indexOf(j) !== -1) out.push({ jour: j, repas: "Midi" });
-      out.push({ jour: j, repas: "Soir" });
+    for (var j = 0; j < n; j++) {
+      var wd = wdDate(addDays(debut, j));
+      if (wd < 2 || midis.indexOf(j) !== -1) out.push({ jour: j, wd: wd, repas: "Midi" });
+      out.push({ jour: j, wd: wd, repas: "Soir" });
     }
     return out;
   }
@@ -1845,6 +1897,7 @@ var Moteur = (function () {
     var rng = opts.rng || Math.random;
     var debut = d0(opts.debut);
     var midis = (opts.midis || []).slice();
+    var nJ = opts.nbJours || 7;
     var evts = opts.evenements || {};
     var startIso = iso(debut);
     var hist = (opts.historique || []).filter(function (e) { return e.date < startIso; });
@@ -1853,14 +1906,14 @@ var Moteur = (function () {
 
     // Les imposées sur un midi de semaine non prévu créent ce midi.
     (opts.imposees || []).forEach(function (im) {
-      if (im.jour != null && im.jour >= 2 && im.repas === "Midi" && midis.indexOf(im.jour) === -1) midis.push(im.jour);
+      if (im.jour != null && im.jour < nJ && wdDate(addDays(debut, im.jour)) >= 2 && im.repas === "Midi" && midis.indexOf(im.jour) === -1) midis.push(im.jour);
     });
 
-    var slots = creneauxDeBase(midis).map(function (s) {
+    var slots = creneauxDeBase(midis, debut, nJ).map(function (s) {
       var d = addDays(debut, s.jour);
       var key = s.jour + "-" + s.repas;
       var ev = evts[key];
-      var slot = { key: key, jour: s.jour, repas: s.repas, date: iso(d), type: "libre", recette: null, source: null, texte: "", notes: [] };
+      var slot = { key: key, jour: s.jour, wd: s.wd, repas: s.repas, date: iso(d), type: "libre", recette: null, source: null, texte: "", notes: [] };
       if (ev && ev.etat === "exclu") slot.type = "exclu";
       else if (ev && ev.etat === "invitation") { slot.type = "invitation"; slot.texte = (ev.texte || "").trim() || "Invitation"; }
       else if (ev && ev.etat === "resto") { slot.type = "resto"; slot.texte = "Restaurant en famille"; if ((ev.resto || "").trim()) slot.resto = ev.resto.trim(); }
@@ -1870,6 +1923,7 @@ var Moteur = (function () {
       return slot;
     });
     function slotAt(j, r) { for (var i = 0; i < slots.length; i++) if (slots[i].jour === j && slots[i].repas === r) return slots[i]; return null; }
+    function slotWd(wd, r) { for (var i = 0; i < slots.length; i++) if (slots[i].wd === wd && slots[i].repas === r) return slots[i]; return null; }
     var used = {};
     function assign(slot, rec, source, notes) {
       slot.type = "recette"; slot.recette = rec.nom; slot.source = source; slot.notes = notes || [];
@@ -1889,24 +1943,24 @@ var Moteur = (function () {
       if (im.jour != null && im.repas) {
         target = slotAt(im.jour, im.repas);
       } else {
-        var pool = slots.filter(function (s) { return open(s) && (im.jour == null || s.jour === im.jour) && (im.jour == null ? (s.key !== "6-Soir") : true); });
-        var compat = pool.filter(function (s) { return compatible(rec, s.jour, s.repas); });
+        var pool = slots.filter(function (s) { return open(s) && (im.jour == null || s.jour === im.jour) && (im.jour == null ? !estVenSoir(s) : true); });
+        var compat = pool.filter(function (s) { return compatible(rec, s.wd, s.repas); });
         var cands = compat.length ? compat : pool;
         if (im.jour == null && !rec._regle.poisson) {
-          var sansSamMidi = cands.filter(function (s) { return s.key !== "0-Midi"; });
+          var sansSamMidi = cands.filter(function (s) { return !estSamMidi(s); });
           if (sansSamMidi.length) cands = sansSamMidi;
         }
         if (cands.length) target = cands[Math.floor(rng() * cands.length)];
       }
       if (!target) { avert.push("Aucun créneau disponible pour la recette imposée « " + rec.nom + " »."); return; }
       var notes = [];
-      if (!compatible(rec, target.jour, target.repas) && rec._regle.type !== "libre" && rec._regle.type !== "imposee") notes.push("hors règle (" + rec._regle.texte + "), demandé");
+      if (!compatible(rec, target.wd, target.repas) && rec._regle.type !== "libre" && rec._regle.type !== "imposee") notes.push("hors règle (" + rec._regle.texte + "), demandé");
       assign(target, rec, "imposee", notes);
     });
 
     // 2. Vendredi soir : alternance stricte.
     var alt = alternanceSuivante(hist);
-    var ven = slotAt(6, "Soir");
+    var ven = slotWd(6, "Soir");
     if (ven && open(ven)) {
       var recAlt = recettes.byName[alt.recette];
       if (recAlt) assign(ven, recAlt, "alternance", []);
@@ -1917,8 +1971,8 @@ var Moteur = (function () {
       var d = fromIso(slot.date);
       return recettes.list.filter(function (r) {
         if (used[r.nom]) return false;
-        if (ALTERNANCE.indexOf(r.nom) !== -1 && slot.key !== "6-Soir" && r.nom === "Pâtes farcies") return false;
-        if (!compatible(r, slot.jour, slot.repas)) return false;
+        if (ALTERNANCE.indexOf(r.nom) !== -1 && !estVenSoir(slot) && r.nom === "Pâtes farcies") return false;
+        if (!compatible(r, slot.wd, slot.repas)) return false;
         if (!enSaison(r, d)) return false;
         var w = semainesDepuis(last[r.nom], d);
         if (!relache && w < r.delai) return false;
@@ -1936,7 +1990,7 @@ var Moteur = (function () {
     function score(r, slot, fam) {
       var sc = rng();
       if (r._regle.type === "strict") sc += r._rare;         // peu d'occasions : les favoriser sur leur créneau
-      if (r._regle.pref) sc += r._regle.pref(slot.jour, slot.repas) ? 0.2 : -0.6;
+      if (r._regle.pref) sc += r._regle.pref(slot.wd, slot.repas) ? 0.2 : -0.6;
       r._familles.forEach(function (f) { sc -= 1.2 * (fam[f] || 0); });
       var w = semainesDepuis(last[r.nom], fromIso(slot.date));
       // Variété : favoriser ce qui n'a pas été servi depuis longtemps.
@@ -1958,7 +2012,7 @@ var Moteur = (function () {
     }
 
     // 4. Samedi midi : poisson en priorité.
-    var samMidi = slotAt(0, "Midi");
+    var samMidi = slotWd(0, "Midi");
     if (samMidi && open(samMidi)) {
       var p = choisir(samMidi, function (r) { return r._regle.poisson; });
       if (p) assign(samMidi, p.rec, "poisson", []);
@@ -1975,7 +2029,7 @@ var Moteur = (function () {
       assign(s, ch.rec, "auto", ch.relache ? ["délai non respecté (" + w + " sem. sur " + ch.rec.delai + ")"] : []);
     }
 
-    return { debut: startIso, fin: iso(addDays(debut, 6)), creneaux: slots, alternance: alt, avertissements: avert };
+    return { debut: startIso, fin: iso(addDays(debut, nJ - 1)), creneaux: slots, alternance: alt, avertissements: avert };
   }
 
   /* Remplacer la recette d'un seul créneau, sans toucher aux autres. */
@@ -1994,10 +2048,10 @@ var Moteur = (function () {
       recettes.byName[s.recette]._familles.forEach(function (f) { fam[f] = (fam[f] || 0) + 1; });
     });
     var c = recettes.list.filter(function (r) {
-      return !used[r.nom] && r.nom !== slot.recette && compatible(r, slot.jour, slot.repas) && enSaison(r, d) &&
-        semainesDepuis(last[r.nom], d) >= r.delai && !(r.nom === "Pâtes farcies" && slot.key !== "6-Soir");
+      return !used[r.nom] && r.nom !== slot.recette && compatible(r, wdOf(slot), slot.repas) && enSaison(r, d) &&
+        semainesDepuis(last[r.nom], d) >= r.delai && !(r.nom === "Pâtes farcies" && !estVenSoir(slot));
     });
-    if (slot.key === "0-Midi") {
+    if (estSamMidi(slot)) {
       var fish = c.filter(function (r) { return r._regle.poisson; });
       if (fish.length) c = fish;
     }
@@ -2005,13 +2059,13 @@ var Moteur = (function () {
     var best = null, bs = -Infinity;
     c.forEach(function (r) {
       var sc = rng();
-      if (r._regle.pref) sc += r._regle.pref(slot.jour, slot.repas) ? 0.6 : -0.6;
+      if (r._regle.pref) sc += r._regle.pref(wdOf(slot), slot.repas) ? 0.6 : -0.6;
       r._familles.forEach(function (f) { sc -= 1.2 * (fam[f] || 0); });
       if (bonus) sc += bonus(r) || 0;
       if (sc > bs) { bs = sc; best = r; }
     });
     slot.type = "recette"; slot.recette = best.nom; slot.source = "auto"; slot.notes = [];
-    if (slot.key === "0-Midi" && best._regle.poisson) slot.source = "poisson";
+    if (estSamMidi(slot) && best._regle.poisson) slot.source = "poisson";
     return slot;
   }
 
@@ -2101,7 +2155,7 @@ var Moteur = (function () {
 
   return {
     JOURS: JOURS, CAT_ORDER: CAT_ORDER, CAT_NAMES: CAT_NAMES, ALTERNANCE: ALTERNANCE,
-    norm: norm, iso: iso, fromIso: fromIso, fr: fr, addDays: addDays, prochainSamedi: prochainSamedi,
+    wdOf: wdOf, wdDate: wdDate, norm: norm, iso: iso, fromIso: fromIso, fr: fr, addDays: addDays, prochainSamedi: prochainSamedi,
     saisonDe: saisonDe, enSaison: enSaison, semaineIdx: semaineIdx, semainesDepuis: semainesDepuis,
     dernieres: dernieres, alternanceSuivante: alternanceSuivante,
     FAMILLES: FAMILLES.map(function (f) { return f[0]; }), famillesAuto: famillesAuto, regleDe: regleDe,
@@ -2157,7 +2211,7 @@ var Moteur = (function () {
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
   function majuscule(t) { t = String(t || "").trim(); return t ? t.charAt(0).toLocaleUpperCase("fr") + t.slice(1) : t; }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
-  function nomJour(i) { return JOURS[i]; }
+  function nomJour(i) { return JOURS[(M.addDays(debut, i).getDay() + 1) % 7]; }
   function dateCourte(isoStr) { var d = M.fromIso(isoStr); return M.fr(d).slice(0, 5); }
 
   /*@@MEMOIRE-DEBUT@@*/
@@ -2696,7 +2750,7 @@ var Moteur = (function () {
   /* ---------- État de la semaine affichée ---------- */
   var S = null;
   var defautDebut = M.prochainSamedi(new Date());
-  var SEMAINE_EN_COURS = M.addDays(defautDebut, -7), SEMAINE_A_PREPARER = defautDebut, debutRepris = false;
+  var debutRepris = false, dernierePeriode = "";
   var debut = defautDebut;
   var ongletActif = "prep";
 
@@ -2704,15 +2758,25 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "22 oct. 8h30";
+  var VERSION_SITE = "28 oct. 10h";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.3.0", VERSION_DATE = "22 oct. 2026";
+  var VERSION_APP = "1.4.0", VERSION_DATE = "28 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
+    { v: "1.4.0", date: "28 oct. 2026", type: "mineur", notes: [
+      "Séjours et absences : « ✈️ Séjour ou absence… » sous le menu découpe la semaine. Le séjour (ex. maison de campagne) a sa propre page, avec son menu et sa liste de courses ; les jours d'avant et d'après deviennent chacun leur période",
+      "Absence : une page « ✈️ Absents », sans menu ni courses",
+      "Séjour de plus d'une semaine : découpé en semaines du lundi au dimanche (« Changer » pour un autre rythme) ; au retour, une période courte jusqu'au vendredi puis le rythme normal",
+      "En séjour : tous les midis prévus, le placard dans la liste (« à emporter ou à acheter »), courses la veille du départ",
+      "Séjour ajouté ou supprimé après validation : les menus sont redécoupés automatiquement, sans perdre les repas ni les articles cochés",
+      "Courses déjà faites : modifier le menu n'affiche plus que ce qu'il faut acheter en plus (« Rien à acheter en plus » si les plats sont les mêmes)",
+      "Imprévu : « Restaurant en famille » ou « Restaurant en amoureux », avec le nom du restaurant (facultatif)",
+      "Listes nommées (ex. « Lidl ») gardées quand on revalide un menu"
+    ] },
     { v: "1.3.0", date: "22 oct. 2026", type: "mineur", notes: [
       "Listes de courses : le nombre affiché sur chaque liste (bandeau « Tu as 2 listes… ») correspond maintenant exactement aux lignes de la liste, même quand un article ajouté à la main rejoint celui d'une recette",
       "Œufs arrondis à ce qu'on peut acheter (boîtes de 4, 6, 10, 12, 18, 24) : 5 → 6, 7 → 8 ; 16 reste 16 (12 + 4)",
@@ -2887,6 +2951,7 @@ var Moteur = (function () {
     return { stage: "questions", reponses: { evenements: {}, midis: [], imposees: [] }, ajouts: [], menu: null, retires: {}, placardPlus: {} };
   }
   function chargerSemaine() {
+    debut = debutPeriode(debut); // séjours : la page commence au début de sa période
     var id = M.iso(debut);
     var valide = Store.menus[id];
     var brouillon = brouillonDe(id);
@@ -2959,11 +3024,13 @@ var Moteur = (function () {
     st.setProperty("--accent-txt", couleurTexte(pa.texte, 4.5));
   }
   function renderEntete() {
-    var fin = M.addDays(debut, 6);
+    var fin = finP();
+    dernierePeriode = JSON.stringify(periodeDe(M.iso(debut)));
+    var tt = document.getElementById("titre"); if (tt && ongletActif === "prep") tt.textContent = titrePrep();
     appliquerAccent();
     var rg = clear(document.getElementById("range"));
     rg.append(h("span", { class: "annee", text: String(anneeSemaine(M.iso(debut))) }),
-      h("span", { text: "Semaine " + semaineIso(fin) + " · du samedi " + M.fr(debut).slice(0, 5) + " au vendredi " + M.fr(fin).slice(0, 5) }));
+      h("span", { text: libPeriode() }));
     var wl = document.getElementById("weeklabel");
     wl.textContent = dateCourte(M.iso(debut)) + " → " + dateCourte(M.iso(fin));
     if (Store.ready) { var et = etatSemaine(); wl.append(icone(et, "wk-etat " + et, et === "ok" ? "Menu validé" : et === "sans" ? "Pas de menu" : "Menu à faire")); }
@@ -2986,7 +3053,7 @@ var Moteur = (function () {
       st.className = "status warn";
       txt += Store.msg ? ". " + Store.msg : ". Historique conservé dans ce navigateur uniquement.";
     }
-    if (M.iso(debut) !== M.iso(defautDebut)) txt += " · semaine choisie manuellement";
+    if (M.iso(debut) !== M.iso(debutPeriode(defautDebut))) txt += " · semaine choisie manuellement";
     st.textContent = "";
     if (typeof pastille === "string") {
       // Tout va bien : un simple point vert discret ; le détail (heure, semaines) en infobulle.
@@ -3048,10 +3115,10 @@ var Moteur = (function () {
   /* Repas passé : jour passé, ou aujourd'hui à partir de 12 h (midi) / 19 h (soir). Il n'est plus modifiable. */
   var HEURE_VERROU = { Midi: 12, Soir: 19 };
   function repasPasse(j, repas) { return jourPasse(j) || (estAujourdhui(j) && new Date().getHours() >= (HEURE_VERROU[repas] || 24)); }
-  function semainePassee() { return M.iso(M.addDays(debut, 6)) < aujIso(); }
+  function semainePassee() { return M.iso(finP()) < aujIso(); }
   function renderSemainePassee() {
     var grid = h("div", { class: "daygrid" });
-    for (var j = 0; j < 7; j++) grid.append(dayBox(j));
+    for (var j = 0; j < NJ(); j++) grid.append(dayBox(j));
     panelPrep.append(h("div", { class: "statut-bloc" }, statut("sans", "Pas de menu cette semaine"),
       h("p", { class: "status", text: "Aucun menu n'a été validé et tous les jours sont passés : plus rien ne peut être généré." })));
     panelPrep.append(grid);
@@ -3101,7 +3168,7 @@ var Moteur = (function () {
       var ul = h("ul", { class: "lecture-menu" });
       S.menu.creneaux.slice().sort(function (a, b) { return a.jour - b.jour || (a.repas === "Midi" ? -1 : 1); }).forEach(function (c) {
         var quoi = c.type === "recette" ? c.recette : c.type === "exclu" ? "—" : (c.texte || c.type);
-        ul.append(h("li", null, h("span", { class: "lm-j", text: JOURS[c.jour].slice(0, 3) + ". " + c.repas.toLowerCase() }), h("span", { text: quoi })));
+        ul.append(h("li", null, h("span", { class: "lm-j", text: nomJour(c.jour).slice(0, 3) + ". " + c.repas.toLowerCase() }), h("span", { text: quoi })));
       });
       resume.append(ul);
     }
@@ -3130,12 +3197,12 @@ var Moteur = (function () {
     ETAPES_TN.forEach(function (e, i) { liste.append(h("li", { class: i < etape && commence ? "fait" : i === etape && commence ? "encours" : "" }, h("b", { text: i < etape && commence ? "✓" : String(i + 1) }), h("span", { text: COURTS[i] }))); });
     panelPrep.append(h("section", { class: "tn-entree" },
       h("div", { class: "statut-bloc" }, statut("todo", deja ? "Modification à valider" : enCours ? "Menu à valider" : "Menu à faire")),
-      h("h2", { text: enCours ? "Ton menu est prêt" : "Prépare le menu de la semaine" }),
+      h("h2", { text: enCours ? "Ton menu est prêt" : sejourCourant() ? "Prépare le menu du séjour" : semaineEntiere() ? "Prépare le menu de la semaine" : "Prépare le menu de la période" }),
       h("p", { class: "status", text: enCours ? "Il reste à le relire et à valider la liste de courses." : "Trois petites questions, puis ton menu et ta liste de courses. Environ une minute." }),
       commence && S.appareil && S.appareil !== ID_APPAREIL ? h("p", { class: "status ok-msg", text: "Commencé sur un autre appareil" + (S.modifie ? ", le " + M.fr(new Date(S.modifie)).slice(0, 5) + " à " + new Date(S.modifie).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "") + " : tu reprends où il en est." }) : null,
       h("button", { type: "button", class: "btn primary tn-go", text: commence ? "Reprendre →" : "Commencer →", onclick: function () { sensTn = 1; S.tunnel = true; if (!S.page) S.page = "semaine"; sauver(); renderPrep(); window.scrollTo(0, 0); } }),
       deja ? boutonAnnulerModifs("btn ghost") : null,
-      liste));
+      liste, zoneSejours() || ""));
   }
 
   /* Efface le menu en préparation partagé. On le retire d'abord de la copie en mémoire : sinon la mise à jour
@@ -3171,13 +3238,13 @@ var Moteur = (function () {
     return zone;
   }
   function enteteTn(i, titre, sous) {
-    var fin = M.addDays(debut, 6);
+    var fin = finP();
     var barre = h("div", { class: "tn-barre", "aria-hidden": "true" });
     ETAPES_TN.forEach(function (e, k) { barre.append(h("i", { class: k < i ? "fait" : k === i ? "encours" : "" })); });
     return h("div", { class: "tn-haut" },
       h("div", { class: "tn-nav" },
         h("button", { type: "button", class: "tn-x", "aria-label": "Quitter (rien n'est perdu)", title: "Quitter (rien n'est perdu)", text: "✕", onclick: quitterTunnel }),
-        h("span", { class: "tn-sem", text: "Semaine " + semaineIso(fin) + " · " + M.fr(debut).slice(0, 5) + " → " + M.fr(fin).slice(0, 5) }),
+        h("span", { class: "tn-sem", text: (sejourCourant() ? nomSejour(sejourCourant()) : "Semaine " + semaineIso(fin)) + " · " + M.fr(debut).slice(0, 5) + " → " + M.fr(fin).slice(0, 5) }),
         h("span", { class: "tn-num", text: i >= 0 ? (i + 1) + "/" + ETAPES_TN.length : "" })),
       i >= 0 ? barre : null,
       titre ? h("h1", { class: "tn-titre", text: titre }) : null,
@@ -3192,11 +3259,11 @@ var Moteur = (function () {
     var p = pageTn(), i = idxEtape(p), page = h("div", { class: "tn-page " + (sensTn < 0 ? "depuis-g" : "depuis-d") });
     var rep = S.reponses, enCoursSem = semaineEnCours() && Store.menus[M.iso(debut)];
     if (p === "semaine") {
-      var dejaPasses = 0; for (var jj = 0; jj < 7; jj++) if (jourPasse(jj)) dejaPasses++;
+      var dejaPasses = 0; for (var jj = 0; jj < NJ(); jj++) if (jourPasse(jj)) dejaPasses++;
       page.append(enteteTn(0, "La semaine", "Touche un repas pour changer : Prévu, Exclu, Invitation, Resto en famille, Resto en amoureux ou Fête. Les midis de semaine sont exclus par défaut." + (dejaPasses ? " Les jours passés restent tels quels." : "")));
       var liste = h("div", { class: "tj-liste" });
-      for (var j = 0; j < 7; j++) liste.append(jourTunnel(j));
-      page.append(liste, basTn(null, h("button", { type: "button", class: "btn primary", text: "Continuer →", onclick: function () { allerPage(clesFete().length ? "fete" : "imposee"); } })));
+      for (var j = 0; j < NJ(); j++) liste.append(jourTunnel(j));
+      page.append(liste, zoneSejours() || "", basTn(null, h("button", { type: "button", class: "btn primary", text: "Continuer →", onclick: function () { allerPage(clesFete().length ? "fete" : "imposee"); } })));
     } else if (p === "fete") {
       renderPageFete(page);
     } else if (p === "imposee") {
@@ -3264,11 +3331,13 @@ var Moteur = (function () {
       page.append(h("div", { class: "bar actions-rares" }, h("button", { type: "button", class: "btn", text: "↻ Tout retirer au sort", onclick: function () { generer(); } }),
         Store.menus[M.iso(debut)] ? boutonAnnulerModifs("btn") : null));
       page.append(alerteSansIngredients(S.menu.creneaux) || "");
-      var nbL = listeCourses().lignes.length;
-      page.append(basTn(enCoursSem ? null : function () { allerPage("articles", -1); }, h("button", { type: "button", class: "btn primary", text: "Voir la liste de courses (" + nbL + ") →", onclick: function () { allerPage("liste"); } })));
+      var nbL = listeCourses().lignes.length, dejaM = Store.menus[M.iso(debut)], cfM = dejaM && dejaM.courses && coursesFaites(dejaM, debut);
+      var cpM = cfM ? complementAvant(dejaM) : null;
+      page.append(basTn(enCoursSem ? null : function () { allerPage("articles", -1); }, h("button", { type: "button", class: "btn primary",
+        text: cfM ? (cpM.plus.length ? "Voir ce qu'il faut en plus (" + cpM.plus.length + ") →" : "Continuer →") : "Voir la liste de courses (" + nbL + ") →", onclick: function () { allerPage("liste"); } })));
     } else if (p === "liste") {
-      page.append(enteteTn(4, "Ta liste de courses", "Retire ce que tu as déjà, ajoute ce qui manque."));
-      var dejaV = Store.menus[M.iso(debut)];
+      var dejaV = Store.menus[M.iso(debut)], cfF0 = dejaV && dejaV.courses && coursesFaites(dejaV, debut);
+      page.append(enteteTn(4, cfF0 ? "Tes courses" : "Ta liste de courses", cfF0 ? "Les courses sont déjà faites : seul ce qui manque est à acheter en plus." : "Retire ce que tu as déjà, ajoute ce qui manque."));
       if (dejaV && dejaV.courses) {
         var cfF = coursesFaites(dejaV, debut);
         // Exception au jour des courses : un petit lien pour dire l'inverse.
@@ -3283,7 +3352,18 @@ var Moteur = (function () {
       }
       if (S.menu.creneaux.some(function (c) { return c.type === "fete"; }) && !S.ajouts.some(function (a) { return /\bvins?\b/i.test(a.produit || ""); }))
         page.append(h("p", { class: "vin-bandeau", text: "🍷 N'oublie pas de prendre du vin pour ton repas de fête !" }));
-      page.append(renderCourses(true));
+      if (cfF0 && dejaV.coursesFaites !== false) {
+        var cpL = complementAvant(dejaV), boxC = h("section", { class: "cp-tn" });
+        if (!cpL.plus.length) boxC.append(h("p", { class: "cp-rien" }, h("b", { text: "✓ Rien à acheter en plus." }), " Tes courses du " + libCourtCourses(dejaV) + " couvrent ce menu."));
+        else {
+          boxC.append(h("p", null, h("b", { text: "À acheter en plus (" + cpL.plus.length + ")" })));
+          var ulC = h("ul", { class: "items" });
+          cpL.plus.forEach(function (l) { ulC.append(h("li", null, h("div", { class: "item" }, h("span", { class: "nm", text: l.produit }), h("span", { class: "qty", text: l.quantite || "" })))); });
+          boxC.append(ulC);
+        }
+        if (cpL.moins.length) boxC.append(h("p", { class: "status", text: "Plus nécessaire : " + cpL.moins.map(function (l) { return l.produit; }).join(", ") + " (déjà acheté : il restera à la maison)." }));
+        page.append(boxC, h("details", { class: "courses-pli" }, h("summary", null, h("span", { text: "Voir ou modifier la liste complète" }), h("small", { text: "pour retirer ou ajouter un article" })), h("div", { style: "margin-top:12px" }, renderCourses(true))));
+      } else page.append(renderCourses(true));
       var sansI = platsSansIngredients(S.menu.creneaux);
       if (sansI.length) {
         var cleSI = sansI.join("|"), cbSI = h("input", { type: "checkbox", checked: S.sansIngrOk === cleSI });
@@ -3550,6 +3630,8 @@ var Moteur = (function () {
     if (retour) panelPrep.append(h("div", { class: "retour" }, h("button", { type: "button", class: "btn ghost", text: "← Retour à l'historique", onclick: function () {
       var r = retour; retour = null; sauver(); debut = r.debut; chargerSemaine(); choisirOnglet(r.onglet); window.scrollTo(0, r.y);
     } })));
+    var sjA = sejourCourant();
+    if (sjA && sjA.absent) { document.body.classList.remove("tunnel"); renderAbsence(panelPrep); return; }
     var dansTunnel = (S.stage !== "valide" && S.tunnel && !semainePassee()) || (S.stage === "valide" && finTunnel);
     document.body.classList.toggle("tunnel", dansTunnel && ongletActif === "prep");
     if (dansTunnel) { clear(panelPrep); if (S.stage === "valide") renderFinTunnel(); else renderTunnel(); return; }
@@ -3570,12 +3652,12 @@ var Moteur = (function () {
     var rep = S.reponses;
 
     // Q1 : créneaux de la semaine (exclusions + midis ajoutés)
-    var dejaPasses = 0; for (var jj = 0; jj < 7; jj++) if (jourPasse(jj)) dejaPasses++;
+    var dejaPasses = 0; for (var jj = 0; jj < NJ(); jj++) if (jourPasse(jj)) dejaPasses++;
     panelPrep.append(h("div", { class: "statut-bloc todo" }, statut("todo", "Menu à faire"),
       h("p", { class: "status", text: dejaPasses ? "La semaine a commencé : le menu portera sur les jours restants." : "Réponds aux questions puis génère le menu." })));
     var q1 = h("section", { class: "card" }, qHead(1, "Des jours à exclure ? Des midis à ajouter ?", "Les midis du lundi au vendredi sont exclus par défaut : passe-les sur « Prévu » pour ajouter un déjeuner. Une invitation ou un restaurant en famille ne compte pas dans l'historique."));
     var grid = h("div", { class: "daygrid" });
-    for (var j = 0; j < 7; j++) grid.append(dayBox(j));
+    for (var j = 0; j < NJ(); j++) grid.append(dayBox(j));
     q1.append(grid);
 
     // Q2
@@ -3644,7 +3726,7 @@ var Moteur = (function () {
   }
 
   function slotKeysDuJour(j) { return [j + "-Midi", j + "-Soir"]; }
-  function midiSemaine(key) { var p = key.split("-"); return +p[0] >= 2 && p[1] === "Midi"; }
+  function midiSemaine(key) { var p = key.split("-"); return p[1] === "Midi" && wdJ(+p[0]) >= 2 && !sejourCourant(); }
 
   /* Valeur affichée d'un créneau. Midi de semaine : « exclu » tant qu'il n'est pas ajouté. */
   function etatCreneau(key) {
@@ -3709,15 +3791,15 @@ var Moteur = (function () {
     return box;
   }
 
-  var PLACEMENTS = (function () {
+  function placements() {
     var o = [["", "Placement automatique"]];
-    for (var j = 0; j < 7; j++) {
+    for (var j = 0; j < NJ(); j++) {
       o.push([j + "-", nomJour(j) + " (midi ou soir)"]);
       o.push([j + "-Midi", nomJour(j) + " midi"]);
       o.push([j + "-Soir", nomJour(j) + " soir"]);
     }
     return o;
-  })();
+  }
 
   /* ---------- Champ de recherche (remplace les longues listes déroulantes) ----------
      opts : items() -> [{v, label, groupe?, sub?, haut?}], value, placeholder, id, garder (affiche le choix), onPick(item) */
@@ -3797,7 +3879,7 @@ var Moteur = (function () {
     rep.imposees.forEach(function (im, i) {
       var rs = chercheur({ id: "imp-r-" + i, label: "Recette", placeholder: "Recette : tape les 1res lettres…", garder: true, value: im.recette, items: itemsRecettes, onPick: function (x) { im.recette = x.v; sauver(); } });
       var pv = (im.jour == null ? "" : im.jour + "-" + (im.repas || ""));
-      var ps = options(h("select", { id: "imp-p-" + i, "aria-label": "Créneau" }), PLACEMENTS, pv);
+      var ps = options(h("select", { id: "imp-p-" + i, "aria-label": "Créneau" }), placements(), pv);
       ps.addEventListener("change", function () {
         if (!ps.value) { im.jour = null; im.repas = null; }
         else { var p = ps.value.split("-"); im.jour = +p[0]; im.repas = p[1] || null; }
@@ -3974,12 +4056,12 @@ var Moteur = (function () {
     var evts = clone(S.reponses.evenements), midis = S.reponses.midis.slice(), gardes = {};
     var imposees = S.reponses.imposees.filter(function (im) { return im.recette && (im.jour == null || !jourPasse(im.jour)); });
     // Jours passés : on garde ce qui était prévu, sinon le créneau reste vide.
-    for (var j = 0; j < 7; j++) {
+    for (var j = 0; j < NJ(); j++) {
       var figeJour = jourPasse(j) || (prev && estAujourdhui(j));
       ["Midi", "Soir"].forEach(function (r) {
         var key = j + "-" + r, ps = prev ? prev.creneaux.filter(function (c) { return c.key === key; })[0] : null;
         if (!figeJour && !repasPasse(j, r) && !(ps && ps.source === "choisie")) return;
-        var midiSem = r === "Midi" && j >= 2;
+        var midiSem = r === "Midi" && wdJ(j) >= 2;
         if (ps && ps.type === "recette") {
           imposees.unshift({ recette: ps.recette, jour: j, repas: r }); gardes[key] = ps; delete evts[key];
           if (midiSem && midis.indexOf(j) === -1) midis.push(j);
@@ -3991,7 +4073,9 @@ var Moteur = (function () {
         }
       });
     }
-    var menu = M.generer(R, { debut: debut, evenements: evts, midis: midis, imposees: imposees, historique: hist });
+    // Séjour : on est sur place toute la journée, les midis de semaine sont prévus.
+    if (sejourCourant()) for (var js = 0; js < NJ(); js++) if (wdJ(js) >= 2 && !gardes[js + "-Midi"] && !repasPasse(js, "Midi") && midis.indexOf(js) === -1 && !(evts[js + "-Midi"] && evts[js + "-Midi"].etat === "exclu")) midis.push(js);
+    var menu = M.generer(R, { debut: debut, nbJours: NJ(), evenements: evts, midis: midis, imposees: imposees, historique: hist });
     menu.creneaux.forEach(function (c) { if (gardes[c.key]) { c.source = gardes[c.key].source; c.notes = gardes[c.key].notes || []; } });
     S.menu = menu;
     S.ajouts = S.ajouts.filter(function (a) { return a.produit && a.produit.trim(); });
@@ -4003,14 +4087,16 @@ var Moteur = (function () {
 
   /* ---------- Proposition ---------- */
   function listeCourses() {
-    var c = M.courses(R, S.menu);
+    var c = M.courses(R, S.menu), enSejour = !!sejourCourant();
     c.lignes.forEach(function (l) { l.produit = majuscule(l.produit); });
     // Placard (huile, farine…) : hors de la liste, sauf si on l'y a remis (« il en manque »).
     var pm = placardMap(), pp = S.placardPlus || {};
-    function auPlacard(l) { return estPlacard(l.produit) && !pp[M.norm(l.produit)]; }
+    // En séjour, le placard de la maison n'est pas là : tout va dans la liste (à emporter ou à acheter).
+    function auPlacard(l) { return !enSejour && estPlacard(l.produit) && !pp[M.norm(l.produit)]; }
     // Remis dans la liste : on achète des paquets entiers (la quantité des recettes passe en détail).
     c.lignes.forEach(function (l) {
       if (!estPlacard(l.produit) || auPlacard(l)) return;
+      if (enSejour) { l.detailAchat = "🏠 placard : à emporter ou à acheter"; return; }
       l.dePlacard = true;
       var a = qteAchat(l.produit, l.quantite); if (a) { l.quantite = a.q; l.detailAchat = a.detail; }
     });
@@ -4060,13 +4146,321 @@ var Moteur = (function () {
         courses: r.lignes.map(function (l) { return { produit: majuscule(l.produit), quantite: l.quantite, categorie: l.categorie, source: "fete" }; }) };
     });
   }
+  /* ---------- Séjours (maison secondaire…) et absences : des périodes à part ----------
+     config/courses.sejours = [{ id, nom, du, au, absent }] (jours entiers, dates ISO) : partagé par toute la famille.
+     Chaque période a sa page : son menu et sa liste de courses. Hors séjour, la période est la semaine
+     (samedi → vendredi), raccourcie par les séjours qui la touchent. Une absence est une page sans repas. */
+  var JOURS_CRT = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+  var JOURS_JS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+  var SEJ_SIMU = null; // séjours simulés (aperçu dans le formulaire)
+  function sejoursListe() { var c = SEJ_SIMU ? { sejours: SEJ_SIMU } : cfgBrute(); return Array.isArray(c.sejours) ? c.sejours.filter(function (s) { return s && s.id && s.du && s.au && s.du <= s.au; }) : []; }
+  function sejourDuJour(isoD) { return sejoursListe().filter(function (s) { return s.du <= isoD && isoD <= s.au; })[0] || null; }
+  function isoPlus(isoD, n) { return M.iso(M.addDays(M.fromIso(isoD), n)); }
+  function ecartJours(a, b) { return Math.round((M.fromIso(b) - M.fromIso(a)) / 86400000); }
+  /* Premier jour (samedi) de la semaine de menu qui contient ce jour. */
+  function samediDe(isoD) { return M.iso(M.addDays(M.prochainSamedi(M.fromIso(isoD)), -7)); }
+  /* Séjour de plus d'une semaine : découpé en semaines, qui commencent le jour choisi (s.semaine, jour JS ; samedi par défaut). */
+  function longSejour(s) { return !s.absent && ecartJours(s.du, s.au) + 1 > 7; }
+  function partieDe(s, isoD) {
+    var w = s.semaine != null ? +s.semaine : 6, d = M.fromIso(isoD), a = M.iso(M.addDays(d, -((d.getDay() - w + 7) % 7))), b = isoPlus(a, 6);
+    return { debut: a < s.du ? s.du : a, fin: b > s.au ? s.au : b };
+  }
+  /* Période qui contient ce jour : { debut, fin, sejour }. */
+  function periodeDe(isoD) {
+    var s = sejourDuJour(isoD);
+    if (s && longSejour(s)) { var pt = partieDe(s, isoD); return { debut: pt.debut, fin: pt.fin, sejour: s }; }
+    if (s) return { debut: s.du, fin: s.au, sejour: s };
+    var a = samediDe(isoD), b = isoPlus(a, 6);
+    sejoursListe().forEach(function (x) {
+      if (x.au < isoD && x.au >= a) a = isoPlus(x.au, 1);
+      if (x.du > isoD && x.du <= b) b = isoPlus(x.du, -1);
+    });
+    return { debut: a, fin: b, sejour: null };
+  }
+  function debutPeriode(d) { return M.fromIso(periodeDe(M.iso(d)).debut); }
+  function finP() { return M.fromIso(periodeDe(M.iso(debut)).fin); }
+  function NJ() { return ecartJours(M.iso(debut), M.iso(finP())) + 1; }
+  function wdJ(j) { return M.wdDate(M.addDays(debut, j)); }
+  function sejourCourant() { return periodeDe(M.iso(debut)).sejour; }
+  function nomJourDe(debIso, j) { return JOURS[M.wdDate(M.addDays(M.fromIso(debIso), j))]; }
+  function nbJoursMenu(menu) { return menu && menu.debut && menu.fin ? ecartJours(menu.debut, menu.fin) + 1 : 7; }
+  function semaineEntiere() { return NJ() === 7; }
+  function jourCourt(isoD) { var d = M.fromIso(isoD); return JOURS_CRT[d.getDay()] + " " + M.fr(d).slice(0, 5); }
+  function libSejour(s) { return "du " + jourCourt(s.du) + " au " + jourCourt(s.au); }
+  function nomSejour(s) { return (s.absent ? "✈️ " : "🏡 ") + ((s.nom || "").trim() || (s.absent ? "Absents" : "Séjour")); }
+  /* Libellé de la période affichée (en-tête, tunnel). */
+  function libPeriode() {
+    var p = periodeDe(M.iso(debut)), f = M.fromIso(p.fin);
+    if (p.sejour) return nomSejour(p.sejour) + partieTxt(p) + " · du " + JOURS_JS[debut.getDay()] + " " + M.fr(debut).slice(0, 5) + " au " + JOURS_JS[f.getDay()] + " " + M.fr(f).slice(0, 5);
+    return "Semaine " + semaineIso(f) + " · du " + JOURS_JS[debut.getDay()] + " " + M.fr(debut).slice(0, 5) + " au " + JOURS_JS[f.getDay()] + " " + M.fr(f).slice(0, 5);
+  }
+  function titrePrep() { var s = sejourCourant(); return s ? (s.absent ? "Absents" : "Menu du séjour") : "Menu de la semaine"; }
+  /* « · semaine 2/3 » pour une page d'un long séjour. */
+  function partieTxt(p) {
+    var s = p.sejour; if (!s || !longSejour(s)) return "";
+    var n = 0, i = 0, x = s.du;
+    while (x <= s.au) { var q = partieDe(s, x); n++; if (q.debut === p.debut) i = n; x = isoPlus(q.fin, 1); }
+    return " · semaine " + i + "/" + n;
+  }
+  function setSejours(l) { var c = Object.assign({}, cfgBrute(), { sejours: l }); var pr = Store.setCoursesCfg(c); if (Store.mode !== "db") lsSet("menus-courses-cfg", c); return pr; }
+
+  /* Menus validés redistribués dans les nouvelles périodes (après ajout, modification ou suppression d'un séjour).
+     Les repas gardent leur date ; ceux qui manquent sont tirés au sort ; ceux d'une absence disparaissent. */
+  function redecouper(zA, zB, ancDebut) {
+    var a = samediDe(zA), b = isoPlus(samediDe(zB), 6);
+    var dSauve = debut, sSauve = S, idSauve = M.iso(dSauve);
+    var anciens = Object.keys(Store.menus).filter(function (id) {
+      var d = Store.menus[id]; if (!d || !d.creneaux) return false;
+      var f = d.fin || isoPlus(id, 6); return id <= b && f >= a;
+    }).sort();
+    var parDate = {}, reels = {}, coches = {}, fins = {};
+    anciens.forEach(function (id) {
+      var d = Store.menus[id];
+      (d.creneaux || []).forEach(function (c) { var dt = c.date || isoPlus(id, c.jour); parDate[dt + "|" + c.repas] = Object.assign({}, c, { date: dt }); if (d.reels && d.reels[c.key]) reels[dt + "|" + c.repas] = d.reels[c.key]; });
+      Object.assign(coches, cochesParProduit(d));
+      fins[d.fin || isoPlus(id, 6)] = id;
+    });
+    // Nouvelles périodes de la zone.
+    var per = [], x = a;
+    while (x <= b) { var p = periodeDe(x); per.push(p); x = isoPlus(p.fin, 1); }
+    var ids = {}, faits = 0;
+    per.forEach(function (p) {
+      if (p.sejour && p.sejour.absent) return;
+      var cs = Object.keys(parDate).filter(function (k) { var dt = k.split("|")[0]; return dt >= p.debut && dt <= p.fin; }).map(function (k) { return parDate[k]; });
+      var prev = Store.menus[p.debut];
+      if (!cs.length && !prev) return;
+      var deja = prev && prev.fin === p.fin && cs.length === (prev.creneaux || []).length;
+      ids[p.debut] = true;
+      if (deja && !p.sejour === !prev.sejour) return; // période inchangée
+      debut = M.fromIso(p.debut);
+      S = prev ? depuisValide(prev) : { stage: "valide", reponses: { evenements: {}, midis: [], imposees: [] }, ajouts: [], retires: {}, qtes: {}, placardPlus: {}, menu: null };
+      if (prev && prev.debut !== p.debut) S.reponses = { evenements: {}, midis: [], imposees: [] };
+      var rr = {};
+      S.menu = { debut: p.debut, fin: p.fin, avertissements: [], creneaux: cs.map(function (c) {
+        var j = ecartJours(p.debut, c.date), n = Object.assign({}, c, { jour: j, key: j + "-" + c.repas, wd: M.wdDate(M.fromIso(c.date)) });
+        if (reels[c.date + "|" + c.repas]) rr[n.key] = reels[c.date + "|" + c.repas];
+        return n;
+      }) };
+      if (S.reponses && S.reponses.evenements) Object.keys(S.reponses.evenements).forEach(function (k) { if (+k.split("-")[0] >= NJ()) delete S.reponses.evenements[k]; });
+      S.reponses.midis = (S.reponses.midis || []).filter(function (j) { return j < NJ(); });
+      completerMenu(S.menu);
+      var r = construireDoc("sejour"), doc = r.doc;
+      if (Object.keys(rr).length) doc.reels = rr; else delete doc.reels;
+      // Ce qui était déjà coché (acheté) le reste.
+      if (!prev) {
+        var idx = indexerLignes(doc.courses).m, c2 = {};
+        Object.keys(coches).forEach(function (k) { if (coches[k] && idx[k]) c2[k] = true; });
+        doc.coches = c2;
+      }
+      // Les articles ajoutés à la main suivent la fin de l'ancienne période.
+      if (!prev && fins[p.fin] && Store.menus[fins[p.fin]]) {
+        var arA = ajoutsRapides(Store.menus[fins[p.fin]]); if (Object.keys(arA).length) doc.ajoutsRapides = arA;
+      }
+      Store.menus[p.debut] = doc; Store.setMenu(p.debut, doc);
+      faits++;
+    });
+    anciens.forEach(function (id) {
+      if (ids[id]) return;
+      delete Store.menus[id]; Store.deleteMenu(id);
+      lsDel("menus-brouillon-" + id); if (partage()) Store.deleteBrouillon(id);
+    });
+    // Page affichée : la période qui contient son premier jour hors du nouveau séjour (sinon le séjour).
+    var cible = ancDebut || idSauve, pc = periodeDe(cible), finAnc = sSauve && sSauve.menu && sSauve.menu.fin ? sSauve.menu.fin : isoPlus(cible, 6);
+    if (pc.sejour) { for (var y = cible; y <= finAnc; y = isoPlus(y, 1)) { var py = periodeDe(y); if (!py.sejour) { pc = py; break; } } }
+    debut = M.fromIso(pc.debut);
+    if (sSauve && sSauve.stage !== "valide" && sSauve.menu && pc.debut !== idSauve) {
+      // Menu en préparation : il suit sa nouvelle période (repas hors période retirés).
+      var dec = ecartJours(idSauve, pc.debut), n = NJ();
+      sSauve.menu.creneaux = sSauve.menu.creneaux.filter(function (c) { return c.jour - dec >= 0 && c.jour - dec < n; }).map(function (c) { var j = c.jour - dec; return Object.assign(c, { jour: j, key: j + "-" + c.repas }); });
+      sSauve.menu.debut = pc.debut; sSauve.menu.fin = M.iso(finP());
+      var ev = {}; Object.keys(sSauve.reponses.evenements || {}).forEach(function (k) { var q = k.split("-"), j = +q[0] - dec; if (j >= 0 && j < n) ev[j + "-" + q[1]] = sSauve.reponses.evenements[k]; });
+      sSauve.reponses.evenements = ev;
+      sSauve.reponses.midis = (sSauve.reponses.midis || []).map(function (j) { return j - dec; }).filter(function (j) { return j >= 0 && j < n; });
+      sSauve.reponses.imposees = (sSauve.reponses.imposees || []).map(function (im) { if (im.jour == null) return im; var j = im.jour - dec; return j >= 0 && j < n ? Object.assign({}, im, { jour: j }) : Object.assign({}, im, { jour: null, repas: null }); });
+      lsDel("menus-brouillon-" + idSauve); if (partage()) Store.deleteBrouillon(idSauve);
+      S = sSauve; sauver();
+    } else if (sSauve && sSauve.stage !== "valide" && sSauve.menu) {
+      S = sSauve; var n2 = NJ(); S.menu.fin = M.iso(finP());
+      S.menu.creneaux = S.menu.creneaux.filter(function (c) { return c.jour < n2; });
+      sauver();
+    } else {
+      chargerSemaine();
+    }
+    return faits;
+  }
+  /* Repas de base d'une période validée (soirs, midis du week-end, midis d'un séjour) : ceux qui manquent sont tirés au sort. */
+  function completerMenu(menu) {
+    var hist = Store.historique(M.iso(debut)), sej = sejourCourant(), n = 0;
+    for (var j = 0; j < NJ(); j++) ["Midi", "Soir"].forEach(function (r) {
+      if (repasPasse(j, r)) return;
+      if (r === "Midi" && wdJ(j) >= 2 && !sej) return;
+      var key = j + "-" + r; if (menu.creneaux.some(function (c) { return c.key === key; })) return;
+      var c = { key: key, jour: j, wd: wdJ(j), repas: r, date: M.iso(M.addDays(debut, j)), type: "exclu", recette: null, source: null, texte: "", notes: [] };
+      menu.creneaux.push(c);
+      if (M.changer(R, menu, key, hist)) n++; else menu.creneaux.splice(menu.creneaux.indexOf(c), 1);
+    });
+    menu.creneaux.sort(function (a, b) { return a.jour - b.jour || (a.repas === "Midi" ? -1 : 1); });
+    return n;
+  }
+  function enregistrerSejours(liste, touches, ancDebut) {
+    var zA = null, zB = null;
+    touches.forEach(function (s) { if (!s) return; if (!zA || s.du < zA) zA = s.du; if (!zB || s.au > zB) zB = s.au; });
+    // Début des semaines changé après ce séjour : toutes les semaines déjà prévues ensuite sont redécoupées.
+    setSejours(liste);
+    var n = redecouper(zA, zB, ancDebut);
+    finTunnel = false;
+    renderOnglet();
+    window.scrollTo(0, 0);
+    return n;
+  }
+  /* Lien discret sous le menu + formulaire (nouveau séjour, ou modifier celui de la page). */
+  function zoneSejours() {
+    if (semainePassee()) return null;
+    var z = h("div", { class: "sej-zone" }), sc = sejourCourant();
+    function initial() {
+      clear(z);
+      if (sc) z.append(h("button", { type: "button", class: "lien-cf sej-lien", text: (sc.absent ? "Modifier ou supprimer l'absence…" : "Modifier ou supprimer ce séjour…"), onclick: function () { formulaire(sc); } }));
+      else {
+        // Séjours et absences à venir : visibles ici pour les retrouver, les modifier ou les supprimer.
+        // Seulement ceux qui touchent la semaine de cette page (samedi → vendredi) : avant ou juste après elle.
+        var sa = samediDe(M.iso(debut)), sb = isoPlus(sa, 6);
+        var av = sejoursListe().filter(function (x) { return x.au >= aujIso() && x.du <= sb && x.au >= sa; });
+        if (av.length) {
+          var ul = h("ul", { class: "sej-avenir" });
+          av.forEach(function (x) {
+            ul.append(h("li", null, h("span", null, h("b", { text: nomSejour(x) }), h("small", { text: " · " + libSejour(x) })),
+              h("button", { type: "button", class: "lien-cf", text: "Voir", onclick: function () { allerSemaine(M.fromIso(x.du)); window.scrollTo(0, 0); } }),
+              h("button", { type: "button", class: "lien-cf", text: "Modifier", onclick: function () { formulaire(x); } })));
+          });
+          z.append(h("p", { class: "sej-avenir-t", text: "Séjours et absences cette semaine" }), ul);
+        }
+        z.append(h("button", { type: "button", class: "lien-cf sej-lien", text: "✈️ Séjour ou absence…", onclick: function () { formulaire(null); } }));
+      }
+    }
+    function formulaire(s0) {
+      clear(z);
+      var aujd = aujIso(), d0 = M.iso(debut) < aujd ? aujd : M.iso(debut);
+      var s = s0 ? Object.assign({}, s0) : { id: "s" + Date.now().toString(36), nom: "", du: d0, au: isoPlus(d0, 3), absent: false };
+      var nom = h("input", { type: "text", value: s.nom || "", "aria-label": "Nom du séjour" });
+      var du = h("input", { type: "date", value: s.du, "aria-label": "Premier jour" });
+      var au = h("input", { type: "date", value: s.au, "aria-label": "Dernier jour" });
+      // Le dernier jour ne peut pas précéder le premier : le calendrier commence au premier jour.
+      du.min = aujIso(); au.min = s.du > aujIso() ? s.du : aujIso();
+      du.addEventListener("change", function () { if (!du.value) return; au.min = du.value; if (!au.value || au.value < du.value) au.value = du.value; });
+      au.addEventListener("change", function () { if (au.value && du.value && au.value < du.value) au.value = du.value; });
+      var abs = h("input", { type: "checkbox", id: "sej-abs" }); abs.checked = !!s.absent;
+      // Séjour de plus d'une semaine : on choisit le jour où commencent ses semaines (souvent lundi en vacances).
+      var rythmeZ = h("div", { class: "sej-rythme", hidden: true }), choixRythme = s.semaine != null ? +s.semaine : 1, rythmeOuvert = false;
+      /* Pages obtenues avec ce choix (aperçu) : la période d'avant, celles du séjour, celle d'après. */
+      function apercu(w) {
+        var cand = { id: s.id, nom: nom.value, du: du.value, au: au.value, absent: abs.checked, semaine: w };
+        SEJ_SIMU = sejoursListe().filter(function (x) { return x.id !== s.id; }).concat([cand]);
+        var out = h("div", { class: "sej-ry-pages" });
+        try {
+          var x = periodeDe(isoPlus(du.value, -1)).debut, fin = periodeDe(isoPlus(au.value, 1)).fin, k = 0;
+          while (x <= fin && k++ < 9) {
+            var p = periodeDe(x), nj = ecartJours(p.debut, p.fin) + 1;
+            out.append(h("span", { class: "sej-ry-p" + (p.sejour ? " sej" : nj < 7 ? " court" : "") }, (p.sejour ? "🏡 " : "") + dateCourte(p.debut) + " → " + dateCourte(p.fin)));
+            x = isoPlus(p.fin, 1);
+          }
+        } finally { SEJ_SIMU = null; }
+        out.append(h("span", { class: "sej-ry-p suite", text: "puis samedi → vendredi" }));
+        return out;
+      }
+      function majRythme() {
+        clear(rythmeZ);
+        if (abs.checked || !du.value || !au.value || du.value > au.value || ecartJours(du.value, au.value) + 1 <= 7) { rythmeZ.hidden = true; return; }
+        rythmeZ.hidden = false;
+        var JL = JOURS_JS, arr = M.fromIso(du.value).getDay(), choix = [[1, "du lundi au dimanche", "Le rythme habituel des vacances."], [6, "du samedi au vendredi", "Comme d'habitude."]];
+        if (arr !== 1 && arr !== 6) choix.push([arr, "du " + JL[arr] + " au " + JL[(arr + 6) % 7], "À partir du jour d'arrivée."]);
+        if (!choix.some(function (o) { return o[0] === choixRythme; })) choixRythme = 1;
+        // Par défaut : semaines du lundi au dimanche, sans question ; on change à la main si besoin.
+        if (!rythmeOuvert) {
+          rythmeZ.classList.add("replie");
+          rythmeZ.append(h("p", { class: "sej-ry-court" }, "Plus d'une semaine : découpé en semaines du " + JL[choixRythme] + " au " + JL[(choixRythme + 6) % 7] + ". ",
+            h("button", { type: "button", class: "lien-cf", text: "Changer", onclick: function () { rythmeOuvert = true; majRythme(); } })));
+          return;
+        }
+        rythmeZ.classList.remove("replie");
+        rythmeZ.append(h("p", { class: "sej-ry-t", text: "Ton séjour dure plus d'une semaine : il est découpé en semaines de menu, chacune avec sa liste de courses. Pendant le séjour, tes semaines vont…" }));
+        choix.forEach(function (o, i) {
+          var r = h("input", { type: "radio", name: "sej-rythme", id: "sej-ry-" + i });
+          r.checked = choixRythme === o[0];
+          r.addEventListener("change", function () { if (r.checked) choixRythme = o[0]; });
+          rythmeZ.append(h("label", { class: "sej-ry-opt", for: "sej-ry-" + i }, r, h("span", null, h("b", { text: o[1] }), h("small", { text: o[2] }), apercu(o[0]))));
+        });
+        rythmeZ.append(h("small", { class: "sej-expl", text: "Au retour, une période plus courte va jusqu'au vendredi, puis le rythme normal (samedi → vendredi) reprend." }));
+      }
+      du.addEventListener("change", majRythme); au.addEventListener("change", majRythme); abs.addEventListener("change", majRythme); setTimeout(majRythme, 0);
+      var aide = h("p", { class: "status" }), err = h("div", { class: "status err sej-err", role: "alert" });
+      function majAide() {
+        aide.textContent = abs.checked ? "Une page à part, sans repas ni courses. Les jours d'avant et d'après deviennent chacun leur propre période, avec leur menu et leur liste."
+          : "Une page à part pour ces jours : son menu et sa liste de courses. Les jours d'avant et d'après deviennent chacun leur propre période.";
+        nom.placeholder = abs.checked ? "Pourquoi ? (facultatif, ex. Vacances)" : "Où ? (ex. Maison de campagne)";
+      }
+      abs.addEventListener("change", majAide); majAide();
+      function ok() {
+        var n = { id: s.id, nom: nom.value.trim(), du: du.value, au: au.value, absent: abs.checked };
+        if (longSejour(n)) n.semaine = choixRythme;
+        if (!n.du || !n.au) { err.textContent = "Choisis les dates."; return; }
+        if (n.du > n.au) { err.textContent = "Le dernier jour est avant le premier."; return; }
+        if (n.au < aujIso()) { err.textContent = "Ces jours sont déjà passés."; return; }
+        var choc = sejoursListe().filter(function (x) { return x.id !== n.id && x.du <= n.au && n.du <= x.au; })[0];
+        if (choc) {
+          // Déjà un séjour sur ces dates : on propose de le remplacer, ou de le modifier lui.
+          clear(err);
+          err.append(h("p", { text: "Ces dates chevauchent « " + nomSejour(choc).slice(3) + " » (" + libSejour(choc) + "), déjà enregistré." }),
+            h("div", { class: "bar" },
+              h("button", { type: "button", class: "btn", text: "Remplacer « " + nomSejour(choc).slice(3) + " »", onclick: function () { sauverN([choc]); } }),
+              h("button", { type: "button", class: "btn ghost", text: "Modifier « " + nomSejour(choc).slice(3) + " »", onclick: function () { formulaire(choc); } })));
+          return;
+        }
+        sauverN([]);
+        function sauverN(remplaces) {
+          var ids = remplaces.map(function (x) { return x.id; });
+          var l = sejoursListe().filter(function (x) { return x.id !== n.id && ids.indexOf(x.id) === -1; }).concat([n]).sort(function (a, b) { return a.du < b.du ? -1 : 1; });
+          var anc = M.iso(debut);
+          enregistrerSejours(l, [s0, n].concat(remplaces), s0 ? null : anc);
+          toast((n.absent ? "Absence" : "Séjour") + " enregistré" + (n.absent ? "e" : "") + " : nouvelle page " + libSejour(n) + ".", { lib: "Voir", fn: function () { allerSemaine(M.fromIso(n.du)); window.scrollTo(0, 0); } });
+        }
+        return;
+      }
+      function suppr() {
+        enregistrerSejours(sejoursListe().filter(function (x) { return x.id !== s.id; }), [s0], null);
+        toast((s0.absent ? "Absence supprimée" : "Séjour supprimé") + " : les jours ont rejoint leur semaine.");
+      }
+      z.append(h("div", { class: "sej-form" },
+        h("p", { class: "sej-titre", text: s0 ? "Modifier : " + nomSejour(s0) : "Séjour ailleurs ou absence" }),
+        h("label", { class: "check", for: "sej-abs" }, abs, " Pas de repas à prévoir (absents)"),
+        nom,
+        h("div", { class: "sej-dates" }, h("span", { text: "Du" }), du),
+        h("div", { class: "sej-dates" }, h("span", { text: "Au" }), au),
+        rythmeZ, aide, err,
+        h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "Enregistrer", onclick: ok }),
+          h("button", { type: "button", class: "btn ghost", text: "Annuler", onclick: initial }),
+          s0 ? h("button", { type: "button", class: "btn danger-ghost", text: "Supprimer", onclick: suppr }) : null)));
+      setTimeout(function () { try { z.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }, 30);
+    }
+    initial();
+    return z;
+  }
+  /* Page d'une absence : pas de menu ni de courses. */
+  function renderAbsence(panel) {
+    var s = sejourCourant();
+    panel.append(h("section", { class: "card absence-carte" },
+      h("p", { class: "abs-ico", text: "✈️" }),
+      h("h2", { text: (s.nom || "").trim() || "Absents", style: "font-size:1.4rem" }),
+      h("p", { class: "status", text: "Du " + JOURS_JS[M.fromIso(s.du).getDay()] + " " + M.fr(M.fromIso(s.du)).slice(0, 5) + " au " + JOURS_JS[M.fromIso(s.au).getDay()] + " " + M.fr(M.fromIso(s.au)).slice(0, 5) + " : pas de repas à prévoir, pas de courses." }),
+      zoneSejours() || ""));
+  }
   function renderMenuGrille(editable) {
     var hist = Store.historique(M.iso(debut));
-    var wrap = h("div", { class: "menu" });
+    var wrap = h("div", { class: "menu" }), vus = {};
     wrap.append(h("div", { class: "mrow head" }, h("div", { text: "Jour" }), h("div", { text: "Midi" }), h("div", { text: "Soir" })));
-    for (var j = 0; j < 7; j++) {
+    for (var j = 0; j < NJ(); j++) {
       var d = M.addDays(debut, j);
       var row = h("div", { class: "mrow" + (M.iso(d) === M.iso(new Date()) ? " is-today" : "") }, h("div", { class: "mday", style: couleursJour(d) }, h("span", { class: "dnum", text: String(d.getDate()).padStart(2, "0") }), h("b", { text: nomJour(j) })));
+      var dIso = M.iso(d);
       ["Midi", "Soir"].forEach(function (repas) {
         var key = j + "-" + repas;
         var slot = S.menu.creneaux.filter(function (s) { return s.key === key; })[0];
@@ -4074,11 +4468,11 @@ var Moteur = (function () {
       });
       wrap.append(row);
     }
-    return wrap;
+    var zs = zoneSejours();
+    return zs ? h("div", { class: "menu-bloc" }, wrap, zs) : wrap;
   }
 
   function estAujourdhui(j) { return M.iso(M.addDays(debut, j)) === aujIso(); }
-  function semaineEnCours() { var t = aujIso(); return M.iso(debut) <= t && t <= M.iso(M.addDays(debut, 6)); }
   var CHOIX_EVT = [["__exclu", "— (pas de repas)"], ["__invitation", "Invitation"], ["__resto", "Restaurant en famille"], ["__amoureux", "Restaurant en amoureux"], ["__fete", "Repas de fête 🎉"]];
   /* Crée le créneau s'il n'existe pas encore (midi de semaine non prévu). */
   function creneauDe(j, repas) {
@@ -4137,8 +4531,8 @@ var Moteur = (function () {
     return a;
   }
 
-  var CHOIX_REEL = [["__restes", "Des restes"], ["__resto", "Restaurant"], ["__invitation", "Invitation"], ["__saute", "Repas sauté"]];
-  function libReel(r) { return r.type === "recette" ? r.recette : r.texte || "Autre"; }
+  var CHOIX_REEL = [["__resto", "Restaurant en famille"], ["__amoureux", "Restaurant en amoureux"], ["__invitation", "Invitation"], ["__saute", "Repas sauté"]];
+  function libReel(r) { return r.type === "recette" ? r.recette : (r.texte || "Autre") + (r.resto ? " · " + r.resto : ""); }
   /* Plus de 2 semaines : on ne réécrit plus l'histoire. */
   function semaineTropVieille() { return M.iso(M.addDays(debut, 20)) < aujIso(); }
   function libSlot(c) {
@@ -4151,7 +4545,7 @@ var Moteur = (function () {
     var idSem = M.iso(debut), docSem = Store.menus[idSem];
     if (!docSem || semaineTropVieille()) return null;
     var passes = [];
-    for (var j = 0; j < 7; j++) ["Midi", "Soir"].forEach(function (r) {
+    for (var j = 0; j < NJ(); j++) ["Midi", "Soir"].forEach(function (r) {
       if (!repasPasse(j, r)) return;
       var c = (docSem.creneaux || []).filter(function (x) { return x.key === j + "-" + r; })[0], reel = docSem.reels && docSem.reels[j + "-" + r];
       if (!c && !reel && r === "Midi") return; // midi sans menu : rarement utile, on allège la liste
@@ -4191,11 +4585,23 @@ var Moteur = (function () {
           itemsRecettes().map(function (y) { y.groupe = "Recettes"; return y; }));
       }, onPick: function (y) {
         if (!y || !y.v) return;
+        // Les deux restaurants sont rangés comme au menu : type « resto », le libellé dit lequel ; puis le nom (facultatif).
+        if (y.v === "__resto" || y.v === "__amoureux") { etapeResto(k, x, { type: "resto", texte: y.label }); return; }
         enregistrer(k, y.v === "__prevu" ? null : y.v.indexOf("__") === 0 ? { type: y.v.slice(2), texte: y.label } : { type: "recette", recette: y.v });
       } });
       zone.append(h("p", { class: "lbl", text: "2. " + nomJour(x.j) + " " + x.r.toLowerCase() + " (prévu : " + libSlot(x.c) + ") — qu'avez-vous mangé ?" }),
         h("div", { class: "choix-ligne" }, sel, h("button", { type: "button", class: "icon", "aria-label": "Retour", text: "✕", onclick: etape1 })));
       setTimeout(function () { var i = sel.querySelector("input"); if (i) i.focus(); }, 30);
+    }
+    function etapeResto(k, x, val) {
+      clear(zone);
+      var anc = x.reel && x.reel.type === "resto" ? x.reel.resto || "" : x.c && x.c.resto ? x.c.resto : "";
+      var inp = h("input", { type: "text", class: "invit-txt", value: anc, placeholder: "Quel restaurant ? (facultatif)", "aria-label": "Nom du restaurant" });
+      function ok() { var v = inp.value.trim(); if (v) val.resto = v; enregistrer(k, val); }
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); ok(); } });
+      zone.append(h("p", { class: "lbl", text: "3. " + nomJour(x.j) + " " + x.r.toLowerCase() + " : " + val.texte }),
+        h("div", { class: "arow" }, inp, h("button", { type: "button", class: "btn", text: "OK", onclick: ok }), h("button", { type: "button", class: "icon", "aria-label": "Retour", text: "✕", onclick: function () { etape2(k); } })));
+      setTimeout(function () { inp.focus(); }, 30);
     }
     return { bouton: btnChg, zone: zone, annuler: annulerReels(idSem, docSem) };
   }
@@ -4233,7 +4639,7 @@ var Moteur = (function () {
     var btn = h("button", { type: "button", class: "icon corbeille", title: "Effacer la semaine", "aria-label": "Effacer la semaine", onclick: function () {
       if (zone.childNodes.length) { clear(zone); return; }
       zone.append(h("div", { class: "confirm-eff" },
-        h("p", null, h("b", { text: "Effacer le menu du " + M.fr(debut).slice(0, 5) + " au " + M.fr(M.addDays(debut, 6)).slice(0, 5) + " ?" }),
+        h("p", null, h("b", { text: "Effacer le menu du " + M.fr(debut).slice(0, 5) + " au " + M.fr(finP()).slice(0, 5) + " ?" }),
           h("span", { text: " Le menu, la liste de courses et les réponses sont supprimés pour tout le monde. Tu repars d'une semaine vierge." })),
         h("div", { class: "bar" },
           h("button", { type: "button", class: "btn danger", text: "Oui, effacer la semaine", onclick: function (e) {
@@ -4588,7 +4994,8 @@ var Moteur = (function () {
     panelPrep.append(h("div", { class: "validate" }, h("p", { text: QUESTION_VALIDATION }), h("div", { class: "bar" }, vbtn, vnote)));
   }
 
-  function valider(btn, note) {
+  /* Document de la semaine validée, à partir de l'état S (aussi pour un recalcul après un séjour). */
+  function construireDoc(motif) {
     var liste = listeCourses();
     var id = M.iso(debut);
     var doc = {
@@ -4607,7 +5014,16 @@ var Moteur = (function () {
     var prevJ = Store.menus[id];
     doc.journal = prevJ ? clone(prevJ.journal || {}) : {};
     if (prevJ && !Object.keys(doc.journal).length && prevJ.valideLe) doc.journal["j0"] = { quoi: "valide", le: prevJ.valideLe, par: prevJ.validePar || "" };
-    doc.journal["j" + Date.now().toString(36)] = { quoi: prevJ ? "modifie" : "valide", le: doc.valideLe, par: NOM_APPAREIL || "" };
+    var cleJ = "j" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    doc.journal[cleJ] = { quoi: prevJ ? "modifie" : "valide", le: doc.valideLe, par: NOM_APPAREIL || "" };
+    if (motif === "sejour") doc.journal[cleJ].detail = "séjour ou absence";
+    // Listes nommées (« Lidl »…) et articles qu'on y a rangés : gardées d'une validation à l'autre.
+    var LNprev = (prevJ && prevJ.listesNommees) || {};
+    doc.listesNommees = {}; doc.dans = {};
+    Object.keys(LNprev).forEach(function (k) { if (LNprev[k] && LNprev[k].nom && !LNprev[k].periode) doc.listesNommees[k] = LNprev[k]; });
+    Object.keys((prevJ && prevJ.dans) || {}).forEach(function (k) { var v = prevJ.dans[k]; if (v && doc.listesNommees[v]) doc.dans[k] = v; });
+    if (!Object.keys(doc.listesNommees).length) { delete doc.listesNommees; delete doc.dans; }
+    var sjc = sejourCourant(); if (sjc) doc.sejour = { id: sjc.id, nom: sjc.nom || "" };
     doc.validePar = prevJ ? (prevJ.validePar || "") : (NOM_APPAREIL || "");
     var si = platsSansIngredients(S.menu.creneaux); if (si.length) doc.sansRecettes = { plats: si, ajoutes: S.sansIngrOk === si.join("|") };
     // Menu déjà validé puis modifié : on garde la liste de référence (celle déjà achetée)
@@ -4633,11 +5049,22 @@ var Moteur = (function () {
         if (k.indexOf("plus:") === 0 ? plusNouv[k.slice(5)] : (nouvIdx[k] || k.indexOf("aj-") === 0 || k.indexOf("fete:") === 0)) c[k] = true;
       });
       doc.coches = c;
-      if (!comp.plus.length && !comp.moins.length) delete doc.coursesReference;
+      if (motif === "sejour") {
+        // Période seulement découpée : rien à racheter. Une liste déjà complétée avant garde son complément, sans les jours partis.
+        if (!prev.coursesReference) delete doc.coursesReference;
+        else { var idxR = indexerLignes(doc.courses).m; doc.coursesReference = prev.coursesReference.filter(function (l) { return idxR[cleArticle(l.categorie + " " + l.produit)]; }); }
+        comp = calculerComplement(doc.coursesReference || [], doc.courses);
+      }
+      if (!doc.coursesReference || (!comp.plus.length && !comp.moins.length)) delete doc.coursesReference;
     }
+    return { doc: doc, prev: prev };
+  }
+  function valider(btn, note) {
+    var id = M.iso(debut), r = construireDoc(), doc = r.doc, prev = r.prev;
     btn.disabled = true; note.className = "status"; note.textContent = "Enregistrement…";
     var premiereValidation = !prev;
     Store.setMenu(id, doc).then(function () {
+      if (Store.mode === "db") Store.menus[id] = doc;
       S = depuisValide(doc);
       lsDel(cleBrouillon()); clearTimeout(minuteurBrouillon); if (partage()) Store.deleteBrouillon(id);
       finTunnel = true;
@@ -4715,10 +5142,11 @@ var Moteur = (function () {
   }
   /* Petit lien vers la semaine suivante, sur la ligne « Menu validé » (semaine en cours seulement). */
   function lienSemaineProchaine() {
-    if (M.iso(debut) !== M.iso(SEMAINE_EN_COURS)) return null;
-    var proch = SEMAINE_A_PREPARER, prete = !!Store.menus[M.iso(proch)];
-    return h("button", { type: "button", class: "lien-proch" + (prete ? " prete" : ""), "aria-label": "Semaine prochaine : " + (prete ? "prête" : "à préparer"), onclick: function () { allerSemaine(proch); window.scrollTo(0, 0); } },
-      h("span", { text: "Sem. suivante · " }), h("b", { text: prete ? "prête ✓" : "à préparer" }), " ›");
+    if (M.iso(debut) !== M.iso(semaineEnCours())) return null;
+    var proch = debutPeriode(M.addDays(finP(), 1)), ps = periodeDe(M.iso(proch)).sejour, prete = !!Store.menus[M.iso(proch)] || !!(ps && ps.absent);
+    var lib = ps ? nomSejour(ps) + " · " : "Sem. suivante · ";
+    return h("button", { type: "button", class: "lien-proch" + (prete ? " prete" : ""), "aria-label": "Période suivante : " + (prete ? "prête" : "à préparer"), onclick: function () { allerSemaine(proch); window.scrollTo(0, 0); } },
+      h("span", { text: lib }), h("b", { text: ps && ps.absent ? "absents" : prete ? "prête ✓" : "à préparer" }), " ›");
   }
   /* Pastille « Ce soir » (version compacte) : prochain repas du jour + ligne « Demain soir · … ». */
   function prochainsRepas(menu, maintenant) {
@@ -4732,8 +5160,8 @@ var Moteur = (function () {
       if (c.type === "invitation" || c.type === "resto" || c.type === "fete") return { t: c.type === "fete" ? emojiFete(c.texte) + " " + c.texte : libInvit(c), evt: true };
       return null;
     }
-    for (var j = jAuj; j < 7; j++) ["Midi", "Soir"].forEach(function (r) { if (j === jAuj && r === "Midi" && apresMidi) return; var x = repas(j, r); if (x) suite.push({ j: j, r: r, x: x }); });
-    function quand(it) { if (it.j === jAuj) return it.r === "Midi" ? "Ce midi" : "Ce soir"; if (it.j === jAuj + 1) return "Demain " + it.r.toLowerCase(); return nomJour(it.j) + " " + it.r.toLowerCase(); }
+    for (var j = jAuj; j < nbJoursMenu(menu); j++) ["Midi", "Soir"].forEach(function (r) { if (j === jAuj && r === "Midi" && apresMidi) return; var x = repas(j, r); if (x) suite.push({ j: j, r: r, x: x }); });
+    function quand(it) { if (it.j === jAuj) return it.r === "Midi" ? "Ce midi" : "Ce soir"; if (it.j === jAuj + 1) return "Demain " + it.r.toLowerCase(); return nomJourDe(menu.debut, it.j) + " " + it.r.toLowerCase(); }
     var principal = suite[0] && suite[0].j === jAuj ? suite[0] : null;
     return { jAuj: jAuj, principal: principal, ensuite: principal ? suite[1] : suite[0], quand: quand };
   }
@@ -4763,7 +5191,7 @@ var Moteur = (function () {
     }
     // Repas à venir dans l'ordre : midi (avant 14 h) puis soir, puis les jours suivants.
     var suite = [], apresMidi = maintenant.getHours() >= 14;
-    for (var j = jAuj; j < 7; j++) {
+    for (var j = jAuj; j < nbJoursMenu(menu); j++) {
       ["Midi", "Soir"].forEach(function (r) {
         if (j === jAuj && r === "Midi" && apresMidi) return;
         var x = repas(j, r); if (x) suite.push({ j: j, r: r, x: x });
@@ -4773,17 +5201,17 @@ var Moteur = (function () {
     function quand(it) {
       if (it.j === jAuj) return it.r === "Midi" ? "Ce midi" : "Ce soir";
       if (it.j === jAuj + 1) return "Demain " + it.r.toLowerCase();
-      return nomJour(it.j) + " " + it.r.toLowerCase();
+      return nomJourDe(menu.debut, it.j) + " " + it.r.toLowerCase();
     }
     var principal = suite[0] && suite[0].j === jAuj ? suite[0] : null;
     var ensuite = principal ? suite[1] : suite[0];
     var frise = h("div", { class: "jd-frise", "aria-hidden": "true" });
-    for (var k = 0; k < 7; k++) {
+    for (var k = 0; k < nbJoursMenu(menu); k++) {
       var dk = M.addDays(M.fromIso(menu.debut), k);
-      frise.append(h("span", { class: "jd-j" + (k < jAuj ? " passe" : "") + (k === jAuj ? " auj" : ""), style: couleursJour(dk) }, h("i"), nomJour(k).slice(0, 1)));
+      frise.append(h("span", { class: "jd-j" + (k < jAuj ? " passe" : "") + (k === jAuj ? " auj" : ""), style: couleursJour(dk) }, h("i"), nomJourDe(menu.debut, k).slice(0, 1)));
     }
     return h("section", { class: "jourcarte", style: coul, "aria-label": "Aujourd'hui" },
-      h("div", { class: "jd-date" }, h("span", { class: "dnum", text: String(d.getDate()).padStart(2, "0") }), h("span", { class: "jd-nom", text: nomJour(jAuj) })),
+      h("div", { class: "jd-date" }, h("span", { class: "dnum", text: String(d.getDate()).padStart(2, "0") }), h("span", { class: "jd-nom", text: nomJourDe(menu.debut, jAuj) })),
       h("div", { class: "jd-repas" },
         principal ? h("span", { class: "jd-lbl", text: quand(principal) }) : h("span", { class: "jd-lbl", text: "Aujourd'hui" }),
         h("p", { class: "jd-plat" + (principal && principal.x.evt ? " evt" : ""), text: principal ? principal.x.t : "Rien de prévu" }),
@@ -4881,7 +5309,7 @@ var Moteur = (function () {
     tout.forEach(function (l) { appliquerOeufs(l); delete l.detailAchat; });
     tout.forEach(function (l) { var c = raI[M.norm(l.produit)]; if (c) l.categorie = c; });
     tout.forEach(function (l) { if ((l.lieu || lieuDe(doc, l.produit)) === "magasin") { l.produit = "🏬 " + l.produit; mag.push(l); } else drive.push(l); delete l.lieu; });
-    return { debut: doc.debut, fin: doc.fin, creneaux: doc.creneaux || [], lignes: drive.concat(mag) };
+    return { debut: doc.debut, fin: doc.fin, sejour: doc.sejour || null, creneaux: doc.creneaux || [], lignes: drive.concat(mag) };
   }
   /* Génère la feuille A4 et la propose au téléchargement ; sinon l'affiche pour un appui long. */
   function telecharger(quoi, btn, note) {
@@ -5078,13 +5506,13 @@ var Moteur = (function () {
   }
   function entete(x, titre, data, accentTxt) {
     var d0 = M.fromIso(data.debut), d1 = M.fromIso(data.fin);
-    x.fillStyle = accentTxt; x.font = "700 24px " + F_SANS; espace(x, "SEMAINE " + semaineIso(d1), 80, 112, 3);
+    x.fillStyle = accentTxt; x.font = "700 24px " + F_SANS; espace(x, data.sejour ? ((data.sejour.nom || "").trim() || "SÉJOUR").toUpperCase() : "SEMAINE " + semaineIso(d1), 80, 112, 3);
     var tz = 170; x.font = "800 " + tz + "px " + F_SANS;
     while (x.measureText(titre).width > W - 72 - 480 && tz > 90) { tz -= 4; x.font = "800 " + tz + "px " + F_SANS; }
     x.fillStyle = C_INK; x.fillText(titre, 72, 270);
     x.textAlign = "right"; x.font = "500 28px " + F_SANS;
-    x.fillStyle = C_INK; x.fillText("Sam. " + dateLongue(d0), W - 80, 220);
-    x.fillStyle = C_GREY; x.fillText("→ ven. " + dateLongue(d1) + " " + d1.getFullYear(), W - 80, 260);
+    x.fillStyle = C_INK; x.fillText(majuscule(JOURS_CRT[d0.getDay()]) + " " + dateLongue(d0), W - 80, 220);
+    x.fillStyle = C_GREY; x.fillText("→ " + JOURS_CRT[d1.getDay()] + " " + dateLongue(d1) + " " + d1.getFullYear(), W - 80, 260);
     x.textAlign = "left";
     x.fillStyle = C_INK; x.fillRect(80, 310, W - 160, 6);
   }
@@ -5099,13 +5527,13 @@ var Moteur = (function () {
       var lAl = wrap(x, "Pense à prévoir les courses pour : " + sansI.join(" · "), W - 160 - 90);
       hAl = 40 + lAl.length * 34 + 20;
     }
-    var left = 80, right = W - 80, top = 336, bottom = H - 80 - hAl, rowH = (bottom - top) / 7, col0 = 270, colW = (right - left - col0) / 2;
-    for (var j = 0; j < 7; j++) {
+    var left = 80, right = W - 80, top = 336, bottom = H - 80 - hAl, nJi = nbJoursMenu(data), rowH = (bottom - top) / Math.max(nJi, 4), col0 = 270, colW = (right - left - col0) / 2;
+    for (var j = 0; j < nJi; j++) {
       var y = top + j * rowH, d = M.addDays(M.fromIso(data.debut), j);
       // Le numéro du jour prend la couleur de son propre mois.
       x.fillStyle = paletteAccueil(COULEURS_MOIS[d.getMonth()]).texte; x.font = "800 108px " + F_SANS;
       x.fillText(String(d.getDate()).padStart(2, "0"), left - 6, y + rowH / 2 + 30);
-      x.fillStyle = C_GREY; x.font = "600 19px " + F_SANS; espace(x, JOURS[j].toUpperCase(), left, y + rowH / 2 + 66, 3);
+      x.fillStyle = C_GREY; x.font = "600 19px " + F_SANS; espace(x, nomJourDe(data.debut, j).toUpperCase(), left, y + rowH / 2 + 66, 3);
       ["Midi", "Soir"].forEach(function (repas, k) {
         var s = data.creneaux.filter(function (c) { return c.key === j + "-" + repas; })[0];
         var txt = "—", style = "off";
@@ -5956,7 +6384,7 @@ var Moteur = (function () {
       Store.toutEffacer(false).then(function () {
         try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf("menus-brouillon-") === 0) localStorage.removeItem(k); }); } catch (e) {}
         coches = {}; cochesSemaine = null;
-        debut = defautDebut; S = etatVide();
+        debut = debutPeriode(defautDebut); S = etatVide();
         fermer(); choisirOnglet("prep");
         var st = document.getElementById("storestatus"); st.className = "status"; st.textContent = "L'historique des menus a été réinitialisé. Recettes et articles conservés.";
       }, function () { note.className = "status err"; note.textContent = "La suppression a échoué en partie. Réessaie."; go.disabled = false; champ.disabled = false; });
@@ -6081,7 +6509,7 @@ var Moteur = (function () {
     var w = M.semainesDepuis(M.dernieres(hist)[r.nom], debut);
     if (r.supprimee) return h("span", { class: "pill wait", text: "retirée" });
     if (r._regle.type === "imposee") return h("span", { class: "pill warn", text: "si imposée" });
-    if (!M.enSaison(r, debut) && !M.enSaison(r, M.addDays(debut, 6))) return h("span", { class: "pill wait", text: "hors saison" });
+    if (!M.enSaison(r, debut) && !M.enSaison(r, finP())) return h("span", { class: "pill wait", text: "hors saison" });
     if (w < r.delai) return h("span", { class: "pill wait", text: "dans " + (r.delai - w) + " sem." });
     return h("span", { class: "pill ok", text: "disponible" });
   }
@@ -6098,7 +6526,7 @@ var Moteur = (function () {
       modifiees: function (r) { return !r.effacee && (r._modifiee || r._nouvelle); },
       retirees: function (r) { return !r.effacee && r.supprimee; },
       fiches: function (r) { return !r.effacee && fichesDispo() && !!ficheDe(r); },
-      saison: function (r) { return !r.effacee && !r.supprimee && (M.enSaison(r, debut) || M.enSaison(r, M.addDays(debut, 6))); },
+      saison: function (r) { return !r.effacee && !r.supprimee && (M.enSaison(r, debut) || M.enSaison(r, finP())); },
       jamais: function (r) { return !r.effacee && !r.supprimee && !last[r.nom]; },
       afaire: function (r) { return !r.effacee && fichesDispo() && !!r.ficheAFaire && !ficheDe(r); }
     };
@@ -6805,7 +7233,7 @@ var Moteur = (function () {
     if (!r.nom) return out;
     var slots = 0; for (var j = 0; j < 7; j++) ["Midi", "Soir"].forEach(function (rr) { if (M.compatible(t, j, rr)) slots++; });
     var statut = t._regle.type === "imposee" ? "jamais tirée au hasard, seulement si tu l'imposes"
-      : (!M.enSaison(t, debut) && !M.enSaison(t, M.addDays(debut, 6))) ? "hors saison la semaine du " + M.fr(debut)
+      : (!M.enSaison(t, debut) && !M.enSaison(t, finP())) ? "hors saison la semaine du " + M.fr(debut)
       : "peut être tirée la semaine du " + M.fr(debut) + " (" + slots + " créneau" + (slots > 1 ? "x" : "") + " possible" + (slots > 1 ? "s" : "") + ")";
     out.push(h("p", null, h("b", { text: "Tirage : " }), statut + "."));
     var c = M.courses({ byName: by }, { creneaux: [{ type: "recette", recette: tmp.nom }] });
@@ -7048,7 +7476,7 @@ var Moteur = (function () {
         h("button", { type: "button", class: "chip", text: "Effacer", onclick: function () { poser(function () { return false; }); } })));
       var grille = h("div", { class: "grille-reg", role: "group", "aria-label": "Créneaux" }, h("span"), h("span", { class: "lbl", text: "Midi" }), h("span", { class: "lbl", text: "Soir" }));
       for (var j = 0; j < 7; j++) {
-        grille.append(h("span", { class: "gj", text: nomJour(j) }));
+        grille.append(h("span", { class: "gj", text: JOURS[j] }));
         ["Midi", "Soir"].forEach(function (r) {
           var k = j + "-" + r;
           var cb = h("input", { type: "checkbox", checked: !!f.grille[k], "aria-label": nomJour(j) + " " + r.toLowerCase(), onchange: function () { if (cb.checked) f.grille[k] = true; else delete f.grille[k]; f.regleTouchee = true; sale(); rerender(); } });
@@ -7468,6 +7896,8 @@ var Moteur = (function () {
       if (!ol) { plus.push(L(k, nl, nl.quantite || "", { etat: "nouveau" })); return; }
       if ((ol.quantite || "") === (nl.quantite || "")) return;
       var o = lireQte(ol.quantite), n = lireQte(nl.quantite);
+      // Même nombre, l'unité seulement ajoutée ou retirée (« 4 » → « 4 feuilletés ») : rien n'a changé.
+      if (o && n && o.u !== n.u && (!o.u || !n.u) && o.a === n.a && o.b === n.b) return;
       if (o && n && o.u === n.u) {
         var da = n.a - o.a, db = n.b - o.b;
         if (da >= 0 && db >= 0 && (da > 0 || db > 0)) { plus.push(L(k, nl, "+ " + fmtQ(Math.min(da, db), Math.max(da, db), n.u), { etat: "hausse", avant: ol.quantite })); return; }
@@ -7614,7 +8044,8 @@ var Moteur = (function () {
   function appliquerOeufs(l) { var o = arrondiOeufs(l.produit, l.quantite); if (o) { l.quantite = o.q; l.detailAchat = o.detail; } return l; }
   /* Produit du placard remis dans la liste : quantité d'achat (paquets entiers) au lieu de la quantité des recettes. */
   function ligneAchat(src, o, doc) {
-    if (!src || src.source === "ajout" || src.source === "fete" || !estPlacard(src.produit)) return o;
+    if (src && (src.source === "sejour" || (doc && doc.sejour)) && estPlacard(src.produit)) { o.detailAchat = "🏠 placard : à emporter ou à acheter"; return o; }
+    if (!src || src.source === "ajout" || src.source === "fete" || src.source === "sejour" || !estPlacard(src.produit)) return o;
     var n = M.norm(src.produit), pv = doc && doc.placardPlus && doc.placardPlus[n];
     o.placardN = n;
     if (typeof pv === "string") { o.quantite = pv; return o; } // quantité corrigée au ✎
@@ -7623,7 +8054,7 @@ var Moteur = (function () {
   }
   /* Ligne d'une liste enregistrée rangée au placard (jamais un article ajouté à la main). */
   function auPlacardDoc(doc, l) {
-    if (!l || l.source === "ajout" || l.source === "fete") return false;
+    if (!l || l.source === "ajout" || l.source === "fete" || l.source === "sejour" || (doc && doc.sejour)) return false;
     var n = M.norm(l.produit); return estPlacard(l.produit) && !((doc && doc.placardPlus) || {})[n];
   }
   /* Encart replié « Vérifie ton placard » en haut de la liste. */
@@ -7660,6 +8091,8 @@ var Moteur = (function () {
   }
   function dateCourses(deb) {
     var c = cfgCourses(), d = new Date(deb.getFullYear(), deb.getMonth(), deb.getDate());
+    // Période qui ne commence pas un samedi (séjour, retour) : les courses se font la veille.
+    if (M.iso(d) !== samediDe(M.iso(d))) { d.setDate(d.getDate() - 1); d.setHours(HEURE_MOMENT[c.moment], 0, 0, 0); return d; }
     for (var i = 0; i < 7 && d.getDay() !== c.jour; i++) d.setDate(d.getDate() - 1);
     d.setHours(HEURE_MOMENT[c.moment], 0, 0, 0);
     return d;
@@ -7763,6 +8196,12 @@ var Moteur = (function () {
     var d = dateCourses(deb), c = cfgCourses();
     return NOMS_JS[d.getDay()] + " " + M.fr(d).slice(0, 5) + " " + (c.moment === "soir" ? "au soir" : c.moment === "midi" ? "à midi" : "au matin");
   }
+  /* Ce que le menu en préparation demande en plus de la liste déjà achetée (même calcul qu'à la validation). */
+  function complementAvant(doc) {
+    var l = listeCourses(), nouv = l.lignes.concat(l.placard).map(function (x) { return { produit: x.produit, quantite: x.quantite, categorie: x.categorie }; });
+    return calculerComplement(doc.coursesReference || doc.courses, nouv);
+  }
+  function libCourtCourses(doc) { var d = doc.coursesFaitesLe && doc.coursesFaitesLe.le ? new Date(doc.coursesFaitesLe.le) : dateCourses(M.fromIso(doc.debut)); return NOMS_JS[d.getDay()] + " " + M.fr(d).slice(0, 5); }
   function complementDe(doc) {
     if (!doc || !doc.coursesReference) return { plus: [], moins: [] };
     return calculerComplement(doc.coursesReference, doc.courses);
@@ -7770,7 +8209,12 @@ var Moteur = (function () {
 
   function renderCoursesOnglet() {
     clear(panelCourses);
-    var id = M.iso(debut), doc = Store.menus[id];
+    var id = M.iso(debut), doc = Store.menus[id], sjA = sejourCourant();
+    if (sjA && sjA.absent) {
+      panelCourses.append(h("section", { class: "card" }, h("h2", { text: "✈️ " + ((sjA.nom || "").trim() || "Absents"), style: "font-size:1.2rem" }),
+        h("p", { class: "status", text: "Pas de courses " + libSejour(sjA) + " : vous êtes absents." })));
+      return;
+    }
     if (!doc || !doc.courses) {
       panelCourses.append(h("section", { class: "card" },
         h("h2", { text: "Pas encore de liste pour cette semaine", style: "font-size:1.2rem" }),
@@ -7786,12 +8230,13 @@ var Moteur = (function () {
     var lignes = idx.ordre.filter(function (k) { return !auPlacardDoc(doc, idx.m[k]); }).map(function (k) { var l = idx.m[k]; return ligneAchat(l, { k: k, produit: majuscule(l.produit), quantite: l.quantite, categorie: l.categorie }, doc); });
     // Ajouts de la semaine (« plus de lait ! ») : partagés, rangés dans leur rayon, retirables.
     var ajouts = ajoutsRapides(doc);
-    Object.keys(ajouts).forEach(function (a) { var x = ajouts[a]; if (x && x.produit) lignes.push({ k: "aj-" + a, aj: a, produit: majuscule(x.produit), quantite: x.quantite || "", categorie: x.categorie || "D", par: x.par || "" }); });
+    Object.keys(ajouts).forEach(function (a) { var x = ajouts[a]; if (x && x.produit) lignes.push({ k: "aj-" + a, aj: a, produit: majuscule(x.produit), quantite: x.quantite || "", categorie: x.categorie || "D", par: x.par || "", sejourSem: x.sejourSem || "" }); });
     var comp = complementDe(doc);
     // Listes à part, nommées (« Lidl », « Pour mamie »…) : les articles déplacés y vont et sortent de la liste principale.
     var LN = listesNommees(doc), lids = Object.keys(LN).sort(function (a, b) { return String(LN[a].cree || "").localeCompare(String(LN[b].cree || "")); });
     if (listeVue && (!LN[listeVue] || listeVueSem !== id)) listeVue = "";
     function dansDe(l) { var x = (doc.dans || {})[l.k]; return x && LN[x] ? x : ""; }
+    comp = { plus: comp.plus.filter(function (l) { return !dansDe(l); }), moins: comp.moins.filter(function (l) { return !dansDe(l); }) };
     if (lids.length) panelCourses.append(selecteurListes(id, doc, lids, LN, lignes, dansDe));
     if (listeVue) {
       lignes = lignes.filter(function (l) { return dansDe(l) === listeVue; });
@@ -8004,8 +8449,8 @@ var Moteur = (function () {
         var btnLieu = h("button", { type: "button", class: "lieu-tag " + l.lieu, title: "Changer : " + (versL === "magasin" ? "prendre en magasin" : "commander au drive"), "aria-label": l.produit + " : " + (l.lieu === "drive" ? "au drive" : "en magasin") + ". Toucher pour " + (versL === "magasin" ? "le prendre en magasin" : "le commander au drive"),
           text: l.lieu === "drive" ? "🚗 Drive" : "🏬 Magasin", onclick: function (e) { e.preventDefault(); e.stopPropagation(); changerLieu(id, Store.menus[id], l.produit, versL, l.aj); } });
         var row = h("label", { class: "shop-item avec-lieu" + (coches[l.k] ? " done" : "") + (l.aj ? " ajout" : ""), for: "shop-" + l.k }, cb,
-          h("span", { class: "nm" }, l.produit, l.aj ? h("small", { class: "aj-par", text: " ajouté" + (l.par ? " par " + l.par : "") }) : null,
-            l.ajFusion ? h("small", { class: "aj-par" }, " + " + (l.ajFusion.map(function (f) { return f.quantite || "1"; }).join(" + ")) + " ajouté" + (l.ajFusion[0].par ? " par " + l.ajFusion[0].par : "") + " ",
+          h("span", { class: "nm" }, l.produit, l.aj ? h("small", { class: "aj-par", text: l.sejourSem ? " repas de la semaine du " + dateCourte(l.sejourSem) : " ajouté" + (l.par ? " par " + l.par : "") }) : null,
+            l.ajFusion ? h("small", { class: "aj-par" }, " + " + (l.ajFusion.map(function (f) { return f.quantite || "1"; }).join(" + ")) + (l.ajFusion[0].sejourSem ? " pour la semaine du " + dateCourte(l.ajFusion[0].sejourSem) : " ajouté" + (l.ajFusion[0].par ? " par " + l.ajFusion[0].par : "")) + " ",
               h("button", { type: "button", class: "lien-x", "aria-label": "Retirer la quantité ajoutée", text: "✕", onclick: function (e) {
                 e.preventDefault(); e.stopPropagation();
                 var patch = { ajoutsRapides: {} };
@@ -8101,6 +8546,11 @@ var Moteur = (function () {
     var z = h("div", { class: "appoint-tete ln-tete" });
     function initial() {
       clear(z);
+      if (info.periode) {
+        z.append(h("p", null, h("b", { text: info.nom }), h("small", { text: " · " + info.periode })),
+          h("small", { class: "sej-expl", text: info.sejour ? "Liste du séjour : les recettes de ces repas." : "Liste des repas au retour : à faire en rentrant." }));
+        return;
+      }
       z.append(h("p", null, h("b", { text: "📋 " + info.nom }), h("small", { text: " · liste à part" + (info.par ? ", créée par " + info.par : "") })),
         h("div", { class: "bar" },
           h("button", { type: "button", class: "lien-cf", text: "Renommer", onclick: renommer }),
@@ -8222,7 +8672,7 @@ var Moteur = (function () {
     var d = lf.date ? M.fromIso(lf.date) : null;
     var sec = h("details", { class: "liste-fete", open: faits < lignes.length },
       h("summary", null, h("span", { text: emojiFete(lf.texte) + " Liste à part : " + lf.texte }),
-        h("small", { text: (d ? nomJour((d.getDay() + 1) % 7) + " " + M.fr(d).slice(0, 5) + " · " : "") + (lignes.length ? faits + " / " + lignes.length + " dans le caddie" : "aucun ingrédient") })));
+        h("small", { text: (d ? JOURS[(d.getDay() + 1) % 7] + " " + M.fr(d).slice(0, 5) + " · " : "") + (lignes.length ? faits + " / " + lignes.length + " dans le caddie" : "aucun ingrédient") })));
     if (!lignes.length) sec.append(h("p", { class: "status", text: "Les plats de ce repas n'ont pas d'ingrédients enregistrés (plats tapés à la main ou recettes sans ingrédients)." }));
     groupeParRayon(lignes).forEach(function (grp) {
       var bloc = h("section", { class: "shop-aisle" }, h("h3", null, h("span", { class: "cnum", text: String(M.CAT_ORDER.indexOf(grp.cat) + 1).padStart(2, "0") }), M.CAT_NAMES[grp.cat]));
@@ -8928,7 +9378,7 @@ var Moteur = (function () {
     ongletActif = n;
     var groupe = GROUPE_DE[n] || "prep";
     document.body.setAttribute("data-onglet", groupe); document.body.setAttribute("data-sous", n);
-    document.getElementById("titre").textContent = n === "rec" || n === "art" ? "Base de données" : { prep: "Menu de la semaine", courses: "Liste de courses", recettes: "Recettes", hist: "Paramètres" }[groupe];
+    document.getElementById("titre").textContent = n === "rec" || n === "art" ? "Base de données" : { prep: titrePrep(), courses: "Liste de courses", recettes: "Recettes", hist: "Paramètres" }[groupe];
     ["prep", "courses", "hist", "art", "rec", "regl", "stats"].forEach(function (k) {
       document.getElementById("panel-" + k).hidden = k !== n;
     });
@@ -8962,7 +9412,7 @@ var Moteur = (function () {
   }
   /* Onglets Menu et Courses : toujours ouverts sur la semaine en cours (celle d'aujourd'hui).
      Le travail sur une autre semaine reste enregistré (brouillon) : on le retrouve avec les flèches ou « Sem. suivante ». */
-  function semaineEnCours() { return M.addDays(M.prochainSamedi(new Date()), -7); }
+  function semaineEnCours() { return debutPeriode(new Date()); }
   function ouvrirSemaineEnCours(onglet) {
     var cur = semaineEnCours();
     if (M.iso(debut) !== M.iso(cur)) { sauver(); finTunnel = false; debut = cur; chargerSemaine(); setTimeout(pousserBrouillonLocal, 0); }
@@ -8972,8 +9422,8 @@ var Moteur = (function () {
   document.getElementById("tab-courses").addEventListener("click", function () { ouvrirSemaineEnCours("courses"); });
   document.getElementById("tab-hist").addEventListener("click", function () { choisirOnglet("rec"); });
   document.getElementById("tab-recettes").addEventListener("click", function () { choisirOnglet("ffiches"); });
-  document.getElementById("prev").addEventListener("click", function () { allerSemaine(M.addDays(debut, -7)); });
-  document.getElementById("next").addEventListener("click", function () { allerSemaine(M.addDays(debut, 7)); });
+  document.getElementById("prev").addEventListener("click", function () { allerSemaine(M.addDays(debut, -1)); });
+  document.getElementById("next").addEventListener("click", function () { allerSemaine(M.addDays(finP(), 1)); });
 
   /* ---------- Démarrage ---------- */
   var premierChargement = true, brouillonsVus = false;
@@ -9014,7 +9464,11 @@ var Moteur = (function () {
 
   Store.onChange = function (quoi, detail) {
     if (quoi === "acces") return;
-    if (quoi === "courses-cfg") { if (ongletActif === "courses") renderCoursesOnglet(); return; }
+    if (quoi === "courses-cfg") {
+      // Séjours changés sur un autre appareil : la page suit sa nouvelle période.
+      var pk = JSON.stringify(periodeDe(M.iso(debut)));
+      if (pk !== dernierePeriode && Store.ready && !premierChargement) { if (S && S.stage !== "valide") sauver(); chargerSemaine(); renderEntete(); renderOnglet(); return; }
+      if (ongletActif === "courses") renderCoursesOnglet(); return; }
     if (verrouEtat === "accueil") majLockCeSoir();
     if (quoi === "conflit") { surConflit(detail || []); return; }
     if (quoi === "fiches") { if (ongletActif === "rec") renderRec(); else if (ongletActif === "prep" && !jeSuisEditeur()) renderPrep(); else if (ongletActif === "courses") renderCoursesOnglet(); return; }
@@ -9040,7 +9494,8 @@ var Moteur = (function () {
     if (premierChargement) {
       premierChargement = false;
       // Semaine en cours déjà validée : on ouvre dessus (Ce soir, la liste du magasin) plutôt que sur la suivante.
-      if (!debutRepris && M.iso(debut) === M.iso(SEMAINE_A_PREPARER) && Store.menus[M.iso(SEMAINE_EN_COURS)]) { debut = SEMAINE_EN_COURS; defautDebut = SEMAINE_EN_COURS; S = brouillonDe(M.iso(debut)) || etatVide(); }
+      var pEnCours = semaineEnCours(), pSuiv = debutPeriode(M.addDays(M.fromIso(periodeDe(M.iso(pEnCours)).fin), 1));
+      if (!debutRepris && M.iso(debutPeriode(debut)) === M.iso(pSuiv) && Store.menus[M.iso(pEnCours)]) { debut = pEnCours; defautDebut = pEnCours; S = brouillonDe(M.iso(debut)) || etatVide(); }
       chargerSemaine(); renderOnglet(); setTimeout(function () { demanderNom(); }, 300); return; }
     if (partage()) {
       resync();
