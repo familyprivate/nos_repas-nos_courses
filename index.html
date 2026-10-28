@@ -1555,6 +1555,8 @@ body.vue-mobile .regl-bloc{padding:0;gap:0}
 .cp-tn { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .cp-tn p { margin: 0; }
 .cp-rien b { color: #1F8A4C; }
+/* Imprévu */
+.imprevu-t { margin: 0; font-size: .85rem; font-weight: 600; color: var(--muted); }
 /* Échange de deux repas */
 .icon.poignee { touch-action: none; cursor: grab; font-weight: 700; }
 .mcell.swap-src { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; background: var(--accent-soft); }
@@ -2766,16 +2768,18 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "28 oct. 14h";
+  var VERSION_SITE = "28 oct. 16h30";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.4.2", VERSION_DATE = "28 oct. 2026";
+  var VERSION_APP = "1.4.3", VERSION_DATE = "28 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
-    { v: "1.4.2", date: "28 oct. 2026", type: "correctif", notes: [
+    { v: "1.4.3", date: "28 oct. 2026", type: "correctif", notes: [
+      "Imprévu : touche ✎ directement sur le repas passé (aussi pendant « Modifier ce menu ») ; le bouton « ⇄ Imprévu ? » disparaît",
+      "Le repas réellement mangé remplace l'affichage du repas prévu (plus de plat barré) ; un restaurant ou une invitation s'affiche dans la couleur du mois, avec le nom du restaurant",
       "Échanger deux repas : glisse la poignée ⇅ d'un repas sur un autre (ou touche ⇅ puis l'autre repas), quand tu modifies le menu",
       "Choix au crayon ✎ : « Restaurant en famille », « Restaurant en amoureux », « Invitation »… restent proposés quand tu commences à taper",
       "Courses déjà faites : échanger deux repas ne demande plus d'articles en plus. La liste achetée est recalculée avec les réglages d'aujourd'hui (rayons, placard, unités) avant la comparaison",
@@ -4765,7 +4769,10 @@ var Moteur = (function () {
     var tools = h("div", { class: "mtools" });
     var libelle = nomJour(j) + " " + repas.toLowerCase();
     // Jours passés : rien. Aujourd'hui : crayon seulement. Jours à venir : ↻ et crayon.
-    if (verrou && estAujourdhui(j)) tools.append(h("span", { class: "repas-verrou", title: "Repas passé : il n'est plus modifiable", "aria-label": "Repas passé, non modifiable", text: "🔒" }));
+    // Repas passé d'un menu validé : ✎ pour dire ce qu'on a vraiment mangé (imprévu), menu modifié ou pas.
+    var docV = Store.menus[M.iso(debut)];
+    if (repasPasse(j, repas) && docV && !semaineTropVieille()) tools.append(h("button", { type: "button", class: "icon", title: "Imprévu : qu'avez-vous mangé ?", "aria-label": "Imprévu " + libelle + " : qu'avez-vous mangé ?", text: "✎", onclick: function () { choixImprevu(cell, j, repas, slot); } }));
+    else if (verrou && estAujourdhui(j)) tools.append(h("span", { class: "repas-verrou", title: "Repas passé : il n'est plus modifiable", "aria-label": "Repas passé, non modifiable", text: "🔒" }));
     if (editable && !jourPasse(j)) {
       var aleatoire = !estAujourdhui(j) && (!slot || ((slot.type === "recette" || slot.type === "vide" || slot.type === "exclu")
         && slot.source !== "imposee" && slot.source !== "alternance" && slot.source !== "choisie"));
@@ -4811,10 +4818,8 @@ var Moteur = (function () {
     }
     // Repas passé : « Changement de plan ? » pour noter ce qu'on a vraiment mangé (compte dans l'historique).
     var idSem = M.iso(debut), docSem = Store.menus[idSem], reel = docSem && docSem.reels && docSem.reels[j + "-" + repas];
-    if (reel) {
-      nameEl.classList.add("prevu-barre");
-      tags.insertBefore(h("span", { class: "reel" }, "→ ", h("b", { text: libReel(reel) })), tags.firstChild);
-    }
+    // Imprévu noté : on affiche ce qui a été mangé, à la place de ce qui était prévu.
+    if (reel) nameEl = nomReel(reel, editable);
     // Échange de deux repas (glisser la poignée ⇅ sur un autre repas, ou toucher ⇅ puis l'autre repas).
     if (editable && !verrou) {
       cell.dataset.key = j + "-" + repas; cell.dataset.swap = "1";
@@ -4823,6 +4828,50 @@ var Moteur = (function () {
     cell.append(h("div", { class: "mline" }, nameEl, tools));
     if (tags.childNodes.length) cell.append(tags);
     return cell;
+  }
+  /* ---------- Imprévus : ce qu'on a vraiment mangé ---------- */
+  function nomReel(r, editable) {
+    if (r.type === "recette") return editable ? h("span", { class: "mname" }, r.recette)
+      : h("button", { type: "button", class: "mname mname-lien", "aria-label": "Voir " + r.recette, onclick: function () { ouvrirPlat(r.recette); } }, r.recette);
+    if (r.type === "saute") return h("span", { class: "mname sans" }, h("span", { class: "sans-menu", text: "Repas sauté" }));
+    return h("span", { class: "mname evt" }, h("span", { text: r.texte || "Autre" }), r.resto ? h("span", { text: " · " + r.resto }) : null);
+  }
+  function enregistrerReel(j, r, val) {
+    var idSem = M.iso(debut), docSem = Store.menus[idSem]; if (!docSem) return;
+    var k = j + "-" + r, patch = { reels: {}, journal: {} }; patch.reels[k] = val;
+    patch.journal["j" + Date.now().toString(36)] = { quoi: "changement", le: new Date().toISOString(), par: NOM_APPAREIL || "", detail: nomJour(j) + " " + r.toLowerCase() + " : " + (val ? libReel(val) : "comme prévu") };
+    if (!docSem.journal) docSem.journal = {}; Object.assign(docSem.journal, patch.journal);
+    if (!docSem.reels) docSem.reels = {};
+    if (val) docSem.reels[k] = val; else delete docSem.reels[k];
+    fileEcriture = fileEcriture.then(function () { return Store.updateMenu(idSem, patch); }).catch(function () {});
+    renderPrep(); toast(val ? "Noté : " + libReel(val) + "." : "Remis comme prévu.");
+  }
+  function choixImprevu(cell, j, repas, slot) {
+    var docSem = Store.menus[M.iso(debut)], k = j + "-" + repas, reel = docSem && docSem.reels && docSem.reels[k];
+    var libelle = nomJour(j) + " " + repas.toLowerCase();
+    var sel = chercheur({ label: "Qu'avez-vous mangé " + libelle + " ?", placeholder: "Qu'avez-vous mangé ? (recette, restaurant…)", items: function () {
+      var o = reel ? [{ v: "__prevu", label: "↺ Comme prévu (" + libSlot(slot) + ")", groupe: "Options", haut: true }] : [];
+      return o.concat(CHOIX_REEL.map(function (c) { return { v: c[0], label: c[1], groupe: "Sans recette", haut: true }; }),
+        itemsRecettes().map(function (y) { y.groupe = "Recettes"; return y; }));
+    }, onPick: function (y) {
+      if (!y || !y.v) return;
+      if (y.v === "__resto" || y.v === "__amoureux") { nomResto({ type: "resto", texte: y.label }); return; }
+      enregistrerReel(j, repas, y.v === "__prevu" ? null : y.v.indexOf("__") === 0 ? { type: y.v.slice(2), texte: y.label } : { type: "recette", recette: y.v });
+    } });
+    function nomResto(val) {
+      clear(cell);
+      var anc = reel && reel.type === "resto" ? reel.resto || "" : slot && slot.resto ? slot.resto : "";
+      var inp = h("input", { type: "text", class: "invit-txt", value: anc, placeholder: "Quel restaurant ? (facultatif)", "aria-label": "Nom du restaurant" });
+      function ok() { var v = inp.value.trim(); if (v) val.resto = v; enregistrerReel(j, repas, val); }
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); ok(); } });
+      cell.append(h("span", { class: "lab", text: repas }), h("p", { class: "imprevu-t", text: val.texte }),
+        h("div", { class: "choix-ligne" }, inp, h("button", { type: "button", class: "btn", text: "OK", onclick: ok }), h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: function () { renderPrep(); } })));
+      setTimeout(function () { inp.focus(); }, 30);
+    }
+    clear(cell);
+    cell.append(h("span", { class: "lab", text: repas }), h("p", { class: "imprevu-t", text: "Imprévu : qu'avez-vous mangé ?" }),
+      h("div", { class: "choix-ligne" }, sel, h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: function () { renderPrep(); } })));
+    setTimeout(function () { var i = sel.querySelector("input"); if (i) i.focus(); }, 30);
   }
   /* ---------- Échanger deux repas ---------- */
   var echangeDe = null;
@@ -5207,7 +5256,7 @@ var Moteur = (function () {
     }
     panelPrep.append(renderMenuGrille(false));
     // Une seule ligne : Modifier ce menu · ⇄ Un repas a changé ? (semaine entamée) · Effacer la semaine (semaine à venir).
-    var chg = zoneChangementPlan(), eff = boutonEffacerSemaine();
+    var chg = null, eff = boutonEffacerSemaine(); // imprévus : ✎ directement sur le repas passé
     if (modif || chg || eff) panelPrep.append(h("div", { class: "bar actions-rares ligne-actions" }, modif, chg ? chg.bouton : null, chg && chg.annuler ? chg.annuler : null, eff ? eff.bouton : null));
     if (chg) panelPrep.append(chg.zone);
     if (eff) panelPrep.append(eff.zone);
