@@ -1555,6 +1555,14 @@ body.vue-mobile .regl-bloc{padding:0;gap:0}
 .cp-tn { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .cp-tn p { margin: 0; }
 .cp-rien b { color: #1F8A4C; }
+/* Échange de deux repas */
+.icon.poignee { touch-action: none; cursor: grab; font-weight: 700; }
+.mcell.swap-src { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; background: var(--accent-soft); }
+.mcell.swap-choix { outline: 1.5px dashed var(--accent); outline-offset: -2px; border-radius: 8px; cursor: pointer; }
+.mcell.swap-cible { outline: 2.5px solid var(--accent); outline-offset: -2px; border-radius: 8px; background: var(--accent-soft); }
+.swap-fantome { position: fixed; z-index: 9999; transform: translate(-50%, -130%); pointer-events: none; padding: 6px 12px; border-radius: 999px; background: var(--ink); color: var(--bg); font-weight: 600; font-size: .9rem; box-shadow: 0 6px 18px rgba(0,0,0,.25); white-space: nowrap; }
+.swap-bandeau { position: sticky; top: 8px; z-index: 30; display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 14px; margin: 6px 0; border-radius: 12px; background: var(--ink); color: var(--bg); font-size: .9rem; }
+.swap-bandeau .lien-cf { color: var(--bg); }
 /* Séjours et absences */
 .sej-rythme.replie { padding: 0; background: none; }
 .sej-ry-court { margin: 0; font-size: .85rem; color: var(--muted); }
@@ -2758,15 +2766,21 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "28 oct. 10h";
+  var VERSION_SITE = "28 oct. 14h";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
-  var VERSION_APP = "1.4.0", VERSION_DATE = "28 oct. 2026";
+  var VERSION_APP = "1.4.2", VERSION_DATE = "28 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
   /* Journal des versions (la plus récente en premier). type : majeur | mineur | correctif. */
   /* Favoris : variante « A » = habituels proposés en un tap ; « B » = pas de favoris. */
   var VARIANTE_FAV = "A";
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
+    { v: "1.4.2", date: "28 oct. 2026", type: "correctif", notes: [
+      "Échanger deux repas : glisse la poignée ⇅ d'un repas sur un autre (ou touche ⇅ puis l'autre repas), quand tu modifies le menu",
+      "Choix au crayon ✎ : « Restaurant en famille », « Restaurant en amoureux », « Invitation »… restent proposés quand tu commences à taper",
+      "Courses déjà faites : échanger deux repas ne demande plus d'articles en plus. La liste achetée est recalculée avec les réglages d'aujourd'hui (rayons, placard, unités) avant la comparaison",
+      "Articles déjà cochés gardés même si leur rayon a changé depuis"
+    ] },
     { v: "1.4.0", date: "28 oct. 2026", type: "mineur", notes: [
       "Séjours et absences : « ✈️ Séjour ou absence… » sous le menu découpe la semaine. Le séjour (ex. maison de campagne) a sa propre page, avec son menu et sa liste de courses ; les jours d'avant et d'après deviennent chacun leur période",
       "Absence : une page « ✈️ Absents », sans menu ni courses",
@@ -3322,7 +3336,7 @@ var Moteur = (function () {
       page.classList.add("tn-prepa"); armerPrepa();
       page.append(enteteTn(-1, null, null), prepaVisuel());
     } else if (p === "menu") {
-      page.append(enteteTn(3, "Ton menu", "Touche ↻ pour une autre recette, ✎ pour choisir toi-même."));
+      page.append(enteteTn(3, "Ton menu", "Touche ↻ pour une autre recette, ✎ pour choisir toi-même, ⇅ pour échanger deux repas."));
       flashEl = h("p", { class: "status", role: "status" });
       page.append(flashEl);
       var av = (S.menu.avertissements || []);
@@ -3816,16 +3830,17 @@ var Moteur = (function () {
       if (opts.garder && choisi && inp.value && tous.some(function (x) { return x.v === choisi && x.label === inp.value; })) q = "";
       enRecherche = !!q;
       if (!q) return tous;
-      var debut = [], mot = [], dedans = [];
+      var debut = [], mot = [], dedans = [], hautT = [];
       if (opts.libre && !tous.some(function (x) { return M.norm(x.label) === q; })) debut.push({ v: inp.value.trim(), label: inp.value.trim(), sub: "texte libre" });
       tous.forEach(function (x) {
-        if (x.haut) return;
         var n = M.norm(x.label + " " + (x.cherche || ""));
+        // Options (« Restaurant en famille », « Invitation »…) : trouvables en tapant, et proposées en premier.
+        if (x.haut) { if (n.indexOf(q) === 0 || (" " + n).indexOf(" " + q) !== -1) hautT.push(x); return; }
         if (n.indexOf(q) === 0) debut.push(x);
         else if ((" " + n).indexOf(" " + q) !== -1) mot.push(x);
         else if (q.length > 1 && n.indexOf(q) !== -1) dedans.push(x);
       });
-      return debut.concat(mot, dedans);
+      return hautT.concat(debut, mot, dedans);
     }
     function dessiner() {
       clear(liste); vus = filtrer(); if (actif >= vus.length) actif = 0;
@@ -4800,9 +4815,85 @@ var Moteur = (function () {
       nameEl.classList.add("prevu-barre");
       tags.insertBefore(h("span", { class: "reel" }, "→ ", h("b", { text: libReel(reel) })), tags.firstChild);
     }
+    // Échange de deux repas (glisser la poignée ⇅ sur un autre repas, ou toucher ⇅ puis l'autre repas).
+    if (editable && !verrou) {
+      cell.dataset.key = j + "-" + repas; cell.dataset.swap = "1";
+      if (slot && slot.type !== "exclu" && slot.type !== "vide") tools.insertBefore(poigneeEchange(cell, slot), tools.firstChild);
+    }
     cell.append(h("div", { class: "mline" }, nameEl, tools));
     if (tags.childNodes.length) cell.append(tags);
     return cell;
+  }
+  /* ---------- Échanger deux repas ---------- */
+  var echangeDe = null;
+  function libCreneau(c) { return c && c.type === "recette" ? c.recette : c && c.texte ? c.texte : "ce repas"; }
+  function echangerCreneaux(a, b) {
+    if (!a || !b || a === b) return;
+    var pa = a.split("-"), pb = b.split("-"), ca = creneauDe(+pa[0], pa[1]), cb = creneauDe(+pb[0], pb[1]);
+    ["type", "recette", "source", "texte", "plats", "resto", "listeAPart"].forEach(function (f) { var t = ca[f]; ca[f] = cb[f]; cb[f] = t; });
+    [ca, cb].forEach(function (c) {
+      ["resto", "listeAPart"].forEach(function (f) { if (c[f] === undefined) delete c[f]; });
+      if (c.type === "recette") c.source = "choisie"; // gardé tel quel si on retire le reste au sort
+      c.notes = [];
+      if (midiSemaine(c.key)) { var i = S.reponses.midis.indexOf(c.jour); if (c.type !== "exclu" && i === -1) S.reponses.midis.push(c.jour); }
+    });
+    var ev = S.reponses.evenements, ea = ev[a], eb = ev[b];
+    if (eb) ev[a] = eb; else delete ev[a];
+    if (ea) ev[b] = ea; else delete ev[b];
+    echangeDe = null; sauver(); renderPrep();
+    toast("Échangé : " + nomJour(ca.jour).toLowerCase() + " " + ca.repas.toLowerCase() + " ↔ " + nomJour(cb.jour).toLowerCase() + " " + cb.repas.toLowerCase() + ".");
+  }
+  function finModeEchange() {
+    echangeDe = null; document.removeEventListener("click", clicEchange, true);
+    Array.prototype.forEach.call(document.querySelectorAll(".swap-src, .swap-choix"), function (c) { c.classList.remove("swap-src", "swap-choix"); });
+    var b = document.querySelector(".swap-bandeau"); if (b) b.remove();
+  }
+  function clicEchange(e) {
+    if (!echangeDe) return;
+    var c = e.target.closest && e.target.closest('.mcell[data-swap="1"]');
+    if (e.target.closest && e.target.closest(".swap-bandeau")) return;
+    e.preventDefault(); e.stopPropagation();
+    var de = echangeDe; finModeEchange();
+    if (c && c.dataset.key !== de) echangerCreneaux(de, c.dataset.key);
+  }
+  function poigneeEchange(cell, slot) {
+    var b = h("button", { type: "button", class: "icon poignee", text: "⇅", title: "Échanger avec un autre repas : glisse-moi sur l'autre repas, ou touche-moi puis l'autre repas", "aria-label": "Échanger « " + libCreneau(slot) + " » avec un autre repas" });
+    b.addEventListener("pointerdown", function (e) {
+      if (e.button) return;
+      e.preventDefault();
+      var x0 = e.clientX, y0 = e.clientY, glisse = false, cible = null, fant = null;
+      try { b.setPointerCapture(e.pointerId); } catch (er) {}
+      function sous(ev) { var el = document.elementFromPoint(ev.clientX, ev.clientY), c = el && el.closest ? el.closest('.mcell[data-swap="1"]') : null; return c && c !== cell ? c : null; }
+      function bouge(ev) {
+        if (!glisse && Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) > 10) {
+          glisse = true; finModeEchange(); cell.classList.add("swap-src");
+          fant = h("div", { class: "swap-fantome", text: libCreneau(slot) }); document.body.append(fant);
+        }
+        if (!glisse) return;
+        fant.style.left = ev.clientX + "px"; fant.style.top = ev.clientY + "px";
+        var c = sous(ev);
+        if (c !== cible) { if (cible) cible.classList.remove("swap-cible"); cible = c; if (c) c.classList.add("swap-cible"); }
+        if (ev.clientY < 90) window.scrollBy(0, -14); else if (ev.clientY > window.innerHeight - 120) window.scrollBy(0, 14);
+      }
+      function fin() {
+        b.removeEventListener("pointermove", bouge); b.removeEventListener("pointerup", fin); b.removeEventListener("pointercancel", fin);
+        if (fant) fant.remove(); cell.classList.remove("swap-src"); if (cible) cible.classList.remove("swap-cible");
+        if (glisse) { if (cible) echangerCreneaux(cell.dataset.key, cible.dataset.key); return; }
+        // Simple toucher : on choisit ensuite l'autre repas.
+        if (echangeDe === cell.dataset.key) { finModeEchange(); return; }
+        if (echangeDe) { var de = echangeDe; finModeEchange(); echangerCreneaux(de, cell.dataset.key); return; }
+        echangeDe = cell.dataset.key; cell.classList.add("swap-src");
+        Array.prototype.forEach.call(document.querySelectorAll('.mcell[data-swap="1"]'), function (c) { if (c !== cell) c.classList.add("swap-choix"); });
+        var grille = cell.closest(".menu");
+        var band = h("div", { class: "swap-bandeau", role: "status" }, h("span", { text: "Touche le repas à échanger avec « " + libCreneau(slot) + " »" }),
+          h("button", { type: "button", class: "lien-cf", text: "Annuler", onclick: finModeEchange }));
+        if (grille) grille.parentNode.insertBefore(band, grille); else document.body.append(band);
+        setTimeout(function () { document.addEventListener("click", clicEchange, true); }, 0);
+      }
+      b.addEventListener("pointermove", bouge); b.addEventListener("pointerup", fin); b.addEventListener("pointercancel", fin);
+    });
+    b.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); });
+    return b;
   }
 
   var flashEl = null;
@@ -5038,9 +5129,13 @@ var Moteur = (function () {
       // Courses pas encore faites : la liste est simplement refaite (on garde les coches des produits toujours là).
       var anc = cochesParProduit(prev), idxN = indexerLignes(doc.courses).m, cN = {};
       Object.keys(anc).forEach(function (k) { if (anc[k] && (idxN[k] || k.indexOf("aj-") === 0 || k.indexOf("fete:") === 0)) cN[k] = true; });
+      cochesParNom(anc, prev.courses, idxN, cN);
       doc.coches = cN;
     } else if (prev && prev.courses) {
-      doc.coursesReference = prev.coursesReference || prev.courses;
+      // Référence = ce qui a été acheté, recalculé avec les règles d'aujourd'hui (rayons, placard, unités) :
+      // un simple échange de repas ne donne alors rien à acheter en plus.
+      var eR = etatRef(prev); if (eR) doc.etatReference = clone(eR);
+      doc.coursesReference = referenceDe(prev);
       var anciennes = cochesParProduit(prev), nouvIdx = indexerLignes(doc.courses).m, c = {};
       var comp = calculerComplement(doc.coursesReference, doc.courses);
       var plusNouv = {}; comp.plus.forEach(function (l) { plusNouv[l.k] = true; });
@@ -5048,14 +5143,16 @@ var Moteur = (function () {
         if (!anciennes[k]) return;
         if (k.indexOf("plus:") === 0 ? plusNouv[k.slice(5)] : (nouvIdx[k] || k.indexOf("aj-") === 0 || k.indexOf("fete:") === 0)) c[k] = true;
       });
+      cochesParNom(anciennes, prev.courses, nouvIdx, c);
       doc.coches = c;
       if (motif === "sejour") {
+        delete doc.etatReference;
         // Période seulement découpée : rien à racheter. Une liste déjà complétée avant garde son complément, sans les jours partis.
         if (!prev.coursesReference) delete doc.coursesReference;
         else { var idxR = indexerLignes(doc.courses).m; doc.coursesReference = prev.coursesReference.filter(function (l) { return idxR[cleArticle(l.categorie + " " + l.produit)]; }); }
         comp = calculerComplement(doc.coursesReference || [], doc.courses);
       }
-      if (!doc.coursesReference || (!comp.plus.length && !comp.moins.length)) delete doc.coursesReference;
+      if (!doc.coursesReference || (!comp.plus.length && !comp.moins.length)) { delete doc.coursesReference; delete doc.etatReference; }
     }
     return { doc: doc, prev: prev };
   }
@@ -7889,11 +7986,15 @@ var Moteur = (function () {
   /* Différence entre la liste déjà achetée (référence) et la nouvelle :
      plus = nouveaux produits ou quantités en hausse (seulement l'écart), moins = plus nécessaires. */
   function calculerComplement(ref, lignes) {
-    var a = indexerLignes(ref), b = indexerLignes(lignes), plus = [], moins = [];
+    var a = indexerLignes(ref), b = indexerLignes(lignes), plus = [], moins = [], vus = {}, aNom = {};
+    // Même article rangé dans un autre rayon depuis : on le retrouve par son nom.
+    a.ordre.forEach(function (k) { var n = M.norm(a.m[k].produit); if (!aNom[n]) aNom[n] = []; aNom[n].push(k); });
     function L(k, l, q, extra) { var o = { k: k, produit: majuscule(l.produit), quantite: q, categorie: l.categorie }; return Object.assign(o, extra || {}); }
     b.ordre.forEach(function (k) {
-      var nl = b.m[k], ol = a.m[k];
+      var nl = b.m[k], ol = a.m[k], ko = k;
+      if (!ol || vus[k]) { ol = null; (aNom[M.norm(nl.produit)] || []).some(function (x) { if (!vus[x] && !b.m[x]) { ol = a.m[x]; ko = x; return true; } return false; }); }
       if (!ol) { plus.push(L(k, nl, nl.quantite || "", { etat: "nouveau" })); return; }
+      vus[ko] = true;
       if ((ol.quantite || "") === (nl.quantite || "")) return;
       var o = lireQte(ol.quantite), n = lireQte(nl.quantite);
       // Même nombre, l'unité seulement ajoutée ou retirée (« 4 » → « 4 feuilletés ») : rien n'a changé.
@@ -7905,7 +8006,7 @@ var Moteur = (function () {
       }
       plus.push(L(k, nl, nl.quantite || "", { etat: "modifie", avant: ol.quantite || "" }));
     });
-    a.ordre.forEach(function (k) { if (!b.m[k]) moins.push(L(k, a.m[k], a.m[k].quantite || "", { etat: "retire" })); });
+    a.ordre.forEach(function (k) { if (!vus[k]) moins.push(L(k, a.m[k], a.m[k].quantite || "", { etat: "retire" })); });
     return { plus: plus, moins: moins };
   }
   /* Articles ajoutés pendant la semaine (« plus de lait ! »). Ancien format : objet rangé dans « ajouts ». */
@@ -8199,7 +8300,25 @@ var Moteur = (function () {
   /* Ce que le menu en préparation demande en plus de la liste déjà achetée (même calcul qu'à la validation). */
   function complementAvant(doc) {
     var l = listeCourses(), nouv = l.lignes.concat(l.placard).map(function (x) { return { produit: x.produit, quantite: x.quantite, categorie: x.categorie }; });
-    return calculerComplement(doc.coursesReference || doc.courses, nouv);
+    return calculerComplement(referenceDe(doc), nouv);
+  }
+  /* État du menu au moment des courses (menu, ajouts, retraits…) : gardé pour recalculer la liste achetée. */
+  function etatRef(doc) {
+    if (doc.etatReference) return doc.etatReference;
+    if (doc.coursesReference) return null; // ancienne modification : seule la liste achetée est connue
+    return { menu: { debut: doc.debut, fin: doc.fin, creneaux: doc.creneaux || [] }, ajouts: Array.isArray(doc.ajouts) ? doc.ajouts : [], retires: doc.retires || {}, qtes: doc.qtes || {}, placardPlus: doc.placardPlus || {} };
+  }
+  function lignesDeEtat(e) {
+    var sv = S; S = Object.assign({}, e, { menu: clone(e.menu), ajouts: clone(e.ajouts || []) });
+    try { var l = listeCourses(); return l.lignes.concat(l.placard).map(function (x) { return { produit: x.produit, quantite: x.quantite, categorie: x.categorie, source: x.source }; }); }
+    finally { S = sv; }
+  }
+  function referenceDe(doc) { var e = etatRef(doc); return e ? lignesDeEtat(e) : (doc.coursesReference || doc.courses); }
+  /* Coches gardées même si la clé d'un article a changé (rayon modifié) : on retrouve l'article par son nom. */
+  function cochesParNom(anc, ancCourses, nouvIdx, out) {
+    var ai = indexerLignes(ancCourses).m, parNom = {};
+    Object.keys(nouvIdx).forEach(function (k) { var n = M.norm(nouvIdx[k].produit); if (!parNom[n]) parNom[n] = k; });
+    Object.keys(anc).forEach(function (k) { if (!anc[k] || nouvIdx[k] || !ai[k]) return; var nk = parNom[M.norm(ai[k].produit)]; if (nk) out[nk] = true; });
   }
   function libCourtCourses(doc) { var d = doc.coursesFaitesLe && doc.coursesFaitesLe.le ? new Date(doc.coursesFaitesLe.le) : dateCourses(M.fromIso(doc.debut)); return NOMS_JS[d.getDay()] + " " + M.fr(d).slice(0, 5); }
   function complementDe(doc) {
