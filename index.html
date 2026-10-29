@@ -852,6 +852,7 @@ body.tunnel { padding-bottom: 24px; }
 body.tunnel .app { max-width: 720px; }
 .tn-page { display: flex; flex-direction: column; gap: 16px; min-height: calc(100vh - 60px); animation: tn-d .28s ease-out; }
 .tn-page.depuis-g { animation-name: tn-g; }
+.tn-page.sur-place { animation: none; }
 @keyframes tn-d { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
 @keyframes tn-g { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .tn-page { animation: none; } }
@@ -1555,7 +1556,10 @@ body.vue-mobile .regl-bloc{padding:0;gap:0}
 .cp-tn { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .cp-tn p { margin: 0; }
 .cp-rien b { color: #1F8A4C; }
+@keyframes swap-fait { from { background: var(--accent-soft); } to { background: transparent; } }
+.mcell.swap-fait { animation: swap-fait .9s ease-out; border-radius: 8px; }
 /* Imprévu */
+.mcell.imprevu-choix { outline: 1.5px dashed var(--accent); outline-offset: -2px; border-radius: 8px; cursor: pointer; background: var(--accent-soft); }
 .imprevu-t { margin: 0; font-size: .85rem; font-weight: 600; color: var(--muted); }
 /* Échange de deux repas */
 .icon.poignee { touch-action: none; cursor: grab; font-weight: 700; }
@@ -2768,7 +2772,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "28 oct. 16h30";
+  var VERSION_SITE = "29 oct. 7h15";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
   var VERSION_APP = "1.4.3", VERSION_DATE = "28 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
@@ -2778,8 +2782,11 @@ var Moteur = (function () {
   var FAV_ON = VARIANTE_FAV !== "B";
   var JOURNAL_VERSIONS = [
     { v: "1.4.3", date: "28 oct. 2026", type: "correctif", notes: [
-      "Imprévu : touche ✎ directement sur le repas passé (aussi pendant « Modifier ce menu ») ; le bouton « ⇄ Imprévu ? » disparaît",
-      "Le repas réellement mangé remplace l'affichage du repas prévu (plus de plat barré) ; un restaurant ou une invitation s'affiche dans la couleur du mois, avec le nom du restaurant",
+      "Imprévu : bouton « ⇄ Imprévu ? » à côté de « Modifier ce menu » (et pendant la modification), puis touche le repas passé qui a changé",
+      "Le repas réellement mangé remplace l'affichage du repas prévu (plus de plat barré) ; un restaurant ou une invitation s'affiche dans la couleur du mois",
+      "Restaurant : le nom s'affiche sur une petite ligne en dessous (✎ Nom), pareil pour un restaurant prévu ou noté en imprévu ; touche-le pour le changer",
+      "« Tout retirer au sort » seulement à la création d'un menu (il n'avait pas d'effet sur une semaine en cours)",
+      "Modifier le menu : l'écran ne bouge plus après un échange, un ↻ ou un ✎ ; les deux repas échangés s'éclairent brièvement",
       "Échanger deux repas : glisse la poignée ⇅ d'un repas sur un autre (ou touche ⇅ puis l'autre repas), quand tu modifies le menu",
       "Choix au crayon ✎ : « Restaurant en famille », « Restaurant en amoureux », « Invitation »… restent proposés quand tu commences à taper",
       "Courses déjà faites : échanger deux repas ne demande plus d'articles en plus. La liste achetée est recalculée avec les réglages d'aujourd'hui (rayons, placard, unités) avant la comparaison",
@@ -3273,8 +3280,12 @@ var Moteur = (function () {
       retour ? h("button", { type: "button", class: "btn tn-retour", "aria-label": "Étape précédente", text: "←", onclick: retour }) : null, principal));
   }
 
+  var pageTnAffichee = "";
   function renderTunnel() {
-    var p = pageTn(), i = idxEtape(p), page = h("div", { class: "tn-page " + (sensTn < 0 ? "depuis-g" : "depuis-d") });
+    // Glissement seulement quand on change d'étape : une mise à jour sur la même page (↻, ✎, ⇅) reste immobile.
+    var p = pageTn(), i = idxEtape(p), memePage = pageTnAffichee === M.iso(debut) + "|" + p;
+    pageTnAffichee = M.iso(debut) + "|" + p;
+    var page = h("div", { class: "tn-page " + (memePage ? "sur-place" : sensTn < 0 ? "depuis-g" : "depuis-d") });
     var rep = S.reponses, enCoursSem = semaineEnCours() && Store.menus[M.iso(debut)];
     if (p === "semaine") {
       var dejaPasses = 0; for (var jj = 0; jj < NJ(); jj++) if (jourPasse(jj)) dejaPasses++;
@@ -3346,8 +3357,8 @@ var Moteur = (function () {
       var av = (S.menu.avertissements || []);
       if (av.length) page.append(h("div", { class: "notes" }, av.map(function (a) { return h("p", { class: "warn", text: a }); })));
       page.append(renderMenuGrille(true));
-      page.append(h("div", { class: "bar actions-rares" }, h("button", { type: "button", class: "btn", text: "↻ Tout retirer au sort", onclick: function () { generer(); } }),
-        Store.menus[M.iso(debut)] ? boutonAnnulerModifs("btn") : null));
+      page.append(h("div", { class: "bar actions-rares" }, Store.menus[M.iso(debut)] ? null : h("button", { type: "button", class: "btn", text: "↻ Tout retirer au sort", onclick: function () { generer(); } }),
+        boutonImprevu("btn"), Store.menus[M.iso(debut)] ? boutonAnnulerModifs("btn") : null));
       page.append(alerteSansIngredients(S.menu.creneaux) || "");
       var nbL = listeCourses().lignes.length, dejaM = Store.menus[M.iso(debut)], cfM = dejaM && dejaM.courses && coursesFaites(dejaM, debut);
       var cpM = cfM ? complementAvant(dejaM) : null;
@@ -4713,7 +4724,7 @@ var Moteur = (function () {
     var nameEl, tags = h("div", { class: "tags" });
     if (slot && slot.type === "recette") {
       nameEl = editable ? h("span", { class: "mname" }, slot.recette, boutonFicheMenu(slot.recette))
-        : estCreneauResto(slot) ? h("span", { class: "mname evt" }, h("span", { text: "Restaurant" }), zoneNomResto(slot),
+        : estCreneauResto(slot) ? h("span", { class: "mname evt" }, h("span", { text: slot.type === "resto" ? (slot.texte || "Restaurant") : "Restaurant" }), zoneNomResto(slot),
           estAujourdhui(j) && (repas === "Soir" || new Date().getHours() < 14) ? h("span", { class: "badge-jour", text: repas === "Midi" ? "CE MIDI" : "CE SOIR" }) : null)
         : h("button", { type: "button", class: "mname mname-lien", "aria-label": "Voir " + slot.recette, onclick: function () { ouvrirPlat(slot.recette); } }, slot.recette, boutonFicheMenu(slot.recette),
           estAujourdhui(j) && (repas === "Soir" || new Date().getHours() < 14) ? h("span", { class: "badge-jour", text: repas === "Midi" ? "CE MIDI" : "CE SOIR" }) : null);
@@ -4771,8 +4782,8 @@ var Moteur = (function () {
     // Jours passés : rien. Aujourd'hui : crayon seulement. Jours à venir : ↻ et crayon.
     // Repas passé d'un menu validé : ✎ pour dire ce qu'on a vraiment mangé (imprévu), menu modifié ou pas.
     var docV = Store.menus[M.iso(debut)];
-    if (repasPasse(j, repas) && docV && !semaineTropVieille()) tools.append(h("button", { type: "button", class: "icon", title: "Imprévu : qu'avez-vous mangé ?", "aria-label": "Imprévu " + libelle + " : qu'avez-vous mangé ?", text: "✎", onclick: function () { choixImprevu(cell, j, repas, slot); } }));
-    else if (verrou && estAujourdhui(j)) tools.append(h("span", { class: "repas-verrou", title: "Repas passé : il n'est plus modifiable", "aria-label": "Repas passé, non modifiable", text: "🔒" }));
+    if (repasPasse(j, repas) && docV && !semaineTropVieille()) { cell.dataset.imprevu = "1"; cell._imprevu = function () { choixImprevu(cell, j, repas, slot); }; }
+    if (verrou && estAujourdhui(j) && !cell._imprevu) tools.append(h("span", { class: "repas-verrou", title: "Repas passé : il n'est plus modifiable", "aria-label": "Repas passé, non modifiable", text: "🔒" }));
     if (editable && !jourPasse(j)) {
       var aleatoire = !estAujourdhui(j) && (!slot || ((slot.type === "recette" || slot.type === "vide" || slot.type === "exclu")
         && slot.source !== "imposee" && slot.source !== "alternance" && slot.source !== "choisie"));
@@ -4819,7 +4830,7 @@ var Moteur = (function () {
     // Repas passé : « Changement de plan ? » pour noter ce qu'on a vraiment mangé (compte dans l'historique).
     var idSem = M.iso(debut), docSem = Store.menus[idSem], reel = docSem && docSem.reels && docSem.reels[j + "-" + repas];
     // Imprévu noté : on affiche ce qui a été mangé, à la place de ce qui était prévu.
-    if (reel) nameEl = nomReel(reel, editable);
+    if (reel) nameEl = nomReel(reel, editable, function () { choixImprevu(cell, j, repas, slot, reel); });
     // Échange de deux repas (glisser la poignée ⇅ sur un autre repas, ou toucher ⇅ puis l'autre repas).
     if (editable && !verrou) {
       cell.dataset.key = j + "-" + repas; cell.dataset.swap = "1";
@@ -4830,10 +4841,12 @@ var Moteur = (function () {
     return cell;
   }
   /* ---------- Imprévus : ce qu'on a vraiment mangé ---------- */
-  function nomReel(r, editable) {
+  function nomReel(r, editable, changerNom) {
     if (r.type === "recette") return editable ? h("span", { class: "mname" }, r.recette)
       : h("button", { type: "button", class: "mname mname-lien", "aria-label": "Voir " + r.recette, onclick: function () { ouvrirPlat(r.recette); } }, r.recette);
     if (r.type === "saute") return h("span", { class: "mname sans" }, h("span", { class: "sans-menu", text: "Repas sauté" }));
+    if (r.type === "resto" && changerNom) return h("span", { class: "mname evt" }, h("span", { text: r.texte || "Restaurant" }),
+      h("span", { class: "resto-nom" }, h("button", { type: "button", class: "lien-resto", text: r.resto ? "✎ " + r.resto : "＋ Quel restaurant ?", "aria-label": "Nom du restaurant", onclick: function (e) { e.stopPropagation(); changerNom(); } })));
     return h("span", { class: "mname evt" }, h("span", { text: r.texte || "Autre" }), r.resto ? h("span", { text: " · " + r.resto }) : null);
   }
   function enregistrerReel(j, r, val) {
@@ -4846,7 +4859,7 @@ var Moteur = (function () {
     fileEcriture = fileEcriture.then(function () { return Store.updateMenu(idSem, patch); }).catch(function () {});
     renderPrep(); toast(val ? "Noté : " + libReel(val) + "." : "Remis comme prévu.");
   }
-  function choixImprevu(cell, j, repas, slot) {
+  function choixImprevu(cell, j, repas, slot, nomSeul) {
     var docSem = Store.menus[M.iso(debut)], k = j + "-" + repas, reel = docSem && docSem.reels && docSem.reels[k];
     var libelle = nomJour(j) + " " + repas.toLowerCase();
     var sel = chercheur({ label: "Qu'avez-vous mangé " + libelle + " ?", placeholder: "Qu'avez-vous mangé ? (recette, restaurant…)", items: function () {
@@ -4868,10 +4881,41 @@ var Moteur = (function () {
         h("div", { class: "choix-ligne" }, inp, h("button", { type: "button", class: "btn", text: "OK", onclick: ok }), h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: function () { renderPrep(); } })));
       setTimeout(function () { inp.focus(); }, 30);
     }
+    if (nomSeul) { nomResto({ type: "resto", texte: nomSeul.texte || "Restaurant" }); return; }
     clear(cell);
     cell.append(h("span", { class: "lab", text: repas }), h("p", { class: "imprevu-t", text: "Imprévu : qu'avez-vous mangé ?" }),
       h("div", { class: "choix-ligne" }, sel, h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: function () { renderPrep(); } })));
     setTimeout(function () { var i = sel.querySelector("input"); if (i) i.focus(); }, 30);
+  }
+  /* Bouton « ⇄ Imprévu ? » : on touche ensuite le repas passé qui a changé. */
+  function boutonImprevu(cls) {
+    var doc = Store.menus[M.iso(debut)]; if (!doc || semaineTropVieille()) return null;
+    var passe = false; for (var j = 0; j < NJ() && !passe; j++) if (repasPasse(j, "Midi") || repasPasse(j, "Soir")) passe = true;
+    if (!passe) return null;
+    return h("button", { type: "button", class: cls || "btn", text: "⇄ Imprévu ?", title: "Un repas passé ne s'est pas passé comme prévu ? Note ce que vous avez mangé.", onclick: function (e) { e.stopPropagation(); modeImprevu(); } });
+  }
+  function finModeImprevu() {
+    document.removeEventListener("click", clicImprevu, true);
+    Array.prototype.forEach.call(document.querySelectorAll(".mcell.imprevu-choix"), function (c) { c.classList.remove("imprevu-choix"); });
+    var b = document.querySelector(".imprevu-bandeau"); if (b) b.remove();
+  }
+  function clicImprevu(e) {
+    if (e.target.closest && e.target.closest(".imprevu-bandeau")) return;
+    var c = e.target.closest && e.target.closest('.mcell[data-imprevu="1"]');
+    e.preventDefault(); e.stopPropagation();
+    finModeImprevu();
+    if (c && c._imprevu) c._imprevu();
+  }
+  function modeImprevu() {
+    finModeImprevu(); finModeEchange();
+    var cells = document.querySelectorAll('.mcell[data-imprevu="1"]'); if (!cells.length) return;
+    Array.prototype.forEach.call(cells, function (c) { c.classList.add("imprevu-choix"); });
+    var grille = cells[0].closest(".menu");
+    var band = h("div", { class: "swap-bandeau imprevu-bandeau", role: "status" }, h("span", { text: "Touche le repas passé qui a changé" }),
+      h("button", { type: "button", class: "lien-cf", text: "Annuler", onclick: finModeImprevu }));
+    if (grille) grille.parentNode.insertBefore(band, grille);
+    try { band.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (er) {}
+    setTimeout(function () { document.addEventListener("click", clicImprevu, true); }, 0);
   }
   /* ---------- Échanger deux repas ---------- */
   var echangeDe = null;
@@ -4889,7 +4933,10 @@ var Moteur = (function () {
     var ev = S.reponses.evenements, ea = ev[a], eb = ev[b];
     if (eb) ev[a] = eb; else delete ev[a];
     if (ea) ev[b] = ea; else delete ev[b];
-    echangeDe = null; sauver(); renderPrep();
+    echangeDe = null; sauver();
+    var y = window.scrollY; renderPrep(); window.scrollTo(0, y);
+    // Petit repère sur les deux repas échangés, sans rien déplacer.
+    [a, b].forEach(function (k) { var c = document.querySelector('.mcell[data-key="' + k + '"]'); if (c) { c.classList.add("swap-fait"); setTimeout(function () { c.classList.remove("swap-fait"); }, 900); } });
     toast("Échangé : " + nomJour(ca.jour).toLowerCase() + " " + ca.repas.toLowerCase() + " ↔ " + nomJour(cb.jour).toLowerCase() + " " + cb.repas.toLowerCase() + ".");
   }
   function finModeEchange() {
@@ -5109,7 +5156,7 @@ var Moteur = (function () {
   function renderProposition() {
     var actions = h("div", { class: "bar actions-rares" },
       semaineEnCours() ? null : h("button", { type: "button", class: "btn", text: "Modifier les réponses", onclick: function () { S.stage = "questions"; sauver(); renderPrep(); window.scrollTo(0, 0); } }),
-      h("button", { type: "button", class: "btn", text: "Autre tirage", onclick: function () { generer(); } }));
+      Store.menus[M.iso(debut)] ? null : h("button", { type: "button", class: "btn", text: "Autre tirage", onclick: function () { generer(); } }));
     var mob = vueMobile();
     panelPrep.append(h("div", { class: "statut-bloc todo" }, statut("todo", Store.menus[M.iso(debut)] ? "Modification à valider" : "Menu à valider"),
       h("p", { class: "status", text: Store.menus[M.iso(debut)] ? "Le menu validé reste en place tant que tu ne valides pas ces changements." : "Proposition prête : ajuste-la puis valide en bas de page." })));
@@ -5257,7 +5304,8 @@ var Moteur = (function () {
     panelPrep.append(renderMenuGrille(false));
     // Une seule ligne : Modifier ce menu · ⇄ Un repas a changé ? (semaine entamée) · Effacer la semaine (semaine à venir).
     var chg = null, eff = boutonEffacerSemaine(); // imprévus : ✎ directement sur le repas passé
-    if (modif || chg || eff) panelPrep.append(h("div", { class: "bar actions-rares ligne-actions" }, modif, chg ? chg.bouton : null, chg && chg.annuler ? chg.annuler : null, eff ? eff.bouton : null));
+    var bImp = boutonImprevu("btn");
+    if (modif || bImp || eff) panelPrep.append(h("div", { class: "bar actions-rares ligne-actions" }, modif, bImp, eff ? eff.bouton : null));
     if (chg) panelPrep.append(chg.zone);
     if (eff) panelPrep.append(eff.zone);
     panelPrep.append(alerteSansIngredients(S.menu.creneaux) || "");
