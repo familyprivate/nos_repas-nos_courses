@@ -2772,7 +2772,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "29 oct. 7h15";
+  var VERSION_SITE = "30 oct. 10h35";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
   var VERSION_APP = "1.4.3", VERSION_DATE = "28 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
@@ -2787,6 +2787,8 @@ var Moteur = (function () {
       "Restaurant : le nom s'affiche sur une petite ligne en dessous (✎ Nom), pareil pour un restaurant prévu ou noté en imprévu ; touche-le pour le changer",
       "« Tout retirer au sort » seulement à la création d'un menu (il n'avait pas d'effet sur une semaine en cours)",
       "Modifier le menu : l'écran ne bouge plus après un échange, un ↻ ou un ✎ ; les deux repas échangés s'éclairent brièvement",
+      "Courses : chaque liste a son onglet (Liste principale, listes nommées, 🧺 Appoint n°…) ; la liste d'appoint n'apparaît plus sous « Liste principale »",
+      "Liste nommée (ex. « Vendée ») : bouton « Clôturer la liste » quand tout est pris, et « Rouvrir la liste »",
       "Échanger deux repas : glisse la poignée ⇅ d'un repas sur un autre (ou touche ⇅ puis l'autre repas), quand tu modifies le menu",
       "Choix au crayon ✎ : « Restaurant en famille », « Restaurant en amoureux », « Invitation »… restent proposés quand tu commences à taper",
       "Courses déjà faites : échanger deux repas ne demande plus d'articles en plus. La liste achetée est recalculée avec les réglages d'aujourd'hui (rayons, placard, unités) avant la comparaison",
@@ -8324,7 +8326,7 @@ var Moteur = (function () {
     var n = listeCourante(doc) + 1, info = { ouverte: new Date().toISOString(), par: NOM_APPAREIL || "" };
     var patch = { listeN: n, cloture: null, listes: {} }; patch.listes[n] = info;
     doc.listeN = n; doc.cloture = null; doc.listes = Object.assign({}, doc.listes || {}); doc.listes[n] = info;
-    ecrireMenu(id, patch);
+    ecrireMenu(id, patch); listeVue = ""; vuePrincipale = false; listeVueSem = id;
     renderCoursesOnglet(); var x = panelCourses.querySelector(".aj-rapide input"); if (x) x.focus();
   }
   /* Liste d'appoint ouverte par erreur (encore vide) : on revient à la liste précédente, clôturée. */
@@ -8373,8 +8375,10 @@ var Moteur = (function () {
     return h("section", { class: "card cloture-carte" },
       h("h2", { text: passees.length > 1 ? "Les " + passees.length + " listes de la semaine" : "Courses faites", style: "font-size:1.2rem" }),
       ul,
-      h("p", { class: "status", text: "Besoin de quelque chose en cours de semaine ? Ouvre une nouvelle liste : elle part de zéro, à part des précédentes." }),
-      h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "+ Nouvelle liste", onclick: function () { nouvelleListe(id, doc); } }),
+      n && !(doc.cloture && doc.cloture.le)
+        ? h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "Voir la liste d'appoint n°" + n + " →", onclick: function () { voirListe(id, "", false); } }))
+        : h("p", { class: "status", text: "Besoin de quelque chose en cours de semaine ? Ouvre une nouvelle liste : elle part de zéro, à part des précédentes." }),
+      n && !(doc.cloture && doc.cloture.le) ? null : h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "+ Nouvelle liste", onclick: function () { nouvelleListe(id, doc); } }),
         h("button", { type: "button", class: "lien-cf", text: "Rouvrir la dernière liste", onclick: function () { rouvrirListe(id, doc); } })));
   }
   /* En-tête d'une liste d'appoint ouverte. */
@@ -8450,18 +8454,20 @@ var Moteur = (function () {
     var comp = complementDe(doc);
     // Listes à part, nommées (« Lidl », « Pour mamie »…) : les articles déplacés y vont et sortent de la liste principale.
     var LN = listesNommees(doc), lids = Object.keys(LN).sort(function (a, b) { return String(LN[a].cree || "").localeCompare(String(LN[b].cree || "")); });
+    if (listeVueSem !== id) vuePrincipale = false;
     if (listeVue && (!LN[listeVue] || listeVueSem !== id)) listeVue = "";
+    var nC0 = listeCourante(doc); if (!nC0) vuePrincipale = false;
     function dansDe(l) { var x = (doc.dans || {})[l.k]; return x && LN[x] ? x : ""; }
     comp = { plus: comp.plus.filter(function (l) { return !dansDe(l); }), moins: comp.moins.filter(function (l) { return !dansDe(l); }) };
-    if (lids.length) panelCourses.append(selecteurListes(id, doc, lids, LN, lignes, dansDe));
+    if (lids.length || nC0) panelCourses.append(selecteurListes(id, doc, lids, LN, lignes, dansDe));
     if (listeVue) {
       lignes = lignes.filter(function (l) { return dansDe(l) === listeVue; });
       placardL = []; comp = { plus: [], moins: [] };
       panelCourses.append(enteteListeNommee(id, doc, listeVue, LN[listeVue], lignes));
     } else lignes = lignes.filter(function (l) { return !dansDe(l); });
     // Listes distinctes : la principale (recettes + ajouts n°0), puis chaque liste d'appoint avec ses seuls ajouts.
-    var nListe = listeVue ? 0 : listeCourante(doc), clot = nListe > 0;
-    if (!listeVue && doc.cloture && doc.cloture.le) {
+    var nListe = listeVue || vuePrincipale ? 0 : listeCourante(doc), clot = nListe > 0;
+    if (!listeVue && ((doc.cloture && doc.cloture.le) || vuePrincipale)) {
       // Liste clôturée : récapitulatif des listes de la semaine, chacune consultable (ⓘ).
       var toutes = lignes.map(function (l) {
         var x = l.aj ? ajouts[l.aj] : null;
@@ -8693,7 +8699,8 @@ var Moteur = (function () {
     });
     if (barreSelEl) panelCourses.append(barreSelEl);
     if (nbLieu.tout && !resteLieu.tout && listeVue) {
-      panelCourses.append(h("div", { class: "fin-courses" }, h("p", null, h("b", { text: "🎉 Tout est pris !" }), h("span", { text: " La liste « " + LN[listeVue].nom + " » est complète." }))));
+      panelCourses.append(h("div", { class: "fin-courses" }, h("p", null, h("b", { text: "🎉 Tout est pris !" }), h("span", { text: " La liste « " + LN[listeVue].nom + " » est complète." })),
+        LN[listeVue].fin ? null : h("button", { type: "button", class: "btn primary", text: "Clôturer la liste « " + LN[listeVue].nom + " »", onclick: function () { cloturerNommee(id, doc, listeVue, true); } })));
     } else if (nbLieu.tout && !resteLieu.tout) {
       panelCourses.append(h("div", { class: "fin-courses" }, h("p", null, h("b", { text: "🎉 Tout est dans le caddie !" }), h("span", { text: clot ? " La liste d'appoint est complète." : " Les courses de la semaine sont faites." })),
         h("button", { type: "button", class: "btn primary", text: clot ? "Clôturer la liste d'appoint" : "Clôturer la liste", onclick: function () { cloturerListe(id, doc); } })));
@@ -8730,13 +8737,14 @@ var Moteur = (function () {
   }
   /* ---------- Listes à part, nommées ----------
      doc.listesNommees[lid] = { nom, cree, par } ; doc.dans[clé de ligne] = lid pour un article déplacé (null = liste principale). */
-  var listeVue = "", listeVueSem = "", selMode = false, selection = {}, selQte = {}, majBarreSel = function () {};
+  var listeVue = "", listeVueSem = "", vuePrincipale = false, selMode = false, selection = {}, selQte = {}, majBarreSel = function () {};
   function listesNommees(doc) { var o = {}, L = (doc && doc.listesNommees) || {}; Object.keys(L).forEach(function (k) { if (L[k] && L[k].nom) o[k] = L[k]; }); return o; }
-  function voirListe(id, lid) { listeVue = lid; listeVueSem = id; selMode = false; selection = {}; renderCoursesOnglet(); window.scrollTo(0, 0); }
+  function voirListe(id, lid, principale) { listeVue = lid; listeVueSem = id; vuePrincipale = !!principale; selMode = false; selection = {}; renderCoursesOnglet(); window.scrollTo(0, 0); }
   function selecteurListes(id, doc, lids, LN, toutes, dansDe) {
-    var ck = coches, reste = { "": 0 };
+    var ck = coches, reste = { "": 0, "__app": 0 };
     lids.forEach(function (l) { reste[l] = 0; });
-    var ar = ajoutsRapides(doc), nC = listeCourante(doc);
+    var ar = ajoutsRapides(doc), nC = listeCourante(doc), appOuverte = nC > 0 && !(doc.cloture && doc.cloture.le);
+    var principaleFinie = nC > 0 || !!(doc.cloture && doc.cloture.le);
     // Même calcul que la liste affichée : un article ajouté à la main qui rejoint la ligne d'une recette
     // (même produit, même endroit, même liste) ne compte qu'une fois.
     function lieuL(l) { var x = l.aj ? ar[l.aj] : null; return x && (x.lieu === "drive" || x.lieu === "magasin") ? x.lieu : lieuDe(doc, l.produit); }
@@ -8746,17 +8754,21 @@ var Moteur = (function () {
     toutes.forEach(function (l) {
       if (l.aj && recettes[cle(l)]) return; // fusionné dans la ligne de la recette
       var d = dansDe(l); if (ck[l.k]) return;
-      if (d) { reste[d] = (reste[d] || 0) + 1; return; }
-      if (doc.cloture && doc.cloture.le) return; // liste principale clôturée : plus rien à prendre
-      if (l.aj ? listeDeAj(ar[l.aj]) === nC : !nC) reste[""]++;
+      if (d) { if (!LN[d].fin) reste[d] = (reste[d] || 0) + 1; return; }
+      var n = l.aj ? listeDeAj(ar[l.aj]) : 0;
+      if (n === 0 && !principaleFinie) reste[""]++;
+      else if (n > 0 && n === nC && appOuverte) reste.__app++;
     });
-    function chip(lid, lib) {
-      var on = listeVue === lid;
-      return h("button", { type: "button", class: "chip" + (on ? " on" : ""), "aria-pressed": String(on), onclick: function () { voirListe(id, lid); } }, lib, h("small", { text: " · " + (reste[lid] ? reste[lid] : "✓") }));
+    function chip(lid, lib, on, fn) {
+      return h("button", { type: "button", class: "chip" + (on ? " on" : ""), "aria-pressed": String(on), onclick: fn }, lib, h("small", { text: " · " + (reste[lid] ? reste[lid] : "✓") }));
     }
+    var surApp = !listeVue && !vuePrincipale && nC > 0;
+    var chips = [chip("", "Liste principale", !listeVue && !surApp, function () { voirListe(id, "", true); })];
+    lids.forEach(function (l) { chips.push(chip(l, LN[l].nom, listeVue === l, function () { voirListe(id, l); })); });
+    if (nC > 0) chips.push(chip("__app", "🧺 Appoint n°" + nC, surApp, function () { voirListe(id, "", false); }));
     return h("div", { class: "listes-switch" },
-      h("p", { class: "ls-info", text: "🧾 Tu as " + (lids.length + 1) + " listes de courses pour cette semaine" }),
-      h("div", { class: "ls-chips" }, chip("", "Liste principale"), lids.map(function (l) { return chip(l, LN[l].nom); })));
+      h("p", { class: "ls-info", text: "🧾 Tu as " + chips.length + " listes de courses pour cette semaine" }),
+      h("div", { class: "ls-chips" }, chips));
   }
   function enteteListeNommee(id, doc, lid, info, lignes) {
     var z = h("div", { class: "appoint-tete ln-tete" });
@@ -8765,6 +8777,11 @@ var Moteur = (function () {
       if (info.periode) {
         z.append(h("p", null, h("b", { text: info.nom }), h("small", { text: " · " + info.periode })),
           h("small", { class: "sej-expl", text: info.sejour ? "Liste du séjour : les recettes de ces repas." : "Liste des repas au retour : à faire en rentrant." }));
+        return;
+      }
+      if (info.fin) {
+        z.append(h("p", null, h("b", { text: "📋 " + info.nom }), h("small", { text: " · ✓ clôturée " + libCloture(info.fin) })),
+          h("div", { class: "bar" }, h("button", { type: "button", class: "lien-cf", text: "Rouvrir la liste", onclick: function () { cloturerNommee(id, doc, lid, false); } })));
         return;
       }
       z.append(h("p", null, h("b", { text: "📋 " + info.nom }), h("small", { text: " · liste à part" + (info.par ? ", créée par " + info.par : "") })),
@@ -8791,6 +8808,14 @@ var Moteur = (function () {
         } }), h("button", { type: "button", class: "btn ghost", text: "Annuler", onclick: initial })));
     }
     initial(); return z;
+  }
+  function cloturerNommee(id, doc, lid, fermer) {
+    var info = doc.listesNommees && doc.listesNommees[lid]; if (!info) return;
+    var fin = fermer ? { le: new Date().toISOString(), par: NOM_APPAREIL || "" } : null;
+    var p = { listesNommees: {} }; p.listesNommees[lid] = Object.assign({}, info, { fin: fin });
+    doc.listesNommees = Object.assign({}, doc.listesNommees); doc.listesNommees[lid] = p.listesNommees[lid];
+    ecrireMenu(id, p); renderCoursesOnglet(); window.scrollTo(0, 0);
+    toast(fermer ? "✓ Liste « " + info.nom + " » clôturée." : "Liste « " + info.nom + " » rouverte.");
   }
   /* Barre de sélection : déplacer les articles choisis vers une autre liste (existante ou nouvelle, nommée). */
   function barreSelection(id, doc, lignes, LN, lids) {
