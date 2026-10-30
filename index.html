@@ -1558,6 +1558,10 @@ body.vue-mobile .regl-bloc{padding:0;gap:0}
 .cp-rien b { color: #1F8A4C; }
 @keyframes swap-fait { from { background: var(--accent-soft); } to { background: transparent; } }
 .mcell.swap-fait { animation: swap-fait .9s ease-out; border-radius: 8px; }
+/* Nouvelle liste */
+.ls-nouvelle { margin-top: 8px; }
+.listes-switch.seule { border: 0; padding: 0; background: none; box-shadow: none; }
+.chip.ls-plus { border-style: dashed; color: var(--accent-t); }
 /* Imprévu */
 .mcell.imprevu-choix { outline: 1.5px dashed var(--accent); outline-offset: -2px; border-radius: 8px; cursor: pointer; background: var(--accent-soft); }
 .imprevu-t { margin: 0; font-size: .85rem; font-weight: 600; color: var(--muted); }
@@ -2772,7 +2776,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "30 oct. 10h35";
+  var VERSION_SITE = "30 oct. 12h40";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
   var VERSION_APP = "1.4.3", VERSION_DATE = "28 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
@@ -2788,7 +2792,8 @@ var Moteur = (function () {
       "« Tout retirer au sort » seulement à la création d'un menu (il n'avait pas d'effet sur une semaine en cours)",
       "Modifier le menu : l'écran ne bouge plus après un échange, un ↻ ou un ✎ ; les deux repas échangés s'éclairent brièvement",
       "Courses : chaque liste a son onglet (Liste principale, listes nommées, 🧺 Appoint n°…) ; la liste d'appoint n'apparaît plus sous « Liste principale »",
-      "Liste nommée (ex. « Vendée ») : bouton « Clôturer la liste » quand tout est pris, et « Rouvrir la liste »",
+      "Liste nommée (ex. « Vendée ») : bouton « Clôturer la liste » quand tout est pris ; une fois clôturée, elle n'affiche plus qu'un récapitulatif (ⓘ pour les articles) et « Rouvrir la liste »",
+      "« + Nouvelle liste » en haut des courses, à tout moment : une liste à part (ex. Marché, Lidl) même si les autres ne sont pas clôturées",
       "Échanger deux repas : glisse la poignée ⇅ d'un repas sur un autre (ou touche ⇅ puis l'autre repas), quand tu modifies le menu",
       "Choix au crayon ✎ : « Restaurant en famille », « Restaurant en amoureux », « Invitation »… restent proposés quand tu commences à taper",
       "Courses déjà faites : échanger deux repas ne demande plus d'articles en plus. La liste achetée est recalculée avec les réglages d'aujourd'hui (rayons, placard, unités) avant la comparaison",
@@ -8377,8 +8382,8 @@ var Moteur = (function () {
       ul,
       n && !(doc.cloture && doc.cloture.le)
         ? h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "Voir la liste d'appoint n°" + n + " →", onclick: function () { voirListe(id, "", false); } }))
-        : h("p", { class: "status", text: "Besoin de quelque chose en cours de semaine ? Ouvre une nouvelle liste : elle part de zéro, à part des précédentes." }),
-      n && !(doc.cloture && doc.cloture.le) ? null : h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "+ Nouvelle liste", onclick: function () { nouvelleListe(id, doc); } }),
+        : h("p", { class: "status", text: "Besoin de quelque chose en cours de semaine ? Ouvre une liste d'appoint : elle part de zéro, à part des précédentes." }),
+      n && !(doc.cloture && doc.cloture.le) ? null : h("div", { class: "bar" }, h("button", { type: "button", class: "btn primary", text: "+ Liste d'appoint", onclick: function () { nouvelleListe(id, doc); } }),
         h("button", { type: "button", class: "lien-cf", text: "Rouvrir la dernière liste", onclick: function () { rouvrirListe(id, doc); } })));
   }
   /* En-tête d'une liste d'appoint ouverte. */
@@ -8459,10 +8464,11 @@ var Moteur = (function () {
     var nC0 = listeCourante(doc); if (!nC0) vuePrincipale = false;
     function dansDe(l) { var x = (doc.dans || {})[l.k]; return x && LN[x] ? x : ""; }
     comp = { plus: comp.plus.filter(function (l) { return !dansDe(l); }), moins: comp.moins.filter(function (l) { return !dansDe(l); }) };
-    if (lids.length || nC0) panelCourses.append(selecteurListes(id, doc, lids, LN, lignes, dansDe));
+    panelCourses.append(selecteurListes(id, doc, lids, LN, lignes, dansDe));
     if (listeVue) {
       lignes = lignes.filter(function (l) { return dansDe(l) === listeVue; });
       placardL = []; comp = { plus: [], moins: [] };
+      if (LN[listeVue].fin) { panelCourses.append(carteNommeeClose(id, doc, listeVue, LN[listeVue], lignes)); return; }
       panelCourses.append(enteteListeNommee(id, doc, listeVue, LN[listeVue], lignes));
     } else lignes = lignes.filter(function (l) { return !dansDe(l); });
     // Listes distinctes : la principale (recettes + ajouts n°0), puis chaque liste d'appoint avec ses seuls ajouts.
@@ -8741,7 +8747,7 @@ var Moteur = (function () {
   function listesNommees(doc) { var o = {}, L = (doc && doc.listesNommees) || {}; Object.keys(L).forEach(function (k) { if (L[k] && L[k].nom) o[k] = L[k]; }); return o; }
   function voirListe(id, lid, principale) { listeVue = lid; listeVueSem = id; vuePrincipale = !!principale; selMode = false; selection = {}; renderCoursesOnglet(); window.scrollTo(0, 0); }
   function selecteurListes(id, doc, lids, LN, toutes, dansDe) {
-    var ck = coches, reste = { "": 0, "__app": 0 };
+    var ck = coches, reste = { "": 0, "__app": 0 }, tot = {};
     lids.forEach(function (l) { reste[l] = 0; });
     var ar = ajoutsRapides(doc), nC = listeCourante(doc), appOuverte = nC > 0 && !(doc.cloture && doc.cloture.le);
     var principaleFinie = nC > 0 || !!(doc.cloture && doc.cloture.le);
@@ -8753,22 +8759,43 @@ var Moteur = (function () {
     toutes.forEach(function (l) { if (!l.aj) recettes[cle(l)] = true; });
     toutes.forEach(function (l) {
       if (l.aj && recettes[cle(l)]) return; // fusionné dans la ligne de la recette
-      var d = dansDe(l); if (ck[l.k]) return;
+      var d = dansDe(l); if (d) tot[d] = (tot[d] || 0) + 1; if (ck[l.k]) return;
       if (d) { if (!LN[d].fin) reste[d] = (reste[d] || 0) + 1; return; }
       var n = l.aj ? listeDeAj(ar[l.aj]) : 0;
       if (n === 0 && !principaleFinie) reste[""]++;
       else if (n > 0 && n === nC && appOuverte) reste.__app++;
     });
     function chip(lid, lib, on, fn) {
-      return h("button", { type: "button", class: "chip" + (on ? " on" : ""), "aria-pressed": String(on), onclick: fn }, lib, h("small", { text: " · " + (reste[lid] ? reste[lid] : "✓") }));
+      var vide = LN[lid] && !LN[lid].fin && !tot[lid];
+      return h("button", { type: "button", class: "chip" + (on ? " on" : ""), "aria-pressed": String(on), onclick: fn }, lib, h("small", { text: " · " + (reste[lid] ? reste[lid] : vide ? "vide" : "✓") }));
     }
     var surApp = !listeVue && !vuePrincipale && nC > 0;
     var chips = [chip("", "Liste principale", !listeVue && !surApp, function () { voirListe(id, "", true); })];
     lids.forEach(function (l) { chips.push(chip(l, LN[l].nom, listeVue === l, function () { voirListe(id, l); })); });
     if (nC > 0) chips.push(chip("__app", "🧺 Appoint n°" + nC, surApp, function () { voirListe(id, "", false); }));
+    // Nouvelle liste à part (Lidl, marché…) : possible à tout moment, même si les autres ne sont pas clôturées.
+    var zoneN = h("div", { class: "ls-nouvelle" });
+    function boutonN() { clear(zoneN); zoneN.append(h("button", { type: "button", class: "chip ls-plus", text: "+ Nouvelle liste", onclick: formN })); }
+    function formN() {
+      clear(zoneN);
+      var inp = h("input", { type: "text", placeholder: "Nom de la liste (ex. Lidl, marché)", "aria-label": "Nom de la nouvelle liste" });
+      function creer() {
+        var v = inp.value.trim(); if (!v) { inp.focus(); return; }
+        var lid = "l" + Date.now().toString(36), info = { nom: v, cree: new Date().toISOString(), par: NOM_APPAREIL || "" }, p = { listesNommees: {} };
+        p.listesNommees[lid] = info; doc.listesNommees = Object.assign({}, doc.listesNommees || {}); doc.listesNommees[lid] = info;
+        ecrireMenu(id, p); voirListe(id, lid);
+        toast("Liste « " + v + " » créée : ajoute ses articles.");
+        setTimeout(function () { var x = panelCourses.querySelector(".aj-rapide input"); if (x) x.focus(); }, 50);
+      }
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); creer(); } if (e.key === "Escape") boutonN(); });
+      zoneN.append(h("div", { class: "arow" }, inp, h("button", { type: "button", class: "btn", text: "Créer", onclick: creer }), h("button", { type: "button", class: "icon", "aria-label": "Annuler", text: "✕", onclick: boutonN })));
+      setTimeout(function () { inp.focus(); }, 30);
+    }
+    boutonN();
+    if (chips.length < 2) return h("div", { class: "listes-switch seule" }, zoneN);
     return h("div", { class: "listes-switch" },
       h("p", { class: "ls-info", text: "🧾 Tu as " + chips.length + " listes de courses pour cette semaine" }),
-      h("div", { class: "ls-chips" }, chips));
+      h("div", { class: "ls-chips" }, chips), zoneN);
   }
   function enteteListeNommee(id, doc, lid, info, lignes) {
     var z = h("div", { class: "appoint-tete ln-tete" });
@@ -8808,6 +8835,24 @@ var Moteur = (function () {
         } }), h("button", { type: "button", class: "btn ghost", text: "Annuler", onclick: initial })));
     }
     initial(); return z;
+  }
+  /* Liste nommée clôturée : un récapitulatif (comme la liste principale), plus de liste à cocher. */
+  function carteNommeeClose(id, doc, lid, info, lignes) {
+    var ar = ajoutsRapides(doc);
+    var x = { lignes: lignes.map(function (l) { var a = l.aj ? ar[l.aj] : null; return { produit: l.produit, quantite: l.quantite, fait: !!coches[l.k], lieu: a && (a.lieu === "drive" || a.lieu === "magasin") ? a.lieu : lieuDe(doc, l.produit) }; }) };
+    var nb = x.lignes.length, pris = x.lignes.filter(function (l) { return l.fait; }).length;
+    var iB = h("button", { type: "button", class: "info-i", text: "i", "aria-label": "Voir les articles : " + info.nom, "aria-expanded": "false" });
+    iB.addEventListener("click", function () {
+      var ul = h("ul", { class: "bulle-liste" });
+      x.lignes.forEach(function (l) { ul.append(h("li", { class: l.fait ? "" : "pas-pris" }, h("span", { text: (l.fait ? "✓ " : "✗ ") + l.produit }), l.quantite ? h("small", { text: " · " + l.quantite }) : null, l.lieu === "magasin" ? h("small", { text: " · 🏬" }) : null)); });
+      if (!nb) ul.append(h("li", { text: "Aucun article." }));
+      bulle(iB, h("div", null, h("b", { text: info.nom }), ul));
+    });
+    return h("section", { class: "card cloture-carte" },
+      h("h2", { text: "Liste « " + info.nom + " » terminée", style: "font-size:1.2rem" }),
+      h("ul", { class: "listes-passees" }, h("li", null, h("span", { class: "lp-coche", "aria-hidden": "true", text: "✓" }),
+        h("span", { class: "lp-txt" }, h("b", { text: info.nom }), h("small", { text: "clôturée " + libCloture(info.fin) + " · " + (pris === nb ? nb + " article" + (nb > 1 ? "s" : "") : pris + " / " + nb + " pris") })), iB)),
+      h("div", { class: "bar" }, h("button", { type: "button", class: "lien-cf", text: "Rouvrir la liste", onclick: function () { cloturerNommee(id, doc, lid, false); } })));
   }
   function cloturerNommee(id, doc, lid, fermer) {
     var info = doc.listesNommees && doc.listesNommees[lid]; if (!info) return;
