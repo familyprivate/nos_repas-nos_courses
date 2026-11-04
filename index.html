@@ -1562,6 +1562,9 @@ body.vue-mobile .regl-bloc{padding:0;gap:0}
 .ls-nouvelle { margin-top: 8px; }
 .listes-switch.seule { border: 0; padding: 0; background: none; box-shadow: none; }
 .chip.ls-plus { border-style: dashed; color: var(--accent-t); }
+/* Exclure un jour depuis le menu */
+.jour-exclu { margin-top: 6px; border: 1px dashed var(--line); background: none; border-radius: 999px; padding: 1px 5px; font: 600 10px var(--font); max-width: 100%; box-sizing: border-box; align-self: flex-start; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.jour-exclu.on { border-style: solid; color: var(--accent-t); }
 /* Imprévu */
 .mcell.imprevu-choix { outline: 1.5px dashed var(--accent); outline-offset: -2px; border-radius: 8px; cursor: pointer; background: var(--accent-soft); }
 .imprevu-t { margin: 0; font-size: .85rem; font-weight: 600; color: var(--muted); }
@@ -1943,6 +1946,8 @@ var Moteur = (function () {
     function slotAt(j, r) { for (var i = 0; i < slots.length; i++) if (slots[i].jour === j && slots[i].repas === r) return slots[i]; return null; }
     function slotWd(wd, r) { for (var i = 0; i < slots.length; i++) if (slots[i].wd === wd && slots[i].repas === r) return slots[i]; return null; }
     var used = {};
+    // Plats d'un repas de fête : pas remis au menu de la même semaine pour un repas classique.
+    slots.forEach(function (s) { if (s.type === "fete") (s.plats || []).forEach(function (p) { if (p && p.recette) used[p.recette] = true; }); });
     function assign(slot, rec, source, notes) {
       slot.type = "recette"; slot.recette = rec.nom; slot.source = source; slot.notes = notes || [];
       used[rec.nom] = true;
@@ -2058,7 +2063,10 @@ var Moteur = (function () {
     var slot = menu.creneaux.filter(function (s) { return s.key === key; })[0];
     if (!slot) return null;
     var used = {};
-    menu.creneaux.forEach(function (s) { if (s.type === "recette" && s !== slot) used[s.recette] = true; });
+    menu.creneaux.forEach(function (s) {
+      if (s.type === "recette" && s !== slot) used[s.recette] = true;
+      if (s.type === "fete") (s.plats || []).forEach(function (p) { if (p && p.recette) used[p.recette] = true; });
+    });
     var d = fromIso(slot.date);
     var fam = {};
     menu.creneaux.forEach(function (s) {
@@ -2776,7 +2784,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "30 oct. 12h40";
+  var VERSION_SITE = "4 nov. 20h";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
   var VERSION_APP = "1.4.3", VERSION_DATE = "28 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
@@ -2794,6 +2802,9 @@ var Moteur = (function () {
       "Courses : chaque liste a son onglet (Liste principale, listes nommées, 🧺 Appoint n°…) ; la liste d'appoint n'apparaît plus sous « Liste principale »",
       "Liste nommée (ex. « Vendée ») : bouton « Clôturer la liste » quand tout est pris ; une fois clôturée, elle n'affiche plus qu'un récapitulatif (ⓘ pour les articles) et « Rouvrir la liste »",
       "« + Nouvelle liste » en haut des courses, à tout moment : une liste à part (ex. Marché, Lidl) même si les autres ne sont pas clôturées",
+      "Un repas exclu à l'étape « La semaine » reste exclu même si un plat y avait été choisi à la main",
+      "« ⊘ Exclure » sous chaque jour du menu pour enlever toute la journée (avec « Annuler »), « ↺ Remettre » pour la retirer au sort",
+      "Un plat prévu dans un repas de fête n'est plus retiré au sort pour un autre repas de la même semaine",
       "Échanger deux repas : glisse la poignée ⇅ d'un repas sur un autre (ou touche ⇅ puis l'autre repas), quand tu modifies le menu",
       "Choix au crayon ✎ : « Restaurant en famille », « Restaurant en amoureux », « Invitation »… restent proposés quand tu commences à taper",
       "Courses déjà faites : échanger deux repas ne demande plus d'articles en plus. La liste achetée est recalculée avec les réglages d'aujourd'hui (rayons, placard, unités) avant la comparaison",
@@ -4097,7 +4108,9 @@ var Moteur = (function () {
       var figeJour = jourPasse(j) || (prev && estAujourdhui(j));
       ["Midi", "Soir"].forEach(function (r) {
         var key = j + "-" + r, ps = prev ? prev.creneaux.filter(function (c) { return c.key === key; })[0] : null;
-        if (!figeJour && !repasPasse(j, r) && !(ps && ps.source === "choisie")) return;
+        // Un repas exclu (ou un événement) demandé à l'étape « La semaine » passe avant un plat choisi à la main.
+        var demande = !!S.reponses.evenements[key] || (r === "Midi" && midiSemaine(key) && S.reponses.midis.indexOf(j) === -1);
+        if (!figeJour && !repasPasse(j, r) && (!(ps && ps.source === "choisie") || demande)) return;
         var midiSem = r === "Midi" && wdJ(j) >= 2;
         if (ps && ps.type === "recette") {
           imposees.unshift({ recette: ps.recette, jour: j, repas: r }); gardes[key] = ps; delete evts[key];
@@ -4496,7 +4509,8 @@ var Moteur = (function () {
     wrap.append(h("div", { class: "mrow head" }, h("div", { text: "Jour" }), h("div", { text: "Midi" }), h("div", { text: "Soir" })));
     for (var j = 0; j < NJ(); j++) {
       var d = M.addDays(debut, j);
-      var row = h("div", { class: "mrow" + (M.iso(d) === M.iso(new Date()) ? " is-today" : "") }, h("div", { class: "mday", style: couleursJour(d) }, h("span", { class: "dnum", text: String(d.getDate()).padStart(2, "0") }), h("b", { text: nomJour(j) })));
+      var row = h("div", { class: "mrow" + (M.iso(d) === M.iso(new Date()) ? " is-today" : "") }, h("div", { class: "mday", style: couleursJour(d) }, h("span", { class: "dnum", text: String(d.getDate()).padStart(2, "0") }), h("b", { text: nomJour(j) }),
+        editable && !jourPasse(j) ? boutonJourExclu(j) : null));
       var dIso = M.iso(d);
       ["Midi", "Soir"].forEach(function (repas) {
         var key = j + "-" + repas;
@@ -4509,8 +4523,46 @@ var Moteur = (function () {
     return zs ? h("div", { class: "menu-bloc" }, wrap, zs) : wrap;
   }
 
+  /* Exclure toute une journée directement dans le menu (sans revenir à l'étape « La semaine »), avec « Annuler ». */
+  function jourExclu(j) {
+    return ["Midi", "Soir"].every(function (r) { var c = S.menu.creneaux.filter(function (x) { return x.key === j + "-" + r; })[0]; return repasPasse(j, r) || !c || c.type === "exclu" || c.type === "vide"; });
+  }
+  function boutonJourExclu(j) {
+    var exclu = jourExclu(j);
+    return h("button", { type: "button", class: "jour-exclu" + (exclu ? " on" : ""), text: exclu ? "↺ Remettre" : "⊘ Exclure",
+      "aria-label": exclu ? "Remettre des repas le " + nomJour(j).toLowerCase() : "Exclure toute la journée du " + nomJour(j).toLowerCase(),
+      onclick: function (e) { e.stopPropagation(); if (exclu) remettreJour(j); else exclureJour(j); } });
+  }
+  function exclureJour(j) {
+    var avant = clone({ menu: S.menu.creneaux, ev: S.reponses.evenements, midis: S.reponses.midis });
+    ["Midi", "Soir"].forEach(function (r) {
+      if (repasPasse(j, r)) return;
+      var key = j + "-" + r, c = S.menu.creneaux.filter(function (x) { return x.key === key; })[0];
+      if (c) { c.type = "exclu"; c.recette = null; c.texte = ""; c.plats = null; c.notes = []; c.source = "choisie"; delete c.resto; delete c.listeAPart; }
+      S.reponses.evenements[key] = { etat: "exclu" };
+    });
+    var i = S.reponses.midis.indexOf(j); if (i !== -1) S.reponses.midis.splice(i, 1);
+    sauver(); var y = window.scrollY; renderPrep(); window.scrollTo(0, y);
+    toast(nomJour(j) + " exclu : pas de repas ce jour-là.", { lib: "Annuler", fn: function () {
+      S.menu.creneaux = avant.menu; S.reponses.evenements = avant.ev; S.reponses.midis = avant.midis;
+      sauver(); var y2 = window.scrollY; renderPrep(); window.scrollTo(0, y2);
+    } });
+  }
+  function remettreJour(j) {
+    var hist = Store.historique(M.iso(debut)), n = 0;
+    ["Midi", "Soir"].forEach(function (r) {
+      if (repasPasse(j, r)) return;
+      var key = j + "-" + r;
+      delete S.reponses.evenements[key];
+      if (r === "Midi" && midiSemaine(key)) return; // midi de semaine : reste sans repas (à ajouter au besoin avec ✎)
+      var c = creneauDe(j, r); c.source = null;
+      if (M.changer(R, S.menu, key, hist)) { c.notes = []; n++; }
+    });
+    sauver(); var y = window.scrollY; renderPrep(); window.scrollTo(0, y);
+    toast(n ? nomJour(j) + " : repas remis au menu." : "Aucune recette disponible pour ce jour.");
+  }
   function estAujourdhui(j) { return M.iso(M.addDays(debut, j)) === aujIso(); }
-  var CHOIX_EVT = [["__exclu", "— (pas de repas)"], ["__invitation", "Invitation"], ["__resto", "Restaurant en famille"], ["__amoureux", "Restaurant en amoureux"], ["__fete", "Repas de fête 🎉"]];
+  var CHOIX_EVT = [["__exclu", "⊘ Pas de repas (exclu)"], ["__invitation", "Invitation"], ["__resto", "Restaurant en famille"], ["__amoureux", "Restaurant en amoureux"], ["__fete", "Repas de fête 🎉"]];
   /* Crée le créneau s'il n'existe pas encore (midi de semaine non prévu). */
   function creneauDe(j, repas) {
     var key = j + "-" + repas, c = S.menu.creneaux.filter(function (x) { return x.key === key; })[0];
