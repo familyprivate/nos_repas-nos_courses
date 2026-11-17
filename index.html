@@ -1653,6 +1653,38 @@ body.vue-mobile .regl-bloc{padding:0;gap:0}
 .feuille-liste li button small { color: var(--muted); }
 .mcell.repas-sel { outline: 2.5px solid var(--accent); outline-offset: -2px; border-radius: 8px; background: var(--accent-soft); }
 .lien-annuler { font-weight: 600; }
+.mcell[data-key] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.icon.poignee { touch-action: none; cursor: grab; display: inline-flex; align-items: center; justify-content: center; }
+.mcell.glisse-appui { transition: transform .35s ease, box-shadow .35s ease; transform: scale(.98); }
+.mcell.glisse-src { opacity: .35; outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: 8px; }
+body.glisse-actif { -webkit-user-select: none; user-select: none; }
+body.glisse-actif .mcell.glisse-ok { outline: 1.5px dashed var(--line); outline-offset: -2px; border-radius: 8px; }
+.mcell.glisse-sur { position: relative; outline: 2.5px solid var(--accent) !important; background: var(--accent-soft); border-radius: 8px; }
+.mcell.glisse-sur::after { content: attr(data-action); position: absolute; right: 6px; top: 50%; transform: translateY(-50%); padding: 3px 8px; border-radius: 999px; background: var(--accent); color: #fff; font: 700 11px/1.2 inherit; pointer-events: none; }
+.glisse-fantome { position: fixed; z-index: 9999; pointer-events: none; transform: translate(-50%, calc(-100% - 18px)) rotate(-2deg); padding: 8px 14px; border-radius: 12px; background: var(--ink); color: var(--bg); box-shadow: 0 10px 24px rgba(0,0,0,.28); max-width: 70vw; transition: transform .12s ease; }
+.glisse-fantome.sur-cible { transform: translate(-50%, calc(-100% - 18px)) rotate(0deg) scale(1.04); }
+.glisse-fantome b { display: block; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.glisse-fantome small { display: block; font-size: .72rem; opacity: .8; }
+.icon.poignee { color: var(--muted); opacity: .55; font-size: 1.05rem; letter-spacing: 0; }
+.mcell.touchable { cursor: pointer; }
+.mcell.touchable:active { background: var(--accent-soft); border-radius: 8px; }
+.feuille-voir { display: block; width: 100%; margin-top: 10px; padding: 10px; background: none; border: 0; color: var(--accent-t); font: 600 .9rem inherit; text-align: center; cursor: pointer; }
+.aide-repas { margin: 0; font-size: .85rem; color: var(--muted); flex-basis: 100%; }
+.edition-zone { display: flex; flex-direction: column; gap: 6px; flex-basis: 100%; }
+.edition-zone .btn { align-self: flex-start; }
+.aide-edition { display: none; }
+body.edition-menu .aide-edition { display: block; }
+body:not(.edition-menu) .mcell.touchable .poignee { display: none; }
+body:not(.edition-menu) .mcell.touchable { cursor: auto; }
+body:not(.edition-menu) .mcell.touchable:active { background: none; }
+.edition-haut { margin: 4px 0 10px; }
+.edition-barre { display: none; position: fixed; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 8000; max-width: 616px; margin: 0 auto; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 14px; background: var(--ink); color: var(--bg); font-weight: 700; font-size: .9rem; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+body.edition-menu .edition-barre { display: flex; }
+.edition-barre .btn.primary { background: var(--bg); color: var(--ink); border-color: var(--bg); }
+.edition-haut { margin-top: -4px; }
+body.edition-menu .feuille-ouverte-x .edition-barre, body.glisse-actif .edition-barre { display: none; }
+body.edition-menu .panel-prep-fin, body.edition-menu .app { padding-bottom: 70px; }
+body.edition-menu .mcell.touchable { outline: 1.5px dashed var(--line); outline-offset: -3px; border-radius: 8px; }
 </style>
 
 <div id="verrou" class="verrou"></div>
@@ -2820,7 +2852,7 @@ var Moteur = (function () {
   var ID_APPAREIL = lsGet("menus-appareil") || ("app-" + Math.random().toString(36).slice(2, 10));
   lsSet("menus-appareil", ID_APPAREIL);
   var NOM_APPAREIL = lsGet("menus-appareil-nom") || "";
-  var VERSION_SITE = "16 nov. 17h20";
+  var VERSION_SITE = "17 nov. 14h30";
   /* Numéro de version affiché (majeur.mineur.correctif ; le .0 final est masqué). Le majeur ne change que sur décision de Yann. */
   var VERSION_APP = "1.4.3", VERSION_DATE = "28 oct. 2026";
   function libVersionApp(v) { return "V" + (v || VERSION_APP).replace(/\.0$/, ""); }
@@ -2841,9 +2873,10 @@ var Moteur = (function () {
       "Un repas exclu à l'étape « La semaine » reste exclu même si un plat y avait été choisi à la main",
       "« ⊘ Exclure » sous chaque jour du menu pour enlever toute la journée (avec « Annuler »), « ↺ Remettre » pour la retirer au sort",
       "Un plat prévu dans un repas de fête n'est plus retiré au sort pour un autre repas de la même semaine",
-      "« ✎ Changer un repas » : touche le repas, une fenêtre s'ouvre en bas (passé : qu'avez-vous mangé ? · à venir : par quoi le remplacer ?), enregistré tout de suite sans repasser par les étapes",
+      "Bouton « ✎ Modifier le menu » sur le menu validé : touche un repas, une fenêtre s'ouvre en bas (passé : qu'avez-vous mangé ? · à venir : par quoi le remplacer ?), enregistré tout de suite sans repasser par les étapes ; « ✓ Terminé » pour sortir. Hors de ce mode, toucher un plat ouvre sa recette",
       "Plat non mangé (imprévu) ou remplacé alors que les courses sont faites : l'app propose de le replacer sur un autre repas de la semaine",
-      "Échanger deux repas en glissant la poignée ⇅, directement sur le menu validé",
+      "En mode Modifier : glisser un repas sur un autre pour les échanger (y compris un repas passé, ex. raclette prévue samedi mangée dimanche)",
+      "« 📖 Voir la recette » dans la fenêtre d'un repas",
       "« Annuler » après chaque changement, et lien « ↺ Annuler le dernier changement »",
       "Restes, Grignotage : précision facultative (ex. lasagnes de mardi), affichée plus petit sous le nom",
       "Tous les articles d'une liste cochés : l'app propose de la clôturer",
@@ -4888,7 +4921,16 @@ var Moteur = (function () {
     // Jours passés : rien. Aujourd'hui : crayon seulement. Jours à venir : ↻ et crayon.
     // Repas passé d'un menu validé : ✎ pour dire ce qu'on a vraiment mangé (imprévu), menu modifié ou pas.
     var docV = Store.menus[M.iso(debut)];
-    if (repasPasse(j, repas) && docV && !semaineTropVieille()) { cell.dataset.imprevu = "1"; cell._imprevu = function () { feuilleRepas(cell, j, repas, slot, true); }; }
+    if (repasPasse(j, repas) && docV && !semaineTropVieille()) {
+      cell.dataset.imprevu = "1"; cell._imprevu = function () { feuilleRepas(cell, j, repas, slot, true); };
+      cell.dataset.passeCle = j + "-" + repas;
+      var reelP = docV.reels && docV.reels[j + "-" + repas];
+      if (!editable && S.stage === "valide" && !semainePassee()) {
+        // Repas passé : on peut y poser un plat (échange) et, s'il reste le plat prévu, le glisser ailleurs.
+        cell.dataset.key = j + "-" + repas; cell.dataset.passe = "1"; cell.dataset.swap = "1";
+        if (slot && slot.type === "recette" && !reelP) tools.insertBefore(poigneeEchange(cell, slot, true), tools.firstChild);
+      }
+    }
     else if (!editable && !verrou && docV && S.stage === "valide" && !semainePassee() && !repasPasse(j, repas)) {
       // Menu validé, repas à venir : modifiable directement (« ✎ Changer un repas »), et échangeable.
       cell.dataset.imprevu = "1"; cell._imprevu = function () { feuilleRepas(cell, j, repas, slot, false); };
@@ -4951,6 +4993,15 @@ var Moteur = (function () {
     }
     cell.append(h("div", { class: "mline" }, nameEl, tools));
     if (tags.childNodes.length) cell.append(tags);
+    if (!editable && cell._imprevu) {
+      cell.classList.add("touchable");
+      cell.addEventListener("click", function (e) {
+        if (!modeEdition || e.defaultPrevented || glisseEnCours || document.querySelector(".feuille")) return;
+        if (e.target.closest(".poignee, .lien-resto, .resto-nom input, .resto-nom button, .fiche-mini")) return;
+        e.preventDefault(); e.stopPropagation();
+        finModeImprevu(); finModeEchange(); cell._imprevu();
+      }, true);
+    }
     return cell;
   }
   function champPrecision(slot) {
@@ -5184,36 +5235,43 @@ var Moteur = (function () {
     });
     corps.append(ul, h("div", { class: "bar" }, h("button", { type: "button", class: "btn ghost", text: "Non merci", onclick: fermerFeuille })));
   }
+  function voirRecette(corps, nom) {
+    if (!nom) return;
+    corps.append(h("button", { type: "button", class: "feuille-voir", onclick: function () { fermerFeuille(); ouvrirPlat(nom); } }, "📖 Voir la recette « " + nom + " »"));
+  }
   function recetteExiste(nom) { return !!(R.byName && R.byName[nom]); }
   function nomRestes() { var n = (R.list || []).map(function (r) { return r.nom; }).filter(function (x) { return /^restes?$/i.test(M.norm(x)); })[0]; return n || null; }
   function nomGrignotage() { var n = (R.list || []).map(function (r) { return r.nom; }).filter(function (x) { return /^grignot/.test(M.norm(x)); })[0]; return n || null; }
   /* Un repas touché : passé → « qu'avez-vous mangé ? », à venir → « par quoi le remplacer ? ». */
-  function feuilleRepas(cell, j, repas, slot, passe) {
-    memoriserAvant();
+  function feuilleRepas(cell, j, repas, slot, passe, opts) {
+    opts = opts || {};
+    if (!opts.garderMemo) memoriserAvant();
     var key = j + "-" + repas, lib = nomJour(j) + " " + repas.toLowerCase();
     var docSem = Store.menus[M.iso(debut)], reel = docSem && docSem.reels && docSem.reels[key];
     var actuel = reel ? libReel(reel) : slot ? libSlot(slot) : "Pas de repas";
-    var corps = ouvrirFeuille(cell, lib.charAt(0).toUpperCase() + lib.slice(1), passe ? (reel ? "Noté : " + actuel + " (prévu : " + (slot ? libSlot(slot) : "rien") + ")" : "Prévu : " + actuel) : actuel);
+    var corps = ouvrirFeuille(cell, lib.charAt(0).toUpperCase() + lib.slice(1), opts.sous || (passe ? (reel ? "Noté : " + actuel + " (prévu : " + (slot ? libSlot(slot) : "rien") + ")" : "Prévu : " + actuel) : actuel));
     var restes = nomRestes(), grign = nomGrignotage();
     if (passe) {
       function noter(val) {
+        if (opts.apres) { enregistrerReel(j, repas, val); recaser = null; renderPrep(); if (val) toast("Noté : " + libReel(val) + ".", actionAnnuler()); etapeRecaser(corps, opts.apres); return; }
         enregistrerReel(j, repas, val);
         // Le plat prévu n'a pas été mangé : on propose de le recaser, dans la même feuille.
         if (recaser && recaser.depuis === key) { var r = recaser; recaser = null; renderPrep(); etapeRecaser(corps, r); } else fermerFeuille();
       }
       function recetteP(nom) { if (avecPrecision(nom)) etapeFeuille(corps, nom + " : une précision ?", "facultatif, ex. lasagnes de mardi", reel && reel.recette === nom ? reel.precision : "", function (p) { var v = { type: "recette", recette: nom }; if (p) v.precision = p; noter(v); }); else noter({ type: "recette", recette: nom }); }
       function resto(t) { etapeFeuille(corps, t + " : quel restaurant ?", "facultatif", reel && reel.type === "resto" ? reel.resto : slot && slot.resto, function (n) { var v = { type: "resto", texte: t }; if (n) v.resto = n; noter(v); }); }
-      corps.append(h("p", { class: "feuille-q", text: "Qu'avez-vous mangé à la place ?" }));
+      corps.append(h("p", { class: "feuille-q", text: reel ? "Changer ce que vous avez mangé ?" : "Pas mangé ça ? Qu'avez-vous mangé à la place ?" }));
       boutonsFeuille(corps, [
-        reel ? { ico: "↺", lib: "Comme prévu", fn: function () { noter(null); } } : null,
+        reel && !opts.sous ? { ico: "↺", lib: "Comme prévu", fn: function () { noter(null); } } : null,
         { ico: "🍽️", lib: "Restaurant en famille", fn: function () { resto("Restaurant en famille"); } },
         { ico: "💞", lib: "Restaurant en amoureux", fn: function () { resto("Restaurant en amoureux"); } },
         { ico: "🏠", lib: "Invitation", fn: function () { noter({ type: "invitation", texte: "Invitation" }); } },
         restes ? { ico: "🍲", lib: restes, fn: function () { recetteP(restes); } } : null,
         grign ? { ico: "🥨", lib: grign, fn: function () { recetteP(grign); } } : null,
         { ico: "⊘", lib: "Repas sauté", fn: function () { noter({ type: "saute", texte: "Repas sauté" }); } },
-        { ico: "🔎", lib: "Un autre plat…", cls: "large", fn: function () { etapeRecette(corps, "Quel plat avez-vous mangé ?", recetteP); } }
+        { ico: "🔎", lib: "Un autre plat (toutes les recettes)…", cls: "large", fn: function () { etapeRecette(corps, "Quel plat avez-vous mangé ?", recetteP); } }
       ]);
+      voirRecette(corps, reel && reel.type === "recette" ? reel.recette : slot && slot.type === "recette" ? slot.recette : null);
       return;
     }
     var hist = Store.historique(M.iso(debut)), ancien = slot && slot.type === "recette" ? slot.recette : null;
@@ -5244,6 +5302,7 @@ var Moteur = (function () {
       { ico: "⊘", lib: "Pas de repas", fn: function () { appliquer(function (c) { c.type = "exclu"; c.recette = null; c.texte = ""; c.source = "choisie"; }); } },
       { ico: "🔎", lib: "Choisir une recette…", cls: "large", fn: function () { etapeRecette(corps, "Quelle recette pour " + lib + " ?", recetteA); } }
     ]);
+    voirRecette(corps, ancien);
   }
   /* ---------- Recaser un plat qui n'a pas été mangé (ses ingrédients sont à la maison) ---------- */
   var recaser = null;
@@ -5331,47 +5390,147 @@ var Moteur = (function () {
     var c = e.target.closest && e.target.closest('.mcell[data-swap="1"]');
     if (e.target.closest && e.target.closest(".swap-bandeau")) return;
     e.preventDefault(); e.stopPropagation();
-    var de = echangeDe; finModeEchange();
-    if (c && c.dataset.key !== de) echangerCreneaux(de, c.dataset.key);
+    var de = echangeDe, passe = echangePasse; finModeEchange(); echangePasse = false;
+    if (c && c.dataset.key !== de) deposerRepas(de, c.dataset.key, passe);
   }
-  function poigneeEchange(cell, slot) {
-    var b = h("button", { type: "button", class: "icon poignee", text: "⇅", title: "Échanger avec un autre repas : glisse-moi sur l'autre repas, ou touche-moi puis l'autre repas", "aria-label": "Échanger « " + libCreneau(slot) + " » avec un autre repas" });
-    b.addEventListener("pointerdown", function (e) {
-      if (e.button) return;
-      e.preventDefault();
-      var x0 = e.clientX, y0 = e.clientY, glisse = false, cible = null, fant = null;
-      try { b.setPointerCapture(e.pointerId); } catch (er) {}
-      function sous(ev) { var el = document.elementFromPoint(ev.clientX, ev.clientY), c = el && el.closest ? el.closest('.mcell[data-swap="1"]') : null; return c && c !== cell ? c : null; }
-      function bouge(ev) {
-        if (!glisse && Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) > 10) {
-          glisse = true; finModeEchange(); cell.classList.add("swap-src");
-          fant = h("div", { class: "swap-fantome", text: libCreneau(slot) }); document.body.append(fant);
-        }
-        if (!glisse) return;
-        fant.style.left = ev.clientX + "px"; fant.style.top = ev.clientY + "px";
-        var c = sous(ev);
-        if (c !== cible) { if (cible) cible.classList.remove("swap-cible"); cible = c; if (c) c.classList.add("swap-cible"); }
-        if (ev.clientY < 90) window.scrollBy(0, -14); else if (ev.clientY > window.innerHeight - 120) window.scrollBy(0, 14);
-      }
-      function fin() {
-        b.removeEventListener("pointermove", bouge); b.removeEventListener("pointerup", fin); b.removeEventListener("pointercancel", fin);
-        if (fant) fant.remove(); cell.classList.remove("swap-src"); if (cible) cible.classList.remove("swap-cible");
-        if (glisse) { if (cible) echangerCreneaux(cell.dataset.key, cible.dataset.key); return; }
-        // Simple toucher : on choisit ensuite l'autre repas.
-        if (echangeDe === cell.dataset.key) { finModeEchange(); return; }
-        if (echangeDe) { var de = echangeDe; finModeEchange(); echangerCreneaux(de, cell.dataset.key); return; }
-        echangeDe = cell.dataset.key; cell.classList.add("swap-src");
-        Array.prototype.forEach.call(document.querySelectorAll('.mcell[data-swap="1"]'), function (c) { if (c !== cell) c.classList.add("swap-choix"); });
-        var grille = cell.closest(".menu");
-        var band = h("div", { class: "swap-bandeau", role: "status" }, h("span", { text: "Touche le repas à échanger avec « " + libCreneau(slot) + " »" }),
-          h("button", { type: "button", class: "lien-cf", text: "Annuler", onclick: finModeEchange }));
-        if (grille) grille.parentNode.insertBefore(band, grille); else document.body.append(band);
-        setTimeout(function () { document.addEventListener("click", clicEchange, true); }, 0);
-      }
-      b.addEventListener("pointermove", bouge); b.addEventListener("pointerup", fin); b.addEventListener("pointercancel", fin);
-    });
-    b.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); });
+  /* ---------- Glisser-déposer un repas ----------
+     Appui long n'importe où sur le repas (ou tout de suite sur ⇅) → le repas suit le doigt ; on le lâche sur un autre. */
+  var glisseEnCours = false;
+  function cibleSous(x, y, src) {
+    var el = document.elementFromPoint(x, y), c = el && el.closest ? el.closest(".mcell.glisse-ok") : null;
+    return c && c !== src ? c : null;
+  }
+  function poigneeEchange(cell, slot, passe) {
+    var b = h("span", { class: "icon poignee", role: "button", tabindex: "0", text: "⠿", title: passe ? "Glisse ce plat sur un repas à venir pour le replacer" : "Glisse sur un autre repas pour les échanger (ou touche, puis touche l'autre repas)", "aria-label": (passe ? "Replacer « " : "Échanger « ") + libCreneau(slot) + " »" });
+    brancherGlisser(cell, slot, !!passe, b);
     return b;
+  }
+  function brancherGlisser(cell, slot, passe, poignee) {
+    var minuteur = null, x0 = 0, y0 = 0, actif = false, bouge = false, viaPoignee = false, fant = null, cible = null, bloqueClic = false, appuye = false;
+    function marquerCibles(on) {
+      Array.prototype.forEach.call(document.querySelectorAll('.mcell[data-swap="1"]'), function (c) { if (c !== cell) c.classList.toggle("glisse-ok", on); });
+    }
+    function demarrer(x, y) {
+      actif = true; bouge = false; finModeEchange(); finModeImprevu(); glisseEnCours = true;
+      cell.classList.remove("glisse-appui"); cell.classList.add("glisse-src"); document.body.classList.add("glisse-actif");
+      marquerCibles(true);
+      fant = h("div", { class: "glisse-fantome" }, h("b", { text: libCreneau(slot) }), h("small", { text: "Lâche-le sur le bon repas" }));
+      document.body.append(fant); placer(x, y);
+      try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
+    }
+    function placer(x, y) {
+      if (!fant) return;
+      fant.style.left = x + "px"; fant.style.top = y + "px";
+      var c = cibleSous(x, y, cell);
+      if (c !== cible) {
+        if (cible) { cible.classList.remove("glisse-sur"); cible.removeAttribute("data-action"); }
+        cible = c;
+        if (c) { c.classList.add("glisse-sur"); c.setAttribute("data-action", c.querySelector(".sans") || (passe && c.dataset.passe !== "1") ? "→ Mettre ici" : "⇄ Échanger"); }
+        fant.classList.toggle("sur-cible", !!c);
+      }
+      if (y < 90) window.scrollBy(0, -12); else if (y > window.innerHeight - 140) window.scrollBy(0, 12);
+    }
+    function nettoyer() {
+      clearTimeout(minuteur); cell.classList.remove("glisse-appui", "glisse-src"); document.body.classList.remove("glisse-actif");
+      marquerCibles(false);
+      if (cible) { cible.classList.remove("glisse-sur"); cible.removeAttribute("data-action"); }
+      if (fant) fant.remove();
+      fant = null; actif = false; appuye = false; glisseEnCours = false;
+    }
+    function finir(x, y) {
+      var c = actif ? cibleSous(x, y, cell) : null, etaitBouge = bouge, poi = viaPoignee, etaitActif = actif;
+      nettoyer();
+      bloqueClic = etaitActif; setTimeout(function () { bloqueClic = false; }, 450);
+      if (c) { deposerRepas(cell.dataset.key, c.dataset.key, passe, slot); return; }
+      // Simple toucher de ⇅ : on choisit ensuite l'autre repas d'un toucher.
+      if (poi && !etaitBouge) { if (cell._imprevu) cell._imprevu(); else modeToucherEchange(cell, slot, passe); }
+    }
+    function appui(x, y, surPoignee) {
+      x0 = x; y0 = y; appuye = true; viaPoignee = surPoignee; bouge = false;
+      if (surPoignee) { demarrer(x, y); return; }
+      cell.classList.add("glisse-appui");
+      minuteur = setTimeout(function () { if (appuye) demarrer(x0, y0); }, 350);
+    }
+    function deplacement(x, y, e) {
+      if (!appuye) return;
+      var d = Math.abs(x - x0) + Math.abs(y - y0);
+      if (!actif) { if (d > 10) { clearTimeout(minuteur); cell.classList.remove("glisse-appui"); appuye = false; } return; }
+      if (d > 10) bouge = true;
+      if (e && e.cancelable) e.preventDefault();
+      placer(x, y);
+    }
+    // Doigt
+    cell.addEventListener("touchstart", function (e) {
+      if (e.touches.length > 1 || glisseEnCours || document.querySelector(".feuille")) return;
+      if (cell._imprevu && !modeEdition) return;
+      if (e.target.closest("input, textarea, select")) return;
+      var t = e.touches[0]; appui(t.clientX, t.clientY, !!(poignee && poignee.contains(e.target)));
+    }, { passive: true });
+    cell.addEventListener("touchmove", function (e) { var t = e.touches[0]; deplacement(t.clientX, t.clientY, e); }, { passive: false });
+    cell.addEventListener("touchend", function (e) {
+      if (!appuye && !actif) return;
+      var t = e.changedTouches[0];
+      if (actif && e.cancelable) e.preventDefault();
+      if (!actif) { nettoyer(); return; }
+      finir(t.clientX, t.clientY);
+    });
+    cell.addEventListener("touchcancel", function () { nettoyer(); });
+    // Souris (ordinateur)
+    cell.addEventListener("mousedown", function (e) {
+      if (e.button || glisseEnCours || document.querySelector(".feuille") || e.target.closest("input, textarea, select")) return;
+      if (cell._imprevu && !modeEdition) return;
+      var surP = !!(poignee && poignee.contains(e.target)); if (surP) e.preventDefault();
+      appui(e.clientX, e.clientY, surP);
+      function mv(ev) { deplacement(ev.clientX, ev.clientY, ev); }
+      function up(ev) { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); if (!actif) { nettoyer(); return; } finir(ev.clientX, ev.clientY); }
+      window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+    });
+    cell.addEventListener("click", function (e) { if (bloqueClic) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+    cell.addEventListener("contextmenu", function (e) { if (appuye || actif) e.preventDefault(); });
+    if (poignee) poignee.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); modeToucherEchange(cell, slot, passe); } });
+  }
+  /* Toucher ⇅ puis l'autre repas. */
+  var echangePasse = false;
+  /* Mode « Modifier » (menu validé) : sans lui, on ne peut ni glisser ni changer un repas. */
+  var modeEdition = false, modeEditionSem = null;
+  function poserModeEdition(on) {
+    modeEdition = !!on; document.body.classList.toggle("edition-menu", modeEdition);
+    if (!modeEdition) { finModeEchange(); finModeImprevu(); }
+    Array.prototype.forEach.call(document.querySelectorAll(".bouton-edition"), majBoutonEdition);
+  }
+  function majBoutonEdition(b) {
+    b.textContent = modeEdition ? "✓ Terminé" : "✎ Modifier le menu";
+    b.className = "btn bouton-edition " + (modeEdition ? "primary" : "secondary");
+    b.setAttribute("aria-pressed", modeEdition ? "true" : "false");
+  }
+  function modeToucherEchange(cell, slot, passe) {
+    finModeEchange(); finModeImprevu();
+    echangeDe = cell.dataset.key; echangePasse = !!passe; cell.classList.add("swap-src");
+    Array.prototype.forEach.call(document.querySelectorAll('.mcell[data-swap="1"]'), function (c) { if (c !== cell) c.classList.add("swap-choix"); });
+    var band = h("div", { class: "swap-bandeau", role: "status" }, h("span", { text: "Touche le repas où mettre « " + libCreneau(slot) + " »" }),
+      h("button", { type: "button", class: "lien-cf", text: "Annuler", onclick: finModeEchange }));
+    document.body.append(band);
+    setTimeout(function () { document.addEventListener("click", clicEchange, true); }, 0);
+  }
+  /* Lâcher un repas sur un autre : échange (à venir ↔ à venir) ou « replacer » un plat passé non mangé. */
+  function deposerRepas(de, vers, passe, slot) {
+    if (!de || !vers || de === vers) return;
+    var cEl = document.querySelector('.mcell[data-key="' + vers + '"]'), versPasse = !!(cEl && cEl.dataset.passe === "1");
+    // Échange simple : entre deux repas à venir, entre deux repas passés (ex. raclette mangée dimanche au lieu de samedi),
+    // ou d'un repas à venir vers un repas passé (plat mangé plus tôt que prévu).
+    if (!passe || versPasse) { echangerCreneaux(de, vers); return; }
+    // Plat passé non mangé → repas à venir : il y est déplacé ; le repas passé reste vide (un imprévu se note avec « ✎ Changer un repas »).
+    memoriserAvant();
+    var pd = de.split("-"), pv = vers.split("-"), src = creneauDe(+pd[0], pd[1]), dst = creneauDe(+pv[0], pv[1]);
+    var plat = src.recette, deplace = dst.type === "recette" ? dst.recette : null;
+    dst.type = "recette"; dst.recette = plat; dst.texte = ""; dst.source = "choisie"; dst.notes = []; delete dst.precision; delete dst.resto;
+    if (midiSemaine(vers) && S.reponses.midis.indexOf(dst.jour) === -1) S.reponses.midis.push(dst.jour);
+    delete S.reponses.evenements[vers];
+    src.type = "exclu"; src.recette = null; src.texte = ""; src.source = "choisie"; src.notes = [];
+    revaliderSemaine("« " + plat + " » déplacé " + nomJour(dst.jour).toLowerCase() + " " + dst.repas.toLowerCase() + ".");
+    var x = document.querySelector('.mcell[data-key="' + vers + '"]'); if (x) { x.classList.add("swap-fait"); setTimeout(function () { x.classList.remove("swap-fait"); }, 900); }
+    // Le plat délogé : ses ingrédients sont achetés, on propose de le recaser (sinon rien).
+    if (deplace && coursesFaitesSem()) { var corps = ouvrirFeuille(null, "Replacer un plat", deplace); etapeRecaser(corps, { recette: deplace, depuis: vers }); }
   }
 
   var flashEl = null;
@@ -5685,12 +5844,24 @@ var Moteur = (function () {
       if (ligneSt) { ic.classList.add("dl-statut"); ligneSt.append(ic); panelPrep.append(note); } else panelPrep.append(h("div", { class: "bar end dl-ligne" }, note, ic));
     }
     var carteR = carteRecaser(); if (carteR) panelPrep.append(carteR);
+    var zoneEd = h("div", { class: "edition-haut" }); panelPrep.append(zoneEd);
     panelPrep.append(renderMenuGrille(false));
     // Une seule entrée pour tout changement : « ✎ Changer un repas » (passé = imprévu, à venir = remplacer / échanger).
     var chg = null, eff = boutonEffacerSemaine();
-    var bChg = boutonChanger();
+    var peutEditer = S.stage === "valide" && Store.menus[M.iso(debut)] && !semaineTropVieille();
+    if (!peutEditer || modeEditionSem !== M.iso(debut)) { modeEditionSem = M.iso(debut); poserModeEdition(false); }
+    var bChg = null;
+    if (peutEditer) {
+      var bEd = h("button", { type: "button", class: "btn bouton-edition", onclick: function () { poserModeEdition(!modeEdition); } });
+      majBoutonEdition(bEd);
+      bChg = h("div", { class: "edition-zone" }, bEd,
+        h("p", { class: "aide-repas aide-edition" }, "Touche un repas pour le changer · glisse-le sur un autre pour les échanger"),
+        h("div", { class: "edition-barre", role: "status" }, h("span", { text: "✎ Modification du menu" }),
+          h("button", { type: "button", class: "btn primary", text: "✓ Terminé", onclick: function () { poserModeEdition(false); } })));
+    }
     var bAnn = actionAnnuler() ? h("button", { type: "button", class: "lien-cf lien-annuler", text: "↺ Annuler le dernier changement", onclick: annulerModif }) : null;
-    if (bChg || eff) panelPrep.append(h("div", { class: "bar actions-rares ligne-actions" }, bChg, bAnn, eff ? eff.bouton : null));
+    if (bChg) zoneEd.append(bChg); else zoneEd.remove();
+    if (bAnn || eff) panelPrep.append(h("div", { class: "bar actions-rares ligne-actions" }, bAnn, eff ? eff.bouton : null));
     if (modif) panelPrep.append(h("div", { class: "bar lien-etapes" }, modif));
     if (chg) panelPrep.append(chg.zone);
     if (eff) panelPrep.append(eff.zone);
